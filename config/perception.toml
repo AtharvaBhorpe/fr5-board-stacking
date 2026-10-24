@@ -76,3 +76,15 @@ grid_squares_y = 7
 square_length_m = 0.032
 marker_length_m = 0.022
 views_directory = ".local/calibration/logitech_small/views"
+
+[ros_calibration.scene]
+board = "large"
+camera_name = "logitech_scene"
+image_topic = "/scene/image_raw"
+camera_namespace = "/scene"
+
+[ros_calibration.wrist]
+board = "small"
+camera_name = "d405_color_check"
+image_topic = "/wrist/wrist_camera/color/image_raw"
+camera_namespace = "/wrist/wrist_camera/color"

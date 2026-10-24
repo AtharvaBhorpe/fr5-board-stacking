@@ -33,6 +33,15 @@ Save the ROS calibration output, then set its file URL in
 `config/logitech_ros.yaml` and restart the scene driver. Until then, the scene
 `CameraInfo` matrix is zero, so metric projection must remain disabled.
 
+For an independent check of the D405 colour intrinsics, use the small grid
+in a separate session and run `pixi run -e camera-ros calibrate-wrist`.
+Compare its saved result against the factory CameraInfo; this does not
+recalibrate stereo depth or determine the wrist-to-flange transform, and
+must not overwrite the factory calibration automatically. Use stopped
+grid poses at sharp, useful working distances. Hand-eye collection later
+needs a stationary target and measured wrist poses with rotation about
+multiple axes.
+
 | Data | ROS topic |
 | --- | --- |
 | Logitech colour | `/scene/image_raw` |

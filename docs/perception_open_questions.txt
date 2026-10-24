@@ -199,6 +199,14 @@ IMPLEMENTATION STATUS
   No motion or suction command sent. Arm trajectories remain uncommissioned.
 - User installed the D405 group-access udev rule and triggered it successfully;
   standard RealSense ROS driver now streams. Cameras are connected through a hub.
+- Combined launch verified with all three image streams. In a five-second
+  multi-topic Python subscriber check with viewers/calibrator also running,
+  observed scene delivery was 1.59 Hz, wrist colour 26.76 Hz, aligned depth
+  28.98 Hz; 117 RGB/depth timestamp matches. This is a loaded subscriber
+  measurement, not proof of device FPS or obstacle-monitor responsiveness.
+- Standard ROS calibration launch now selects scene/large or wrist/small
+  measured profiles. D405 colour check is independent of stereo depth and
+  hand-eye calibration; factory calibration is not overwritten automatically.
 
 Q21 [P0] Choose stationary table/region reference IDs and measure their corner
     coordinates/heights in the workcell frame. No fixed layout exists yet.
