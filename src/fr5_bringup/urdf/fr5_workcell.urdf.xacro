@@ -7,6 +7,17 @@
 
   <xacro:include filename="$(find fairino_description)/urdf/fairino5_v6.urdf"/>
   <xacro:include filename="$(find fr5_bringup)/urdf/fr5.ros2_control.xacro"/>
+  <xacro:include filename="$(find fr5_bringup)/urdf/schmalz_gripper.xacro"/>
+
+  <!-- Tool flange face: 100 mm along +z of wrist3_link (FR5 DH d6). -->
+  <joint name="flange_joint" type="fixed">
+    <parent link="wrist3_link"/>
+    <child link="flange"/>
+    <origin xyz="0 0 0.100" rpy="0 0 0"/>
+  </joint>
+  <link name="flange"/>
+
+  <xacro:schmalz_gripper parent="flange"/>
 
   <xacro:fr5_ros2_control name="FR5System"
                           use_fake_hardware="$(arg use_fake_hardware)"

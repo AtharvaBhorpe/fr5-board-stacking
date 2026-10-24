@@ -20,3 +20,6 @@ rosbags/
 .env
 *.env
 secrets/
+
+# Editor caches
+.cache/
