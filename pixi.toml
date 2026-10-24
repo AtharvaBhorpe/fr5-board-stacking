@@ -42,6 +42,7 @@ py-opencv = ">=4.10,<5"
 
 [feature.perception.pypi-dependencies]
 pyrealsense2 = ">=2.56,<3"
+fr5-perception = { path = "src/fr5_perception", editable = true }
 
 [feature.perception.tasks]
 hardware = "python scripts/check_perception_hardware.py inventory"

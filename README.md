@@ -35,3 +35,9 @@ Start with [GPU and camera checks](docs/perception_setup.md) before geometric
 perception, pretrained segmentation or voice integration. Camera checks do not
 connect to or move the robot. The [running questions list](docs/perception_open_questions.txt)
 tracks missing calibration, material and interface information.
+
+The first geometric detector is available as `fr5-perception-inspect` in the
+perception environment. It produces diagnostic pixel observations only; metric
+grasp output remains disabled until calibration is validated. See the
+[camera and scene calibration guide](docs/calibration_setup.md) for measured
+grid profiles, view collection, held-out checks and wrist calibration inputs.

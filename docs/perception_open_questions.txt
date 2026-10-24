@@ -7,7 +7,10 @@ CONFIRMED BY THE USER
 - FR5; Ubuntu 24.04; vacuum suction tool; command labels 1=suck, 2=blow.
 - Inputs can be stacked or scattered; outputs must be stacked.
 - Direction reference is on the table, not a printed direction on the substrate.
-- ArUco/AprilTag markers are allowed; availability/dictionary not confirmed.
+- Fiducial markers are allowed. Visible calibration grids decode as ArUco 5x5.
+  Large-grid measured cell side 52 mm and marker side 38 mm. User counted the
+  rotated grid as 5 x 7; printed ID ordering matches OpenCV ChArUco 7 x 5.
+  Marker locations/roles are not yet fixed. Tagged 270 x 200 x 6 mm boards exist.
 - Robot should avoid long pauses; acceptable maximum pause is unspecified.
 - Industry use, creativity and real-world applicability matter; no official rubric yet.
 - Cameras: Logitech VU0060 fixed on wooden support, wrist RealSense D405,
@@ -71,13 +74,16 @@ Q09 [P0] Target rectangle identity, dimensions and direction cue (arrow/tag/line
 Q10 [P1] Can cloth be flattened/fixed or replaced by a rigid matte work surface?
     Can camera support be braced, lighting controlled, and rigid fiducials fixed?
     Are destination registration stops allowed, and must the destination move freely?
-Q11 [P1] Marker dictionary/IDs, physical print sizes, print scale accuracy and whether
-    tags may be placed on substrates or only around the workspace/target.
-Q12 [PARTLY ANSWERED] User confirmed external cameras are not connected yet.
-    Need Logitech/D405 stream checks once connected: resolution/fps and depth validity.
-    Baseline uses Logitech and D405 only. Number of spare Arducams/lenses/mounts
-    matters only if later adding another view; this is not a baseline prerequisite.
-    Is a full-resolution wrist RGB/depth sample available at the inspection pose?
+Q11 [PARTLY ANSWERED] Large-grid geometry and ArUco 5x5 ID layout established.
+    Cell=52 mm; marker outer black square=38 mm; ChArUco model=7 x 5.
+    Fixed reference locations and ID roles remain unassigned. Different sheets
+    reuse IDs; moving tagged boards must not be mistaken for fixed anchors.
+Q12 [PARTLY ANSWERED] Both external cameras connected and frame delivery tested.
+    Logitech C920: 1920x1080 MJPEG ~30 fps initially; one later frame showed JPEG
+    corruption and was excluded from calibration. Stationary calibration now uses
+    1920x1080 YUYV at 5 fps. Real-time inference profile still needs validation.
+    D405: RGB/depth 848x480; scale ~0.0001 m/unit; initial full-frame nonzero
+    depth ~78.9%. These results do not prove local grasp accuracy.
 Q13 [ANSWERED: GPU SETUP] Restart completed; driver and GPU inventory pass.
     RTX 4070 Laptop GPU, 8188 MiB, driver 595.99.02.
     Isolated PyTorch 2.7.1+cu128 / CUDA 12.8 numerical test passed on the GPU.
@@ -137,7 +143,9 @@ REPOSITORY SPECIFICATIONS TO CONFIRM
 
 IMPLEMENTATION STATUS
 - Repository cloned into Roboinnovate/fr5-board-stacking.
-- Branch: feat/perception-hardware-checks; main is unchanged.
+- Active branch: feat/perception-geometric-detector. Latest team main at
+  739cde9 was synced and perception setup merged only into this feature branch.
+  Never merge or push our work into main; user reiterated this instruction.
 - GitHub login completed as SahilRMane; Git authentication configured for backups.
 - Git author/committer: configured human identity; no AI attribution.
 - Default locked pixi environment installed. Existing default and camera-only
@@ -148,6 +156,37 @@ IMPLEMENTATION STATUS
   Real GPU numerical test passed after restart; no CPU fallback was used.
   Disconnected D405 is correctly reported as unavailable.
   Team default environment lock verified unchanged.
-- At the post-restart inspection, Logitech/D405 were still absent.
-  No external camera stream has been tested.
-- A/B/E implementation has not started beyond hardware commissioning tools.
+- Both streams tested and local RGB/depth samples inspected; all captures remain
+  in ignored .local/ folders. No camera images are committed.
+- A phase 1 implemented: Detector interface, white-quadrilateral pixel preview,
+  ArUco/AprilTag discovery, duplicate-ID warnings, normalized ROI support.
+- A rejects clipped region candidates and never emits executable grasps yet.
+- ChArUco inspect/accept/fit commands implemented. Fitting requires 15+ diverse
+  views with held-out pixel-error, tilt and coverage checks. Target is 25-30.
+- 17 automated tests passed, including recovery of known intrinsics from mixed
+  large/small synthetic grid observations and independent board geometry checks.
+- Logitech focus locked: autofocus disabled, focus control 35.
+- Calibration accepted views: 8 total (7 large grid + 1 small grid). Raw attempt 2 was occluded; raw attempt 4
+  had JPEG corruption. Both are retained as rejected/raw data, excluded from fit.
+- Intrinsic matrices not fitted yet. Scene/robot/wrist extrinsics remain unknown.
+- B and E are not implemented yet.
+
+Q21 [P0] Choose stationary table/region reference IDs and measure their corner
+    coordinates/heights in the workcell frame. No fixed layout exists yet.
+Q22 [P0] Continue collecting 25-30 diverse sharp Logitech grid views; inspect the
+    fit and independent validation before marking intrinsics usable.
+Q23 [PARTLY ANSWERED] Smaller grid measured: 32 mm cells, 22 mm marker sides.
+    Real-image ID layout matches OpenCV ChArUco 5 x 7; 22 corners in closer view.
+    User currently uses it for additional Logitech views. Profiles and folders are
+    separate and the fitter uses each print's own geometry. Wrist hand-eye still
+    requires timestamped measured base-to-flange poses and a fixed target.
+Q24 [P1] Resolve MJPEG corruption / validate an inference camera profile and
+    processing latency before using the scene monitor for dynamic obstacles.
+
+LATEST COLLECTION NOTES
+- User confirmed both calibration targets have rigid, flat backing.
+- Large grid: 52/38 mm, ID model 7 x 5. Small grid: 32/22 mm, ID model 5 x 7.
+- Logitech mount, resolution and focus remain fixed; small target moved closer.
+- Mixed-board fitter refuses to fit the current 8 images (minimum 15); no camera
+  matrix has been produced or declared validated. Target remains 25-30 views.
+- Do not mix simultaneous duplicate-ID grids in one calibration observation.

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import time
 import tomllib
 
 
@@ -35,7 +36,7 @@ def inventory(config):
     }
 
 
-def logitech(config, device):
+def logitech(config, device, capture_dir=None):
     import cv2
 
     device = device or config['logitech']['device']
@@ -47,18 +48,43 @@ def logitech(config, device):
     try:
         if not cap.isOpened():
             raise RuntimeError('Cannot open selected webcam; check permissions and other camera applications.')
+        settings = config['logitech']
+        if settings.get('fourcc'):
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*settings['fourcc']))
+        if 'autofocus' in settings:
+            if not cap.set(cv2.CAP_PROP_AUTOFOCUS, int(settings['autofocus'])):
+                raise RuntimeError('Camera refused the configured autofocus mode.')
+        if 'focus_position' in settings:
+            if not cap.set(cv2.CAP_PROP_FOCUS, settings['focus_position']):
+                raise RuntimeError('Camera refused the configured fixed focus.')
+        for key, prop in (('width', cv2.CAP_PROP_FRAME_WIDTH), ('height', cv2.CAP_PROP_FRAME_HEIGHT),
+                          ('fps', cv2.CAP_PROP_FPS)):
+            if settings.get(key):
+                cap.set(prop, settings[key])
+        received = []
         for _ in range(config['probe']['frames']):
             ok, frame = cap.read()
             if not ok or frame is None or frame.size == 0:
                 raise RuntimeError('Webcam opened but did not deliver the requested frames.')
-        return {'ok': True, 'frames': config['probe']['frames'], 'width': frame.shape[1],
+            received.append(time.monotonic())
+        report = {'ok': True, 'frames': config['probe']['frames'], 'width': frame.shape[1],
                 'height': frame.shape[0], 'reported_fps': cap.get(cv2.CAP_PROP_FPS),
                 'note': 'Frame delivery passed; focus, exposure and calibration still require visual checks.'}
+        if len(received) > 1 and received[-1] > received[0]:
+            report['observed_read_fps'] = (len(received) - 1) / (received[-1] - received[0])
+        if capture_dir:
+            folder = Path(capture_dir)
+            folder.mkdir(parents=True, exist_ok=True)
+            if not cv2.imwrite(str(folder / 'logitech_rgb.png'), frame):
+                raise RuntimeError('Failed to save Logitech sample.')
+            (folder / 'logitech_metadata.json').write_text(json.dumps(report, indent=2))
+        return report
     finally:
         cap.release()
 
 
-def d405(config):
+def d405(config, capture_dir=None):
+    import cv2
     import numpy as np
     import pyrealsense2 as rs
 
@@ -84,12 +110,36 @@ def d405(config):
                 raise RuntimeError('D405 did not deliver both color and depth.')
         image = np.asanyarray(depth.get_data())
         valid_fraction = float(np.count_nonzero(image) / image.size)
-        return {'ok': True, 'frames': config['probe']['frames'],
+        report = {'ok': True, 'frames': config['probe']['frames'],
                 'depth_size': [depth.get_width(), depth.get_height()],
                 'color_size': [color.get_width(), color.get_height()],
                 'depth_scale_m': profile.get_device().first_depth_sensor().get_depth_scale(),
                 'nonzero_depth_fraction_last_frame': valid_fraction,
                 'note': 'Stream delivery passed; nonzero depth is not an accuracy or grasp-readiness check.'}
+        if capture_dir:
+            folder = Path(capture_dir)
+            folder.mkdir(parents=True, exist_ok=True)
+            aligned = rs.align(rs.stream.color).process(frames)
+            aligned_depth = aligned.get_depth_frame()
+            rgb = np.asanyarray(color.get_data())
+            fmt = color.get_profile().format()
+            if fmt == rs.format.rgb8:
+                rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            elif fmt != rs.format.bgr8:
+                raise RuntimeError(f'Unsupported color format for saved sample: {fmt}')
+            intrinsics = aligned_depth.profile.as_video_stream_profile().get_intrinsics()
+            report['aligned_depth_intrinsics'] = {
+                key: getattr(intrinsics, key) for key in ('width', 'height', 'fx', 'fy', 'ppx', 'ppy')}
+            report['aligned_depth_intrinsics']['model'] = str(intrinsics.model)
+            report['aligned_depth_intrinsics']['coeffs'] = list(intrinsics.coeffs)
+            report['camera_timestamp_ms'] = depth.get_timestamp()
+            report['timestamp_domain'] = str(depth.get_frame_timestamp_domain())
+            if not cv2.imwrite(str(folder / 'd405_rgb.png'), rgb):
+                raise RuntimeError('Failed to save D405 color sample.')
+            np.save(folder / 'd405_raw_depth.npy', image)
+            np.save(folder / 'd405_aligned_depth.npy', np.asanyarray(aligned_depth.get_data()))
+            (folder / 'd405_metadata.json').write_text(json.dumps(report, indent=2))
+        return report
     finally:
         pipeline.stop()
 
@@ -118,6 +168,7 @@ def main(argv=None):
     parser.add_argument('kind', choices=('inventory', 'logitech', 'd405', 'cuda'))
     parser.add_argument('--config', default='config/perception.toml')
     parser.add_argument('--device', help='Explicit Logitech device; never automatically select the laptop camera.')
+    parser.add_argument('--capture-dir', help='Save local RGB/depth samples for visual inspection.')
     parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     try:
@@ -132,6 +183,8 @@ def main(argv=None):
                        '--worker', '--config', args.config]
             if args.device:
                 command += ['--device', args.device]
+            if args.capture_dir:
+                command += ['--capture-dir', args.capture_dir]
             # A camera driver can block inside read(); isolate it behind a process timeout.
             result = subprocess.run(command, timeout=config['probe']['timeout_seconds'])
             return result.returncode
@@ -139,7 +192,8 @@ def main(argv=None):
             if args.kind == 'cuda':
                 report = cuda()
             else:
-                report = logitech(config, args.device) if args.kind == 'logitech' else d405(config)
+                report = (logitech(config, args.device, args.capture_dir) if args.kind == 'logitech'
+                          else d405(config, args.capture_dir))
         print(json.dumps(report, indent=2))
         return 0
     except (OSError, ValueError, RuntimeError, ImportError, KeyError, subprocess.TimeoutExpired) as exc:

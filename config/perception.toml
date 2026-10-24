@@ -1,6 +1,6 @@
 [probe]
 frames = 20
-timeout_seconds = 20
+timeout_seconds = 30
 
 [host]
 usb_root = "/sys/bus/usb/devices"
@@ -8,10 +8,59 @@ video_root = "/sys/class/video4linux"
 driver_version_file = "/proc/driver/nvidia/version"
 
 [logitech]
-# Set the Logitech's /dev/v4l/by-id/... path after connecting it.
+# Stable path on the commissioning laptop; update for another camera/computer.
 # An empty value prevents accidentally opening the laptop camera.
-device = ""
+device = "/dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920_692E0F9F-video-index0"
+width = 1920
+height = 1080
+fps = 5
+fourcc = "YUYV"
+autofocus = false
+focus_position = 35
 
 [d405]
 # Optional when exactly one D405 is connected. Never select a different model.
 serial = ""
+
+[classical]
+# Empty regions mean diagnostic preview only; never infer pick/placement regions.
+pickup_polygon_normalized = []
+destination_polygon_normalized = []
+min_value = 120
+max_saturation = 90
+min_area_fraction = 0.002
+max_area_fraction = 0.4
+min_rectangularity = 0.75
+max_aspect_ratio = 4.0
+contour_epsilon_fraction = 0.02
+
+[markers]
+# Discovery dictionaries; confirm the printed grid before calibration.
+dictionaries = ["DICT_5X5_100", "DICT_APRILTAG_16h5", "DICT_APRILTAG_25h9", "DICT_APRILTAG_36h10", "DICT_APRILTAG_36h11"]
+
+[calibration]
+active_board = "small"
+min_corners = 12
+min_views = 15
+max_rms_px = 1.0
+min_tilt_spread_deg = 15.0
+min_axis_coverage_fraction = 0.5
+output_file = "config/calibration/logitech_intrinsics.json"
+
+[calibration.boards.large]
+dictionary = "DICT_5X5_100"
+# Printed ID ordering matches 7 x 5; the user counted the rotated grid as 5 x 7.
+grid_squares_x = 7
+grid_squares_y = 5
+square_length_m = 0.052
+marker_length_m = 0.038
+views_directory = ".local/calibration/logitech/views"
+
+[calibration.boards.small]
+dictionary = "DICT_5X5_100"
+# This print has a different ID ordering; verified on the camera images.
+grid_squares_x = 5
+grid_squares_y = 7
+square_length_m = 0.032
+marker_length_m = 0.022
+views_directory = ".local/calibration/logitech_small/views"

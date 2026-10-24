@@ -31,7 +31,8 @@ class HardwareChecksTest(unittest.TestCase):
         cap = unittest.mock.Mock()
         cap.isOpened.return_value = True
         cap.read.return_value = (False, None)
-        fake_cv = SimpleNamespace(VideoCapture=unittest.mock.Mock(return_value=cap), CAP_V4L2=200)
+        fake_cv = SimpleNamespace(VideoCapture=unittest.mock.Mock(return_value=cap), CAP_V4L2=200,
+                                  CAP_PROP_FRAME_WIDTH=3, CAP_PROP_FRAME_HEIGHT=4, CAP_PROP_FPS=5)
         with tempfile.NamedTemporaryFile() as device:
             with patch.dict('sys.modules', {'cv2': fake_cv}):
                 with self.assertRaisesRegex(RuntimeError, 'did not deliver'):
