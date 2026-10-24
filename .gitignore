@@ -25,3 +25,6 @@ secrets/
 # Local bootstrap tools and camera captures
 .tools/
 .local/
+
+# Editor caches
+.cache/

@@ -7,6 +7,29 @@
 
   <xacro:include filename="$(find fairino_description)/urdf/fairino5_v6.urdf"/>
   <xacro:include filename="$(find fr5_bringup)/urdf/fr5.ros2_control.xacro"/>
+  <xacro:include filename="$(find fr5_bringup)/urdf/d405_wrist_mount.xacro"/>
+  <xacro:include filename="$(find fr5_bringup)/urdf/schmalz_gripper.xacro"/>
+
+  <!-- Tool flange face: 100 mm along +z of wrist3_link (FR5 DH d6). -->
+  <joint name="flange_joint" type="fixed">
+    <parent link="wrist3_link"/>
+    <child link="flange"/>
+    <origin xyz="0 0 0.100" rpy="0 0 0"/>
+  </joint>
+  <link name="flange"/>
+
+  <!-- Camera mount plate sits on the flange. TODO day 1: set yaw to the arm's real direction. -->
+  <xacro:d405_wrist_mount parent="flange" yaw="0.0"/>
+
+  <!-- Gripper sits on top of the 9.5 mm mount plate. -->
+  <joint name="tool_adapter_joint" type="fixed">
+    <parent link="flange"/>
+    <child link="tool_adapter"/>
+    <origin xyz="0 0 0.0095" rpy="0 0 0"/>
+  </joint>
+  <link name="tool_adapter"/>
+
+  <xacro:schmalz_gripper parent="tool_adapter"/>
 
   <xacro:fr5_ros2_control name="FR5System"
                           use_fake_hardware="$(arg use_fake_hardware)"
