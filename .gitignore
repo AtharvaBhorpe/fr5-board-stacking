@@ -15,3 +15,8 @@ __pycache__/
 *.bag
 rosbags/
 *.mcap
+
+# Secrets (never commit)
+.env
+*.env
+secrets/
