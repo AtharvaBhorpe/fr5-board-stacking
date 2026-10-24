@@ -10,3 +10,21 @@ version = "0.1.0"
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"
 colcon-common-extensions = ">=0.3.0,<0.4"
+
+# Camera SDK wheels use a separate Python environment from the team's ROS stack.
+[feature.perception.dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<3"
+py-opencv = ">=4.10,<5"
+
+[feature.perception.pypi-dependencies]
+pyrealsense2 = ">=2.56,<3"
+
+[feature.perception.tasks]
+hardware = "python scripts/check_perception_hardware.py inventory"
+check-logitech = "python scripts/check_perception_hardware.py logitech"
+check-d405 = "python scripts/check_perception_hardware.py d405"
+test-perception = "python -m unittest discover -s tests -v"
+
+[environments]
+perception = { features = ["perception"], no-default-feature = true }

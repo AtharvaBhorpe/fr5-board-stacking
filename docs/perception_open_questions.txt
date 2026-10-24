@@ -31,8 +31,10 @@ RECOVERED CONTEXT / READ-ONLY CHECKS
   That chat's Humble recommendation is not evidence of an installed Humble stack.
 - Local PCI inventory identifies NVIDIA RTX 4070 Mobile / Max-Q.
   User authorized installing the NVIDIA driver/CUDA prerequisites on 2026-10-24.
-  nvidia-smi could not communicate with the driver in this session.
-  Available VRAM and working CUDA runtime are not verified.
+  Host inspection confirmed Ubuntu 24.04.5 LTS and running kernel 7.0.0-38.
+  User installed Canonical-signed NVIDIA 595.99.02 and matching kernel module.
+  Installation verified; driver not yet loaded and Ubuntu requests a restart.
+  Available VRAM and actual CUDA execution remain unverified.
 
 OBSERVED IN PROVIDED SCENE PHOTOS
 - Table surface appears to be a dark fabric covering with wrinkles.
@@ -73,8 +75,8 @@ Q12 [PARTLY ANSWERED] User confirmed external cameras are not connected yet.
     Baseline uses Logitech and D405 only. Number of spare Arducams/lenses/mounts
     matters only if later adding another view; this is not a baseline prerequisite.
     Is a full-resolution wrist RGB/depth sample available at the inspection pose?
-Q13 [IN PROGRESS] User authorized NVIDIA driver/GPU setup.
-    Host nvidia-smi failed; no loaded NVIDIA driver proc entry was found.
+Q13 [IN PROGRESS] Matching signed NVIDIA driver/module installed and verified.
+    Pending restart, nvidia-smi success, then a GPU-runtime execution test.
     Still need working CUDA runtime, free GPU memory and competing GPU workloads.
     Is this Codex host the machine that will run perception at the robot?
 Q14 [P1] Is Isaac Sim still required for judging? Existing Brev instance/version,
@@ -106,7 +108,8 @@ CURRENT RECOMMENDATION (conditional)
 - Independent local obstacle monitor; collision-checked full-arm/tool/sheet routes;
   continue only while remaining route is clear; bounded stop and replan if threatened.
 - Keep working Jazzy motion integration; do not infer planning support from teleop.
-- CPU perception baseline first; optional GPU segmentation after recorded tests.
+- A uses geometric image processing; B will use the local GPU after driver/runtime
+  verification. Do not add B/E before A is validated.
 - Local speech transcription; optional VLM chooses candidate IDs only.
 - Pipeline options under comparison: classical marker-assisted RGB + local RGB-D;
   zero-shot Grounding DINO/SAM 2 + geometry; custom-trained instance segmentation
@@ -124,6 +127,21 @@ CURRENT RECOMMENDATION (conditional)
 
 REPOSITORY SPECIFICATIONS TO CONFIRM
 - AGENTS.md says Ubuntu 26.04 / isolated RoboStack ROS 2 Humble; earlier user
-  context says Ubuntu 24.04 / existing ROS 2 Jazzy teleop. Inspect actual host.
+  context says Ubuntu 24.04 / existing ROS 2 Jazzy teleop. Host now confirmed
+  Ubuntu 24.04.5; project default Humble and isolated perception env remain separate.
 - AGENTS.md specifies white boards 270 x 200 x 6 mm and tolerance <5 mm.
   Treat as repository specifications until user confirms applicability to all runs.
+
+IMPLEMENTATION STATUS
+- Repository cloned into Roboinnovate/fr5-board-stacking.
+- Branch: feat/perception-hardware-checks; main is unchanged.
+- GitHub login completed as SahilRMane; Git authentication configured for backups.
+- Git author/committer: configured human identity; no AI attribution.
+- Default locked pixi environment installed.
+- Isolated perception env installed: Python 3.12, OpenCV 4.13, NumPy, RealSense SDK.
+- Stage 0 checker ready: inventory and bounded Logitech/D405 stream tests.
+  Five automated checks passed; OpenCV/ArUco/RealSense imports passed.
+  Disconnected D405 is correctly reported as unavailable.
+  Team default environment lock verified unchanged.
+- Cameras are not connected; no external camera stream has been tested.
+- A/B/E implementation has not started beyond hardware commissioning tools.

@@ -1,0 +1,17 @@
+[probe]
+frames = 20
+timeout_seconds = 20
+
+[host]
+usb_root = "/sys/bus/usb/devices"
+video_root = "/sys/class/video4linux"
+driver_version_file = "/proc/driver/nvidia/version"
+
+[logitech]
+# Set the Logitech's /dev/v4l/by-id/... path after connecting it.
+# An empty value prevents accidentally opening the laptop camera.
+device = ""
+
+[d405]
+# Optional when exactly one D405 is connected. Never select a different model.
+serial = ""
