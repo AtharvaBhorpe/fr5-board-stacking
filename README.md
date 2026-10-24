@@ -21,8 +21,8 @@ Do not use conda `base` alongside pixi (`conda config --set auto_activate false`
 - One branch per task: `git switch -c feat/<area>-<short-description>`
   - Areas: `robot`, `perception`, `calib`, `task`, `voice`, `infra`
   - Example: `feat/perception-webcam-threshold`
-- Open a PR into `main`; at least 1 teammate approves before merge.
+- Open a PR into `main`; reviews are optional, merge when ready.
 - Pull often: `git switch main && git pull`
 - Commit `pixi.lock` whenever dependencies change.
-- The PR author merges after approval.
+- AI agents never merge PRs; a human always merges.
 - Full rules for humans and AI agents: see [AGENTS.md](AGENTS.md).

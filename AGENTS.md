@@ -39,7 +39,8 @@ Priority: reliability and recovery over speed.
   - Example: `feat/perception-webcam-threshold`
 - Commit messages: Conventional Commits (`feat: ...`, `fix: ...`).
 - Keep PRs small and single-purpose. Fill in the PR template.
-- 1 teammate approval required. **The PR author merges** after approval.
+- Reviews are optional: anyone can merge their own PR. Ask for a review on risky changes (real-robot motion, safety).
+- **AI agents never merge PRs.** Agents may open PRs; a human always merges.
 - Merges are squash-only; branches auto-delete after merge.
 - Before starting: `git switch main && git pull`, then branch.
 - To update a branch with new `main`: `git merge main` (do not rebase
