@@ -24,3 +24,5 @@ Do not use conda `base` alongside pixi (`conda config --set auto_activate false`
 - Open a PR into `main`; at least 1 teammate approves before merge.
 - Pull often: `git switch main && git pull`
 - Commit `pixi.lock` whenever dependencies change.
+- The PR author merges after approval.
+- Full rules for humans and AI agents: see [AGENTS.md](AGENTS.md).
