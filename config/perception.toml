@@ -2,6 +2,18 @@
 frames = 20
 timeout_seconds = 30
 
+[transport_test]
+pixi_executable = ".tools/pixi"
+domain_id = 173
+topic = "/_fr5_perception_transport_test/image"
+log_directory = ".local/ros_transport_logs"
+width = 1920
+height = 1080
+frames = 20
+fps = 10
+timeout_seconds = 20
+max_age_ms = 200.0
+
 [host]
 usb_root = "/sys/bus/usb/devices"
 video_root = "/sys/class/video4linux"

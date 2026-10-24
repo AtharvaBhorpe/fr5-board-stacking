@@ -1,0 +1,10 @@
+# realsense2_camera rs_launch.py config_file format: a flat parameter mapping.
+enable_color: true
+enable_depth: true
+depth_module.depth_profile: "848,480,30"
+depth_module.color_profile: "848,480,30"
+align_depth.enable: true
+enable_sync: true
+pointcloud.enable: false
+hole_filling_filter.enable: false
+wait_for_device_timeout: 10.0

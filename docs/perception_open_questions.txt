@@ -61,7 +61,11 @@ Q04 [P0] Must exactly one sheet be moved per pick? Is multiple-sheet pickup pena
 Q05 [P0] Tool IO mapping and protocol: what exactly do command labels 1/2 address?
     How are suction hold, blow duration and off state controlled? Is vacuum/contact
     or acquisition feedback readable? Cup diameter and tool mounting measurements?
-Q06 [P0] Current controller firmware and active tool/workpiece frame; measured TCP,
+Q06 [PARTLY ANSWERED] Controller reports robot software v3.9.2 through the team
+    ROS service. Five /nonrt_state_data samples received with nonzero joint/TCP
+    positions and zero main/sub errors. SDK real-time feedback warns of packet
+    size mismatch; validate before using ros2_control. This non-RT message has
+    no source Header. Still need active tool/workpiece frame; measured TCP,
     payload and camera-to-flange transform. Can timestamped joints/flange pose and
     motion/stop acknowledgements be read through the working adapter?
 Q07 [P0] Obstacle examples, maximum dimensions/height, entry regions and speed;
@@ -170,6 +174,31 @@ IMPLEMENTATION STATUS
   had JPEG corruption. Both are retained as rejected/raw data, excluded from fit.
 - Intrinsic matrices not fitted yet. Scene/robot/wrist extrinsics remain unknown.
 - B and E are not implemented yet.
+- Latest team main dd94a10 merged into the feature branch only; pinned official
+  Fairino submodule initialized without edits. All 5 selected ROS packages build.
+- User requests Ponytail for every response and standard ROS 2 packages first
+  across A/B/E. Live camera path now uses v4l2_camera, realsense2_camera,
+  camera_calibration, image_proc and image_view. No custom live camera driver.
+- Optional camera-ros env installed; existing default/perception/GPU lock entries
+  verified unchanged. Upstream ROS calibration solver recovers known synthetic
+  intrinsics in its integration test; OpenCV <5 is required for its ChArUco API.
+- Offline A replay completed on 10 saved camera images, 58.6-136.1 ms/image in
+  that run. Captures mostly show calibration targets, not labelled substrates;
+  no object-detection/picking success rate was measured. Reports remain local.
+- Cross-environment ROS check passed: 20 full 1920x1080 RGB payloads verified,
+  maximum observed age 13.82 ms; excludes camera exposure and actual inference.
+- Live ROS camera delivery verified: scene 1920x1080 BGR, wrist 848x480 RGB,
+  aligned depth 848x480 16UC1, with all three CameraInfo topics. Initial aligned
+  depth nonzero fraction 89.95%; not a depth-accuracy or grasp-success result.
+- Logitech ROS autofocus readback false and focus 35. Its CameraInfo is still
+  uncalibrated (zero K); D405 factory intrinsics present. Fresh frames saved in
+  ignored .local/captures/ros_live. Eight older accepted Logitech views retained.
+- Existing FR5 Ethernet profile activated at 192.168.58.10/24, no default route;
+  robot 192.168.58.2 ping 0.10-0.18 ms. Wi-Fi unchanged.
+- User confirmed clear workspace, human at e-stop, and use of the team driver.
+  No motion or suction command sent. Arm trajectories remain uncommissioned.
+- User installed the D405 group-access udev rule and triggered it successfully;
+  standard RealSense ROS driver now streams. Cameras are connected through a hub.
 
 Q21 [P0] Choose stationary table/region reference IDs and measure their corner
     coordinates/heights in the workcell frame. No fixed layout exists yet.
@@ -182,6 +211,10 @@ Q23 [PARTLY ANSWERED] Smaller grid measured: 32 mm cells, 22 mm marker sides.
     requires timestamped measured base-to-flange poses and a fixed target.
 Q24 [P1] Resolve MJPEG corruption / validate an inference camera profile and
     processing latency before using the scene monitor for dynamic obstacles.
+Q25 [P0, ON RESUMPTION] After setup handover, did anyone change Logitech focus,
+    resolution/crop/zoom or its mounting? Verify autofocus off and focus 35.
+    A mounting change requires new scene extrinsics, but does not by itself
+    invalidate lens intrinsics. Changed optical settings need a separate dataset.
 
 LATEST COLLECTION NOTES
 - User confirmed both calibration targets have rigid, flat backing.
@@ -190,3 +223,19 @@ LATEST COLLECTION NOTES
 - Mixed-board fitter refuses to fit the current 8 images (minimum 15); no camera
   matrix has been produced or declared validated. Target remains 25-30 views.
 - Do not mix simultaneous duplicate-ID grids in one calibration observation.
+- Two additional small-grid captures saved locally as raw view_003/view_004.
+  They yielded only 4/0 ChArUco corners (5/2 decoded markers), respectively,
+  below the 12-corner requirement. Neither was accepted; total remains 8.
+  The full grid was visible near the upper-left image area, but its marker
+  detail was not reliably decoded. Next use the larger grid there, or bring
+  the small grid closer to the camera without changing camera focus.
+- Setup handed to another team; capture paused. Need at least 7 more accepted
+  views to attempt a preliminary fit, preferably 17-22 more for 25-30 total.
+  Planned 17: 5 near-front-facing views (centre and four image quadrants),
+  8 tilted views (left/right/top/bottom areas, two opposite tilt directions
+  at each, around both target axes, about 20-35 degrees), and 4 views at two
+  sharp distances with approximately 90-degree in-plane rotation and tilt.
+  Keep target fully visible on rigid backing; use large grid for Logitech.
+  Assess diversity against existing observations; count alone does not prove
+  calibration quality. Reserve 3-5 independently positioned metric-check views
+  after fitting and scene registration, outside the intrinsic fitting set.

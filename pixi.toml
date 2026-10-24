@@ -56,6 +56,29 @@ torch = { version = "==2.7.1", index = "https://download.pytorch.org/whl/cu128" 
 [feature.gpu.tasks]
 check-cuda = "python scripts/check_perception_hardware.py cuda"
 
+# Standard ROS camera tools, isolated from motion and GPU environments.
+[feature.camera-ros.dependencies]
+# Humble's ChArUco solver uses an API removed in OpenCV 5.
+py-opencv = ">=4.10,<5"
+ros-humble-ros2cli-common-extensions = "*"
+ros-humble-camera-calibration = "*"
+ros-humble-v4l2-camera = "*"
+ros-humble-image-proc = "*"
+ros-humble-image-view = "*"
+ros-humble-realsense2-camera = "*"
+
+[feature.camera-ros.tasks]
+cameras = "ros2 launch config/cameras.launch.py"
+scene-camera = "ros2 run v4l2_camera v4l2_camera_node --ros-args -r __ns:=/scene --params-file config/logitech_ros.yaml"
+wrist-camera = "ros2 launch realsense2_camera rs_launch.py camera_name:=wrist_camera camera_namespace:=wrist device_type:=D405 config_file:=config/d405_ros.yaml"
+calibrate-scene = "ros2 launch config/scene_calibration.launch.py"
+test-ros-calibration = "python -m unittest discover -s tests -p test_ros_calibration.py -v"
+view-cameras = "ros2 launch config/camera_views.launch.py"
+view-scene = "ros2 run image_view image_view --ros-args -r image:=/scene/image_raw"
+view-wrist = "ros2 run image_view image_view --ros-args -r image:=/wrist/wrist_camera/color/image_raw"
+view-depth = "ros2 run image_view image_view --ros-args -r image:=/wrist/wrist_camera/aligned_depth_to_color/image_raw -p autosize:=true"
+
 [environments]
 perception = { features = ["perception"], no-default-feature = true }
 perception-gpu = { features = ["perception", "gpu"], no-default-feature = true }
+camera-ros = { features = ["camera-ros"], no-default-feature = true }

@@ -41,3 +41,9 @@ perception environment. It produces diagnostic pixel observations only; metric
 grasp output remains disabled until calibration is validated. See the
 [camera and scene calibration guide](docs/calibration_setup.md) for measured
 grid profiles, view collection, held-out checks and wrist calibration inputs.
+
+For the live standard ROS camera path, run `pixi run -e camera-ros cameras`.
+In separate terminals run `pixi run -e camera-ros view-cameras` for both RGB
+feeds and aligned depth, and `pixi run -e camera-ros calibrate-scene` for the
+large ChArUco print. The [setup guide](docs/perception_setup.md) lists topics,
+device permissions, transport checks and robot-feedback commands.

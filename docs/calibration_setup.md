@@ -16,6 +16,13 @@ images as small-grid images by changing one global square length.
 
 ## Logitech intrinsics
 
+Use the standard ROS GUI via `pixi run -e camera-ros calibrate-scene` for
+further live collection. It consumes `/scene/image_raw` and supplies coverage
+feedback. See [the launch workflow](perception_setup.md#standard-ros-camera-workflow).
+Use only the large print for this standard session; its ChArUco solver does
+not combine different physical board models correctly. The commands below
+remain available for inspection and fitting of the saved mixed-print dataset.
+
 Use one large grid at a time. Attach it flat to rigid matte backing and
 keep fingers outside the printed pattern. Loose or bent paper is unsuitable
 for accurate calibration. Keep the Logitech mount, resolution and lens
@@ -28,7 +35,7 @@ For stationary calibration, the camera was switched to uncompressed YUYV,
 obstacle-monitoring update rate. Recheck image geometry and quality before
 switching codec/profile for inference.
 
-Collect at least 15 accepted, varied views; the user requested 25-30 for
+The offline fitter requires at least 15 accepted, varied views; the user requested 25-30 for
 redundancy and better spatial/angle coverage:
 
 1. Include centre, corners and edges of the camera image where accessible.
