@@ -9,9 +9,11 @@ and stack them inside the taped boundary.
 1. Install pixi: https://pixi.sh
 2. Clone and install:
 
-       git clone https://github.com/AtharvaBhorpe/fr5-board-stacking.git
+       git clone --recurse-submodules https://github.com/AtharvaBhorpe/fr5-board-stacking.git
        cd fr5-board-stacking
        pixi install
+       pixi run build
+       pixi run demo   # FR5 in RViz with fake hardware
 
 Do not use conda `base` alongside pixi (`conda config --set auto_activate false`).
 

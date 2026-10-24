@@ -64,6 +64,7 @@ Priority: reliability and recovery over speed.
   Failures go to recovery or stop safely; never fail silently.
 - Units in code: meters and radians. Millimeters only in logs and labels.
 - No hard-coded IPs, ports, paths or calibration values outside `config/`.
+- Never edit files under `external/` (upstream submodules). Work around issues in our own packages, build flags or config.
 
 ## Before opening a PR
 
