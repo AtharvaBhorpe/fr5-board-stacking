@@ -33,8 +33,11 @@ RECOVERED CONTEXT / READ-ONLY CHECKS
   User authorized installing the NVIDIA driver/CUDA prerequisites on 2026-10-24.
   Host inspection confirmed Ubuntu 24.04.5 LTS and running kernel 7.0.0-38.
   User installed Canonical-signed NVIDIA 595.99.02 and matching kernel module.
-  Installation verified; driver not yet loaded and Ubuntu requests a restart.
-  Available VRAM and actual CUDA execution remain unverified.
+  After restart: driver loaded; nvidia-smi and project inventory both pass.
+  Device is NVIDIA GeForce RTX 4070 Laptop GPU with 8188 MiB total memory.
+  Driver reports CUDA API support 13.2. PyTorch 2.7.1+cu128 with CUDA runtime
+  12.8 passed GPU matrix multiplication and numerical verification.
+  About 7.4 GiB CUDA memory was free during the test; model capacity is unmeasured.
 
 OBSERVED IN PROVIDED SCENE PHOTOS
 - Table surface appears to be a dark fabric covering with wrinkles.
@@ -75,10 +78,10 @@ Q12 [PARTLY ANSWERED] User confirmed external cameras are not connected yet.
     Baseline uses Logitech and D405 only. Number of spare Arducams/lenses/mounts
     matters only if later adding another view; this is not a baseline prerequisite.
     Is a full-resolution wrist RGB/depth sample available at the inspection pose?
-Q13 [IN PROGRESS] Matching signed NVIDIA driver/module installed and verified.
-    Pending restart, nvidia-smi success, then a GPU-runtime execution test.
-    Still need working CUDA runtime, free GPU memory and competing GPU workloads.
-    Is this Codex host the machine that will run perception at the robot?
+Q13 [ANSWERED: GPU SETUP] Restart completed; driver and GPU inventory pass.
+    RTX 4070 Laptop GPU, 8188 MiB, driver 595.99.02.
+    Isolated PyTorch 2.7.1+cu128 / CUDA 12.8 numerical test passed on the GPU.
+    Future model memory/latency must still be measured with actual workloads.
 Q14 [P1] Is Isaac Sim still required for judging? Existing Brev instance/version,
     usable credit scope and current simulation state?
 Q15 [PARTLY ANSWERED] Team has 2.5 days; user has about 17 hours for perception;
@@ -137,11 +140,14 @@ IMPLEMENTATION STATUS
 - Branch: feat/perception-hardware-checks; main is unchanged.
 - GitHub login completed as SahilRMane; Git authentication configured for backups.
 - Git author/committer: configured human identity; no AI attribution.
-- Default locked pixi environment installed.
+- Default locked pixi environment installed. Existing default and camera-only
+  environment locks verified unchanged when adding the optional GPU environment.
 - Isolated perception env installed: Python 3.12, OpenCV 4.13, NumPy, RealSense SDK.
 - Stage 0 checker ready: inventory and bounded Logitech/D405 stream tests.
-  Five automated checks passed; OpenCV/ArUco/RealSense imports passed.
+  Six automated checks passed; OpenCV/ArUco/RealSense imports passed.
+  Real GPU numerical test passed after restart; no CPU fallback was used.
   Disconnected D405 is correctly reported as unavailable.
   Team default environment lock verified unchanged.
-- Cameras are not connected; no external camera stream has been tested.
+- At the post-restart inspection, Logitech/D405 were still absent.
+  No external camera stream has been tested.
 - A/B/E implementation has not started beyond hardware commissioning tools.

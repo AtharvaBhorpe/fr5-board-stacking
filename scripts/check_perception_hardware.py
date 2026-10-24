@@ -94,9 +94,28 @@ def d405(config):
         pipeline.stop()
 
 
+def cuda():
+    import torch
+
+    if not torch.cuda.is_available():
+        raise RuntimeError('PyTorch cannot access CUDA. Check the driver and use the perception-gpu environment.')
+    with torch.inference_mode():
+        values = torch.arange(4096, dtype=torch.float32, device='cuda').reshape(64, 64)
+        result = values @ torch.eye(64, dtype=torch.float32, device='cuda')
+        torch.cuda.synchronize()
+        expected = torch.arange(4096, dtype=torch.float32).reshape(64, 64)
+        if not torch.equal(result.cpu(), expected):
+            raise RuntimeError('CUDA computation returned an incorrect result.')
+    free, total = torch.cuda.mem_get_info()
+    return {'ok': True, 'torch_version': torch.__version__, 'torch_cuda_runtime': torch.version.cuda,
+            'device': torch.cuda.get_device_name(), 'total_memory_bytes': total,
+            'free_memory_bytes': free, 'matrix_multiplication_verified': True,
+            'note': 'Numerical CUDA test passed; model memory and latency still require separate measurement.'}
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('kind', choices=('inventory', 'logitech', 'd405'))
+    parser.add_argument('kind', choices=('inventory', 'logitech', 'd405', 'cuda'))
     parser.add_argument('--config', default='config/perception.toml')
     parser.add_argument('--device', help='Explicit Logitech device; never automatically select the laptop camera.')
     parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
@@ -117,7 +136,10 @@ def main(argv=None):
             result = subprocess.run(command, timeout=config['probe']['timeout_seconds'])
             return result.returncode
         else:
-            report = logitech(config, args.device) if args.kind == 'logitech' else d405(config)
+            if args.kind == 'cuda':
+                report = cuda()
+            else:
+                report = logitech(config, args.device) if args.kind == 'logitech' else d405(config)
         print(json.dumps(report, indent=2))
         return 0
     except (OSError, ValueError, RuntimeError, ImportError, KeyError, subprocess.TimeoutExpired) as exc:

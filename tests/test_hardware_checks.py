@@ -14,6 +14,12 @@ spec.loader.exec_module(checks)
 
 
 class HardwareChecksTest(unittest.TestCase):
+    def test_missing_cuda_is_failure_instead_of_cpu_fallback(self):
+        fake_torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: False))
+        with patch.dict('sys.modules', {'torch': fake_torch}):
+            with self.assertRaisesRegex(RuntimeError, 'cannot access CUDA'):
+                checks.cuda()
+
     def test_empty_webcam_selection_never_opens_laptop_camera(self):
         fake_cv = SimpleNamespace(VideoCapture=unittest.mock.Mock())
         with patch.dict('sys.modules', {'cv2': fake_cv}):

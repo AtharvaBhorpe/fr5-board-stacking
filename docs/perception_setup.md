@@ -28,13 +28,32 @@ ignored by Git; commit dependency changes together with `pixi.lock`.
 The setup inspection found Ubuntu 24.04, an RTX 4070 Mobile and Secure Boot.
 The running kernel was `7.0.0-38-generic`, but the installed NVIDIA module was
 for `7.0.0-28-generic`. The user installed the matching Canonical-signed
-595.99.02 driver/module packages. Ubuntu then reported a reboot required;
-the GPU was not yet active at that check.
+595.99.02 driver/module packages. After the restart, `nvidia-smi` and the
+inventory checker successfully detected the RTX 4070 Laptop GPU, 8188 MiB
+memory and driver 595.99.02.
 
-After saving work and restarting, run `nvidia-smi` and the hardware task.
-Working `nvidia-smi` verifies driver access, not PyTorch CUDA execution.
-Install and verify the GPU model runtime through pixi when adding B.
-Do not install a separate system CUDA toolkit just to obtain a driver.
+The optional `perception-gpu` environment adds PyTorch 2.7.1 from its official
+CUDA 12.8 wheel index. The driver reporting CUDA 13.2 is its supported API
+level; the environment's bundled CUDA runtime can have a different version.
+Neither the default ROS environment nor the camera-only environment needs
+these GPU packages.
+
+```bash
+pixi install -e perception-gpu
+pixi run -e perception-gpu check-cuda
+```
+
+This test creates GPU tensors, performs matrix multiplication, synchronizes,
+copies the result to the CPU and checks the numerical result. It fails if
+CUDA is unavailable instead of silently falling back to CPU execution.
+The real RTX 4070 test passed after restart with PyTorch 2.7.1+cu128,
+CUDA runtime 12.8 and approximately 7.4 GiB free CUDA memory at the check.
+This establishes runtime operation, not model performance or accuracy.
+No B/E model weights are installed by this step, and a system CUDA compiler
+toolkit is not needed for the prebuilt runtime.
+
+Sources: [PyTorch CUDA wheels](https://pytorch.org/get-started/previous-versions/#v271),
+[pixi PyTorch configuration](https://pixi.prefix.dev/latest/python/pytorch/).
 
 ## Camera commissioning
 
