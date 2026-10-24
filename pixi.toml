@@ -1,0 +1,10 @@
+[workspace]
+authors = ["AtharvaBhorpe <athborpe@gmail.com>"]
+channels = ["https://prefix.dev/robostack-humble", "https://prefix.dev/conda-forge"]
+name = "fr5-board-stacking"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
