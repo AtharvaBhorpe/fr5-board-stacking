@@ -3,6 +3,10 @@
 use_fake_hardware:=true   (default) simulated joints, no robot connection.
 use_fake_hardware:=false  real FR5 at 192.168.58.2; also starts Fairino's
                           command server (IO, gripper) and state topic.
+
+Every node gets OUR robot description (FR5 + flange + gripper + tcp).
+We deliberately avoid generate_demo_launch(): it includes Fairino's own
+sub-launch files, which load Fairino's URDF without our gripper.
 """
 import os
 
@@ -12,7 +16,12 @@ from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
-from moveit_configs_utils.launches import generate_demo_launch
+from moveit_configs_utils.launches import (
+    generate_move_group_launch,
+    generate_moveit_rviz_launch,
+    generate_rsp_launch,
+    generate_spawn_controllers_launch,
+)
 
 
 def _setup(context):
@@ -28,7 +37,25 @@ def _setup(context):
         .robot_description(file_path=urdf, mappings={"use_fake_hardware": fake})
         .to_moveit_configs()
     )
-    actions = list(generate_demo_launch(moveit_config).entities)
+
+    actions = []
+    for ld in (
+        generate_rsp_launch(moveit_config),
+        generate_move_group_launch(moveit_config),
+        generate_moveit_rviz_launch(moveit_config),
+    ):
+        actions.extend(ld.entities)
+
+    actions.append(Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[
+            moveit_config.robot_description,
+            str(moveit_config.package_path / "config/ros2_controllers.yaml"),
+        ],
+        output="screen",
+    ))
+    actions.extend(generate_spawn_controllers_launch(moveit_config).entities)
 
     if fake == "false":
         actions.insert(0, LogInfo(msg="*** REAL ROBOT MODE: FR5 at 192.168.58.2. "
