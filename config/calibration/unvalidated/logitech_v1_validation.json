@@ -1,0 +1,182 @@
+{
+  "recorded_images": 680,
+  "selected_images": [
+    ".local/calibration/logitech_live_recording/frame00000.png",
+    ".local/calibration/logitech_live_recording/frame00185.png",
+    ".local/calibration/logitech_live_recording/frame00205.png",
+    ".local/calibration/logitech_live_recording/sparse00004.png",
+    ".local/calibration/logitech_live_recording/sparse00021.png",
+    ".local/calibration/logitech_live_recording/sparse00052.png",
+    ".local/calibration/logitech_live_recording/sparse00061.png",
+    ".local/calibration/logitech_live_recording/sparse00063.png",
+    ".local/calibration/logitech_live_recording/sparse00064.png",
+    ".local/calibration/logitech_live_recording/sparse00065.png",
+    ".local/calibration/logitech_live_recording/sparse00068.png",
+    ".local/calibration/logitech_live_recording/sparse00069.png",
+    ".local/calibration/logitech_live_recording/sparse00070.png",
+    ".local/calibration/logitech_live_recording/sparse00071.png",
+    ".local/calibration/logitech_live_recording/sparse00073.png",
+    ".local/calibration/logitech_live_recording/sparse00074.png",
+    ".local/calibration/logitech_live_recording/sparse00075.png",
+    ".local/calibration/logitech_live_recording/sparse00078.png",
+    ".local/calibration/logitech_live_recording/sparse00080.png",
+    ".local/calibration/logitech_live_recording/sparse00090.png",
+    ".local/calibration/logitech_live_recording/sparse00093.png",
+    ".local/calibration/logitech_live_recording/sparse00095.png",
+    ".local/calibration/logitech_live_recording/sparse00098.png",
+    ".local/calibration/logitech_live_recording/sparse00101.png",
+    ".local/calibration/logitech_live_recording/sparse00105.png",
+    ".local/calibration/logitech_live_recording/sparse00109.png",
+    ".local/calibration/logitech_live_recording/sparse00117.png",
+    ".local/calibration/logitech_live_recording/sparse00120.png",
+    ".local/calibration/logitech_live_recording/sparse00122.png",
+    ".local/calibration/logitech_live_recording/sparse00126.png",
+    ".local/calibration/logitech_live_recording/sparse00131.png",
+    ".local/calibration/logitech_live_recording/sparse00188.png",
+    ".local/calibration/logitech_live_recording/sparse00213.png",
+    ".local/calibration/logitech_live_recording/sparse00225.png",
+    ".local/calibration/logitech_live_recording/sparse00227.png",
+    ".local/calibration/logitech_live_recording/sparse00232.png",
+    ".local/calibration/logitech_live_recording/sparse00264.png",
+    ".local/calibration/logitech_live_recording/sparse00290.png"
+  ],
+  "board_profile": "large_5x7",
+  "board": {
+    "dictionary": "DICT_5X5_100",
+    "grid_squares_x": 5,
+    "grid_squares_y": 7,
+    "square_length_m": 0.052,
+    "marker_length_m": 0.038,
+    "views_directory": ".local/calibration/logitech_large_5x7/views"
+  },
+  "rejected": {
+    "no_grid": 25,
+    "insufficient_geometry": 13,
+    "redundant": 604
+  },
+  "held_out_indices": [
+    4,
+    9,
+    14,
+    19,
+    24,
+    29,
+    34
+  ],
+  "per_view_rms_px": [
+    0.17277897894382477,
+    0.8960177898406982,
+    0.5498057007789612,
+    0.7585552930831909,
+    0.7165887355804443,
+    0.8429503440856934,
+    0.46787163615226746,
+    0.23729847371578217,
+    1.467318058013916,
+    0.38731124997138977,
+    0.7041275501251221,
+    1.210669994354248,
+    2.1326093673706055,
+    0.9346649050712585,
+    2.0748825073242188,
+    0.38951775431632996,
+    0.29641637206077576,
+    0.4771050810813904,
+    0.41355037689208984,
+    0.8175327777862549,
+    1.1786677837371826,
+    0.5127372145652771,
+    0.402153342962265,
+    0.49135488271713257,
+    0.4814163148403168,
+    0.28317588567733765,
+    1.2851063013076782,
+    0.39088550209999084,
+    0.3653830289840698,
+    0.534992516040802,
+    0.6277753114700317,
+    0.3180711269378662,
+    0.24757736921310425,
+    0.5527549982070923,
+    0.6617449522018433,
+    0.5720700621604919,
+    0.8411906957626343,
+    0.4308176636695862
+  ],
+  "training_rms_px": 0.7834259775704003,
+  "held_out_rms_px": [
+    0.7165887355804443,
+    0.38731124997138977,
+    2.0748825073242188,
+    0.8175327777862549,
+    0.4814163148403168,
+    0.534992516040802,
+    0.6617449522018433
+  ],
+  "normal_spread_deg": 102.07705988959688,
+  "axis_coverage_fraction": [
+    0.8491206487019857,
+    0.8452006022135417
+  ],
+  "ros_coverage_progress": [
+    [
+      "X",
+      0.0648941770195961,
+      0.8433530330657959,
+      1.0
+    ],
+    [
+      "Y",
+      0.03468945994973183,
+      0.767722487449646,
+      1.0
+    ],
+    [
+      "Size",
+      0.0,
+      0.3172407213669859,
+      0.7931018034174647
+    ],
+    [
+      "Skew",
+      0.0,
+      0.7101690770457312,
+      1.0
+    ]
+  ],
+  "camera_matrix": [
+    [
+      1656.530579346277,
+      0.0,
+      1165.8535900497234
+    ],
+    [
+      0.0,
+      1656.201193185216,
+      594.9825442620912
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "distortion_coefficients": [
+    0.004983522355684207,
+    -0.12545058126178169,
+    -0.01925064782851645,
+    0.011953141459995955,
+    0.10231958746635281
+  ],
+  "image_size": [
+    1920,
+    1080
+  ],
+  "intrinsic_checks_passed": false,
+  "warnings": [
+    "Held-out reprojection error exceeds the configured limit.",
+    "A training view exceeds the configured pixel-error limit."
+  ],
+  "metric_workcell_calibrated": false,
+  "execution_allowed": false
+}

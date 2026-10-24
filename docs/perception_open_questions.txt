@@ -207,6 +207,17 @@ IMPLEMENTATION STATUS
 - Standard ROS calibration launch now selects scene/large or wrist/small
   measured profiles. D405 colour check is independent of stereo depth and
   hand-eye calibration; factory calibration is not overwritten automatically.
+- Current Logitech target is another large print: observed 5 x 7 ID layout,
+  user reconfirmed 52 mm cells and 38 mm markers. Added large_5x7 profile and
+  selected it for the scene ROS session. Old large 7 x 5 observations keep
+  their original profile. Do not infer physical scale from ID layout alone.
+- Venue shutdown checkpoint: see docs/perception_resume.txt. 680 raw PNGs
+  saved locally (~1.404 GB). Raw recording stopped. ROS Save compatibility
+  fixed by NumPy <2.3; fit/archive/export regression test passes.
+- Two recovered Logitech candidates FAILED validation: held-out maxima
+  2.075 px and 1.210 px. Reports backed up under config/calibration/unvalidated.
+  No candidate applied. Flatness of the printed sheet requires confirmation;
+  close-up error images show bowing. D405 colour/hand-eye work not started.
 
 Q21 [P0] Choose stationary table/region reference IDs and measure their corner
     coordinates/heights in the workcell frame. No fixed layout exists yet.

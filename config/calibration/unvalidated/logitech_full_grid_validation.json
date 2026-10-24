@@ -1,0 +1,155 @@
+{
+  "recorded_images": 680,
+  "selected_images": [
+    ".local/calibration/logitech_live_recording/frame00000.png",
+    ".local/calibration/logitech_live_recording/frame00185.png",
+    ".local/calibration/logitech_live_recording/frame00205.png",
+    ".local/calibration/logitech_live_recording/sparse00004.png",
+    ".local/calibration/logitech_live_recording/sparse00021.png",
+    ".local/calibration/logitech_live_recording/sparse00052.png",
+    ".local/calibration/logitech_live_recording/sparse00061.png",
+    ".local/calibration/logitech_live_recording/sparse00064.png",
+    ".local/calibration/logitech_live_recording/sparse00065.png",
+    ".local/calibration/logitech_live_recording/sparse00068.png",
+    ".local/calibration/logitech_live_recording/sparse00069.png",
+    ".local/calibration/logitech_live_recording/sparse00070.png",
+    ".local/calibration/logitech_live_recording/sparse00074.png",
+    ".local/calibration/logitech_live_recording/sparse00075.png",
+    ".local/calibration/logitech_live_recording/sparse00078.png",
+    ".local/calibration/logitech_live_recording/sparse00080.png",
+    ".local/calibration/logitech_live_recording/sparse00090.png",
+    ".local/calibration/logitech_live_recording/sparse00096.png",
+    ".local/calibration/logitech_live_recording/sparse00101.png",
+    ".local/calibration/logitech_live_recording/sparse00105.png",
+    ".local/calibration/logitech_live_recording/sparse00109.png",
+    ".local/calibration/logitech_live_recording/sparse00117.png",
+    ".local/calibration/logitech_live_recording/sparse00129.png",
+    ".local/calibration/logitech_live_recording/sparse00212.png",
+    ".local/calibration/logitech_live_recording/sparse00225.png",
+    ".local/calibration/logitech_live_recording/sparse00227.png"
+  ],
+  "board_profile": "large_5x7",
+  "board": {
+    "dictionary": "DICT_5X5_100",
+    "grid_squares_x": 5,
+    "grid_squares_y": 7,
+    "square_length_m": 0.052,
+    "marker_length_m": 0.038,
+    "views_directory": ".local/calibration/logitech_large_5x7/views"
+  },
+  "rejected": {
+    "no_grid": 25,
+    "insufficient_geometry": 73,
+    "redundant": 556
+  },
+  "minimum_corners": 24,
+  "held_out_indices": [
+    4,
+    9,
+    14,
+    19,
+    24
+  ],
+  "per_view_rms_px": [
+    0.11773567646741867,
+    0.7536248564720154,
+    0.566633403301239,
+    0.5043748617172241,
+    0.5303742289543152,
+    0.6161816716194153,
+    0.5092552900314331,
+    1.2783738374710083,
+    0.16497902572155,
+    1.2096034288406372,
+    1.3179889917373657,
+    2.210520029067993,
+    0.33359748125076294,
+    0.2940372824668884,
+    0.6389158964157104,
+    0.30888643860816956,
+    0.46641984581947327,
+    0.42582353949546814,
+    0.5423242449760437,
+    0.39361029863357544,
+    0.2297121286392212,
+    1.2481825351715088,
+    0.48829448223114014,
+    0.300408273935318,
+    0.5747130513191223,
+    0.6142419576644897
+  ],
+  "training_rms_px": 0.7983343898740559,
+  "held_out_rms_px": [
+    0.5303742289543152,
+    1.2096034288406372,
+    0.6389158964157104,
+    0.39361029863357544,
+    0.5747130513191223
+  ],
+  "normal_spread_deg": 93.96004829797508,
+  "axis_coverage_fraction": [
+    0.8091519673665365,
+    0.8375610916702836
+  ],
+  "ros_coverage_progress": [
+    [
+      "X",
+      0.10041624307632446,
+      0.8433530330657959,
+      1.0
+    ],
+    [
+      "Y",
+      0.10117097944021225,
+      0.767722487449646,
+      0.9522165060043335
+    ],
+    [
+      "Size",
+      0.0,
+      0.3172407213669859,
+      0.7931018034174647
+    ],
+    [
+      "Skew",
+      0.0,
+      0.6600784557970223,
+      1.0
+    ]
+  ],
+  "camera_matrix": [
+    [
+      1671.2693247572333,
+      0.0,
+      1223.7356967157975
+    ],
+    [
+      0.0,
+      1670.3611366357093,
+      501.9704667722178
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "distortion_coefficients": [
+    0.022444006577170068,
+    -0.03397699103754567,
+    -0.019160058491492684,
+    0.025057677757356088,
+    -0.008667752086685458
+  ],
+  "image_size": [
+    1920,
+    1080
+  ],
+  "intrinsic_checks_passed": false,
+  "warnings": [
+    "Held-out reprojection error exceeds the configured limit.",
+    "A training view exceeds the configured pixel-error limit."
+  ],
+  "metric_workcell_calibrated": false,
+  "execution_allowed": false
+}

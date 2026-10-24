@@ -24,7 +24,7 @@ def calibration_node(context):
                    '--aruco_dict', board['dictionary'].removeprefix('DICT_').lower(),
                    '--camera_name', profile['camera_name'], '--no-service-check'],
         remappings=[('image', profile['image_topic']), ('camera', profile['camera_namespace'])],
-        output='screen')]
+        output='screen', emulate_tty=True)]
 
 
 def generate_launch_description():

@@ -78,7 +78,7 @@ marker_length_m = 0.022
 views_directory = ".local/calibration/logitech_small/views"
 
 [ros_calibration.scene]
-board = "large"
+board = "large_5x7"
 camera_name = "logitech_scene"
 image_topic = "/scene/image_raw"
 camera_namespace = "/scene"
@@ -88,3 +88,13 @@ board = "small"
 camera_name = "d405_color_check"
 image_topic = "/wrist/wrist_camera/color/image_raw"
 camera_namespace = "/wrist/wrist_camera/color"
+
+[calibration.boards.large_5x7]
+dictionary = "DICT_5X5_100"
+# Current rigid print: user confirmed 52/38 mm; observed ID layout is 5 x 7.
+# Keep the older large 7 x 5 print separate; never relabel its saved images.
+grid_squares_x = 5
+grid_squares_y = 7
+square_length_m = 0.052
+marker_length_m = 0.038
+views_directory = ".local/calibration/logitech_large_5x7/views"

@@ -1,0 +1,87 @@
+{
+  "depth": {
+    "size": [
+      848,
+      480
+    ],
+    "encoding": "16UC1",
+    "frame": "wrist_camera_color_optical_frame",
+    "stamp_sec": 1792869254,
+    "camera_info_received": true,
+    "intrinsics_available": true,
+    "valid_fraction": 0.899533215408805,
+    "camera_matrix": [
+      432.938720703125,
+      0.0,
+      424.78363037109375,
+      0.0,
+      432.3909912109375,
+      243.8435516357422,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "distortion_model": "plumb_bob",
+    "distortion_coefficients": [
+      -0.05556514114141464,
+      0.06409953534603119,
+      -0.0009510015952400863,
+      0.0007228149333968759,
+      -0.021628431975841522
+    ]
+  },
+  "wrist": {
+    "size": [
+      848,
+      480
+    ],
+    "encoding": "rgb8",
+    "frame": "wrist_camera_color_optical_frame",
+    "stamp_sec": 1792869254,
+    "camera_info_received": true,
+    "intrinsics_available": true,
+    "camera_matrix": [
+      432.938720703125,
+      0.0,
+      424.78363037109375,
+      0.0,
+      432.3909912109375,
+      243.8435516357422,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "distortion_model": "plumb_bob",
+    "distortion_coefficients": [
+      -0.05556514114141464,
+      0.06409953534603119,
+      -0.0009510015952400863,
+      0.0007228149333968759,
+      -0.021628431975841522
+    ]
+  },
+  "scene": {
+    "size": [
+      1920,
+      1080
+    ],
+    "encoding": "bgr8",
+    "frame": "scene_camera_optical_frame",
+    "stamp_sec": 1792869254,
+    "camera_info_received": true,
+    "intrinsics_available": false,
+    "camera_matrix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distortion_model": "",
+    "distortion_coefficients": []
+  }
+}

@@ -1,6 +1,8 @@
 """Compatibility check against the installed upstream ROS calibrator."""
 
 from pathlib import Path
+from io import BytesIO
+import tarfile
 import tomllib
 import unittest
 
@@ -35,3 +37,12 @@ class RosCalibrationTest(unittest.TestCase):
             observations.append((pixels.astype(np.float32), ids.copy(), board))
         calibrator.cal_fromcorners(observations)
         np.testing.assert_allclose(calibrator.intrinsics, matrix, rtol=.001, atol=.1)
+        # Exercise the GUI Save backend as well as the numerical fit.
+        calibrator.db = [([.5, .5, .25, .2], np.zeros((720, 1280), np.uint8))]
+        saved = BytesIO()
+        with tarfile.open(fileobj=saved, mode='w:gz') as archive:
+            calibrator.do_tarfile_save(archive)
+        saved.seek(0)
+        with tarfile.open(fileobj=saved, mode='r:gz') as archive:
+            self.assertIn('ost.yaml', archive.getnames())
+            self.assertGreater(archive.getmember('left-0000.png').size, 0)

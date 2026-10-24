@@ -60,6 +60,8 @@ check-cuda = "python scripts/check_perception_hardware.py cuda"
 [feature.camera-ros.dependencies]
 # Humble's ChArUco solver uses an API removed in OpenCV 5.
 py-opencv = ">=4.10,<5"
+# Its Save backend uses ndarray.tostring, removed in NumPy 2.3.
+numpy = ">=2,<2.3"
 ros-humble-ros2cli-common-extensions = "*"
 ros-humble-camera-calibration = "*"
 ros-humble-v4l2-camera = "*"

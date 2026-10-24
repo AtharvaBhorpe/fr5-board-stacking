@@ -1,0 +1,26 @@
+image_width: 1920
+image_height: 1080
+camera_name: logitech_scene
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [1656.53058,    0.     , 1165.85359,
+            0.     , 1656.20119,  594.98254,
+            0.     ,    0.     ,    1.     ]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.004984, -0.125451, -0.019251, 0.011953, 0.102320]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1., 0., 0.,
+         0., 1., 0.,
+         0., 0., 1.]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [1634.39303,    0.     , 1193.86484,    0.     ,
+            0.     , 1674.23191,  581.80287,    0.     ,
+            0.     ,    0.     ,    1.     ,    0.     ]

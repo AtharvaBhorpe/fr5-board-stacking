@@ -80,6 +80,9 @@ The transport test uses its own localhost-only ROS domain and no robot.
 The calibration check recovers known intrinsics from synthetic projections
 through the upstream ROS solver. OpenCV is constrained below 5 because the
 Humble solver uses an API removed in OpenCV 5.
+NumPy is also constrained below 2.3: the Humble Save backend still calls
+`ndarray.tostring`. The regression check exercises fit, archive export and
+archive reload, covering the Save failure encountered during live collection.
 
 For the D405 USB permission setup, install `config/99-realsense-d405.rules`
 into `/etc/udev/rules.d`, reload udev rules and reconnect/trigger the D405.

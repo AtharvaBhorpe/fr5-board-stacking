@@ -1,0 +1,92 @@
+PERCEPTION RESUME CHECKPOINT — 2026-10-24, Europe/Berlin
+
+Branch: feat/perception-geometric-detector. Do not merge into main.
+Git commits use the user's configured human identity only.
+User preference: Ponytail for every response; use standard ROS 2 packages first.
+
+WHAT WORKS
+- Both cameras use standard ROS 2 drivers. One launch starts both; another
+  opens scene colour, wrist colour and aligned-depth viewer windows.
+- Logitech: stable C920 link, 1920x1080 YUYV/BGR, autofocus off, focus 35.
+- D405: RealSense ROS 4.57.7 / librealsense 2.57.7, RGB/depth 848x480x30,
+  aligned depth and CameraInfo. Device-access rule installed by the user.
+- Driver/ROS transport tested; 20 full RGB payloads verified between camera
+  and motion environments. Existing non-camera environment locks unchanged.
+- Geometric A pixel-preview tests pass; no executable grasp poses emitted.
+- Official Fairino submodule initialized at its pinned revision, unedited;
+  all 5 selected ROS packages build. Ethernet profile FR5 is configured
+  at laptop 192.168.58.10/24; controller 192.168.58.2, software v3.9.2.
+- Non-RT ROS feedback supplied five nonzero measured joint/TCP samples,
+  zero main/sub errors. No motion or suction command was sent.
+
+CALIBRATION STATUS — NOT YET VALIDATED
+- Current large print has 5x7 marker-ID layout, 52 mm cells / 38 mm markers
+  (user reconfirmed). Profile: large_5x7. Older large print is 7x5 with
+  the same dimensions; keep its old images under their original profile.
+- Small print: 5x7, 32 mm cells / 22 mm markers. For D405 colour checks.
+- Standard GUI selected 60+ samples and fitted intrinsics, but Save failed
+  and the window exited. /tmp/calibrationdata.tar.gz is empty; do not use it.
+- Root cause reproduced: Humble Save calls ndarray.tostring, removed in
+  NumPy 2.3. camera-ros now pins NumPy >=2,<2.3 (installed 2.2.6) and
+  OpenCV <5. The standard fit + archive-save + reload regression test passes.
+- All 680 raw PNG frames survived: 376 initial full-rate frames plus 304
+  snapshots at ~2-second intervals. About 1.404 GB. They are LOCAL ONLY:
+  .local/calibration/logitech_live_recording/
+  Full path: /home/smane/Documents/ChatGPT/Roboinnovate/fr5-board-stacking/.local/calibration/logitech_live_recording/
+- ROS image_view/extract_images performed recording. Its recording process
+  has been stopped. The standard solver recovered files from these images.
+- Recovery v1: 38 diverse views, training RMS 0.783 px, maximum held-out
+  RMS 2.075 px. Strict full-grid recovery: 26 views, training RMS 0.798 px,
+  maximum held-out RMS 1.210 px. BOTH FAIL the configured 1-pixel checks.
+- Small YAML/JSON reports are backed up in config/calibration/unvalidated/.
+  They are diagnostic candidates. Scene camera_info_url remains empty;
+  no candidate was applied to the driver or enabled robot execution.
+- Highest-error close-up images show the print bowing away from its backing.
+  Confirmation of a genuinely flat, stiff target is pending. Do not relax
+  error thresholds simply to pass. Inspect sparse00070.png / sparse00073.png
+  and .local/calibration/logitech_recovered_v1/inspect_worst_views.jpg.
+- D405 retains factory calibration. Its separate colour check has NOT started;
+  no hand-eye, camera-to-table or workcell-to-base calibration is complete.
+- Local recovered archives/images remain in .local/calibration/
+  logitech_recovered_v1 and logitech_recovered_full_grid.
+
+RESUME (run from repository root; each persistent command in its own terminal)
+1. Connect cameras via USB hub and Ethernet, then:
+   nmcli connection up FR5 ifname enp4s0
+2. Cameras:
+   ./.tools/pixi run --frozen -e camera-ros cameras
+3. Three viewer windows:
+   ./.tools/pixi run --frozen -e camera-ros view-cameras
+4. Standard Logitech GUI (current large_5x7 profile):
+   ./.tools/pixi run --frozen -e camera-ros calibrate-scene
+5. Standard D405 colour check (small grid, separate session):
+   ./.tools/pixi run --frozen -e camera-ros calibrate-wrist
+6. Checks:
+   ./.tools/pixi run --frozen -e perception test-perception
+   ./.tools/pixi run --frozen -e camera-ros test-ros-calibration
+7. Offline recovery with the standard ROS solver (choose a NEW output directory):
+   ./.tools/pixi run --frozen -e camera-ros python scripts/calibrate_ros_recording.py --input-dir .local/calibration/logitech_live_recording --output-dir .local/calibration/logitech_recovered_next --full-grid
+8. Read robot state only, using the team's standard driver:
+   ./.tools/pixi run --frozen ros2 run fairino_hardware_v3_9_0_1 ros2_cmd_server
+   ./.tools/pixi run --frozen ros2 topic echo /nonrt_state_data --once
+
+Do not start duplicate camera or robot-control nodes. Do not source system
+Jazzy inside pixi. NumPy pin changed camera-ros only. SDK real-time feedback
+reports packet-size warnings and still needs checking before trajectories;
+non-RT feedback has no source timestamp Header. The last physical-motion
+authorization was for today's supervised session; establish readiness again
+before any later real movement. Initial movements must be <=20% speed.
+
+NEXT WORK
+1. Confirm print is completely flush against stiff backing; collect only
+   necessary replacement/independent validation views. Finish Logitech lens
+   calibration and verify export before applying CameraInfo.
+2. Check D405 colour/factory calibration using the small rigid target; do not
+   overwrite stereo/depth factory calibration with a monocular colour fit.
+3. Establish fixed table/region markers and measured workcell geometry.
+4. Calibrate wrist-to-flange with a stationary target and measured robot
+   poses; standard easy_handeye2 was identified, not installed/configured.
+5. Finish/test A on actual substrates and depth; then add B and E.
+   B and E are not implemented. No scene-specific pick success rate measured.
+
+All remaining questions retain their IDs in docs/perception_open_questions.txt.

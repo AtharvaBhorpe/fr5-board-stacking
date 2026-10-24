@@ -8,6 +8,12 @@ The smaller print was separately measured: cell side **0.032 m**, marker side
 **0.022 m**. Its ID ordering matches **5 by 7**, independently checked on real
 camera images. Both prints are mounted on rigid flat backing (user confirmed).
 
+A newly presented large print was separately confirmed as 52/38 mm but has
+a 5 by 7 ID layout. Its profile is `large_5x7`, selected for the current ROS
+scene session. Do not relabel the older 7 by 5 print's saved observations.
+Later close-up recording shows paper bowing; confirm actual surface flatness
+before accepting the recovered calibration. See `perception_resume.txt`.
+
 Separate board profiles and image directories are configured under
 `calibration.boards`. The active profile is selected by `active_board` or
 `--board large` / `--board small`. The intrinsic fitter combines views using
