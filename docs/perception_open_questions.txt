@@ -1,0 +1,129 @@
+PERCEPTION HANDOFF AND OPEN QUESTIONS
+Updated: 2026-10-24, Europe/Berlin
+This file tracks this chat's confirmed facts, evidence and unanswered questions.
+It does not authorize robot movement or hardware changes.
+
+CONFIRMED BY THE USER
+- FR5; Ubuntu 24.04; vacuum suction tool; command labels 1=suck, 2=blow.
+- Inputs can be stacked or scattered; outputs must be stacked.
+- Direction reference is on the table, not a printed direction on the substrate.
+- ArUco/AprilTag markers are allowed; availability/dictionary not confirmed.
+- Robot should avoid long pauses; acceptable maximum pause is unspecified.
+- Industry use, creativity and real-world applicability matter; no official rubric yet.
+- Cameras: Logitech VU0060 fixed on wooden support, wrist RealSense D405,
+  Arducam B0495-family/AR0234 modules available but NOT installed or in use.
+- Scope correction: team has 2.5 days; user's perception implementation window
+  is about 17 hours. Friend owns actual robot motion in parallel.
+- Logitech is the scene/context camera; wrist D405 supports local grasp perception.
+- PDF is the general team plan and may be extended after successful milestones.
+- User currently plans A+B+E: geometric perception, pretrained segmentation,
+  and speech/optional VLM selection. Priority is success on first/second attempts.
+
+RECOVERED CONTEXT / READ-ONLY CHECKS
+- Chat: Connect robot with Xbox via ROS 2.
+  User reported successful operation after legacy ServoCart compatibility fix.
+  Local project uses ROS 2 Jazzy and a custom XML-RPC Cartesian servo adapter.
+  README documents no robot-state feedback and no MoveIt collision avoidance.
+  Legacy eight-argument ServoCart matters; controller firmware remains unknown.
+- Chat: Set up pick-and-place simulation.
+  User previously said Isaac Sim was requested and preferred 1 mm accuracy.
+  User described 0.05 mm as an aspiration; this is not an established tolerance.
+  That chat's Humble recommendation is not evidence of an installed Humble stack.
+- Local PCI inventory identifies NVIDIA RTX 4070 Mobile / Max-Q.
+  User authorized installing the NVIDIA driver/CUDA prerequisites on 2026-10-24.
+  nvidia-smi could not communicate with the driver in this session.
+  Available VRAM and working CUDA runtime are not verified.
+
+OBSERVED IN PROVIDED SCENE PHOTOS
+- Table surface appears to be a dark fabric covering with wrinkles.
+- Large windows may cause changing illumination; actual camera image is unknown.
+- Printed marker sheets are loose/overlapping; no fixed calibrated layout established.
+- Cables and loose objects occupy parts of the table.
+- Photos do not establish dimensions, target identity, camera coverage or calibration.
+
+OPEN QUESTIONS (keep IDs stable when answering)
+Q01 [P0] Supply one full-resolution frame from the mounted webcam, without resizing.
+    Does it show both pickup/destination regions and the entire transfer corridor?
+Q02 [P0] Table length/width and tabletop height; camera optical-centre height above
+    tabletop (clarify the earlier 160 cm reference); intended pickup/target regions.
+Q03 [P0] Actual substrate sizes, thicknesses, materials, colours, stiffness and curl.
+    Are piles aligned, randomly overlapping, or both? Are sizes mixed in one stack?
+Q04 [P0] Must exactly one sheet be moved per pick? Is multiple-sheet pickup penalized?
+    How many sheets per run, and maximum source/destination stack heights?
+Q05 [P0] Tool IO mapping and protocol: what exactly do command labels 1/2 address?
+    How are suction hold, blow duration and off state controlled? Is vacuum/contact
+    or acquisition feedback readable? Cup diameter and tool mounting measurements?
+Q06 [P0] Current controller firmware and active tool/workpiece frame; measured TCP,
+    payload and camera-to-flange transform. Can timestamped joints/flange pose and
+    motion/stop acknowledgements be read through the working adapter?
+Q07 [P0] Obstacle examples, maximum dimensions/height, entry regions and speed;
+    whether obstacles keep moving and whether people enter the robot workspace.
+Q08 [P0] Maximum acceptable pause and required response/cycle time. Is brief
+    stop/update/replan acceptable? How will dynamic avoidance be demonstrated?
+Q09 [P0] Target rectangle identity, dimensions and direction cue (arrow/tag/line).
+    Is orientation modulo 180 degrees sufficient? Required stack registration
+    (centred, common edge/corner, or another rule) and official tolerances?
+Q10 [P1] Can cloth be flattened/fixed or replaced by a rigid matte work surface?
+    Can camera support be braced, lighting controlled, and rigid fiducials fixed?
+    Are destination registration stops allowed, and must the destination move freely?
+Q11 [P1] Marker dictionary/IDs, physical print sizes, print scale accuracy and whether
+    tags may be placed on substrates or only around the workspace/target.
+Q12 [PARTLY ANSWERED] User confirmed external cameras are not connected yet.
+    Need Logitech/D405 stream checks once connected: resolution/fps and depth validity.
+    Baseline uses Logitech and D405 only. Number of spare Arducams/lenses/mounts
+    matters only if later adding another view; this is not a baseline prerequisite.
+    Is a full-resolution wrist RGB/depth sample available at the inspection pose?
+Q13 [IN PROGRESS] User authorized NVIDIA driver/GPU setup.
+    Host nvidia-smi failed; no loaded NVIDIA driver proc entry was found.
+    Still need working CUDA runtime, free GPU memory and competing GPU workloads.
+    Is this Codex host the machine that will run perception at the robot?
+Q14 [P1] Is Isaac Sim still required for judging? Existing Brev instance/version,
+    usable credit scope and current simulation state?
+Q15 [PARTLY ANSWERED] Team has 2.5 days; user has about 17 hours for perception;
+    friend owns motion in parallel. Still need owners for tool IO, calibration
+    capture, speech and end-to-end integration; confirm the shared output interface.
+Q16 [P1] Speech language and required command examples; local/cloud restrictions;
+    whether semantic object selection is judged or simple voice task launch suffices.
+Q17 [P0] Can the wrist camera see the full substrate and suction contact region at
+    a reachable pre-grasp inspection pose? Supply camera-to-cup geometry, working
+    distance, and whether useful depth exists on blank paper/cardboard there.
+Q18 [P1] Can the team capture calibration images and varied stopped wrist poses
+    early? Can someone label 200-500 varied scene images if training becomes needed?
+    Are markers permitted on substrates as well as table/target (Q11)?
+Q19 [P0] Which perception-to-motion interface will the friend consume: ROS 2 topics/
+    services/actions or another API? What frame/units, pose conventions and request
+    acknowledgement will be used? Can the friend provide measured flange pose at
+    image timestamps (or measured joints plus the matching kinematic model)?
+Q20 [P1] Does first/second-attempt success mean first two implementation/integration
+    runs, or each pick must succeed within two physical attempts? Agree on success
+    denominator, placement tolerance and whether refusals/aborts count as failures.
+
+CURRENT RECOMMENDATION (conditional)
+- Fixed Logitech geometric detector and rigid workspace/target markers.
+- Wrist D405 RGB/depth local refinement where actual depth validity supports it.
+- No Arducam, stereo reconstruction or new camera mounting in the baseline.
+- Explicit source/destination top-surface height and single-sheet verification.
+- Independent local obstacle monitor; collision-checked full-arm/tool/sheet routes;
+  continue only while remaining route is clear; bounded stop and replan if threatened.
+- Keep working Jazzy motion integration; do not infer planning support from teleop.
+- CPU perception baseline first; optional GPU segmentation after recorded tests.
+- Local speech transcription; optional VLM chooses candidate IDs only.
+- Pipeline options under comparison: classical marker-assisted RGB + local RGB-D;
+  zero-shot Grounding DINO/SAM 2 + geometry; custom-trained instance segmentation
+  + geometry; depth-first local Open3D geometry. Same metric output contract.
+- Measured robot pose at image capture is required for wrist-to-base conversion;
+  joint COMMANDS are not a replacement. Measured joint states plus a calibrated
+  kinematic model can substitute for measured flange pose.
+- For A+B+E, prefer A as baseline; SAM 2.1 tiny/small refines uncertain candidates;
+  Grounding DINO supplies discovery/semantic boxes when needed; E selects candidate
+  IDs. No custom model training in the initial implementation window.
+- Local pretrained inference is a candidate; CUDA/available memory must be checked.
+  Brev is optional for model experiments or language inference, not a prerequisite.
+- No scene-specific success rate has been measured. Success targets must not be
+  presented as forecasts or inferred from model benchmark scores.
+
+REPOSITORY SPECIFICATIONS TO CONFIRM
+- AGENTS.md says Ubuntu 26.04 / isolated RoboStack ROS 2 Humble; earlier user
+  context says Ubuntu 24.04 / existing ROS 2 Jazzy teleop. Inspect actual host.
+- AGENTS.md specifies white boards 270 x 200 x 6 mm and tolerance <5 mm.
+  Treat as repository specifications until user confirms applicability to all runs.
