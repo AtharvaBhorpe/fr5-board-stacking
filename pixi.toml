@@ -27,8 +27,8 @@ pkg-config = ">=0.29.2,<0.30"
 sysroot_linux-64 = ">=2.34"
 
 [tasks]
-build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 external/frcobot_ros2/fairino5_v6_moveit2_config'
-demo = "ros2 launch fairino5_v6_moveit2_config demo.launch.py"
+build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 external/frcobot_ros2/fairino5_v6_moveit2_config src/fr5_bringup'
+demo = "ros2 launch fr5_bringup bringup.launch.py"
 
 
 [activation]
