@@ -22,7 +22,7 @@ camera_post:                   # wooden post at the far end of the profile
 
 overhead_camera:               # approximate; replaced by extrinsic calibration
   xy: [0.87, -0.116]
-  height_above_table: 1.61     # TODO confirm: above table (assumed) or floor?
+  height_above_table: 1.61     # measured above the table
   rpy: [0.0, 1.5708, 0.0]      # looking straight down (camera_link: x = view)
 
 pick_zone:

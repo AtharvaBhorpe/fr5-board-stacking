@@ -29,7 +29,11 @@ sysroot_linux-64 = ">=2.34"
 [tasks]
 build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 external/frcobot_ros2/fairino5_v6_moveit2_config src/fr5_bringup'
 demo = "ros2 launch fr5_bringup bringup.launch.py"
+robot = "ros2 launch fr5_bringup bringup.launch.py use_fake_hardware:=false"
 
 
 [activation]
 scripts = ["install/setup.sh"]
+
+[activation.env]
+LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/external/frcobot_ros2/fairino_hardware_v3_9_0_1/libfairino/lib:$LD_LIBRARY_PATH"
