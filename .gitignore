@@ -20,3 +20,7 @@ rosbags/
 .env
 *.env
 secrets/
+
+# Local bootstrap tools and camera captures
+.tools/
+.local/
