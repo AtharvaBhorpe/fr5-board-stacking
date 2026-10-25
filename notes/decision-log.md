@@ -873,3 +873,4 @@ The rationale below is only what was recorded at the time.
 | `76ef200` | cancel / preempt fix: smooth stop via arm controller, speed-dependent deceleration |
 | `58e64da` | hk_fr5_interfaces: Grip, Release, GripperState, GripperErrorCode + decisions 5l |
 | `7cf694c` | hk_fr5_gripper: gripper_controller (state topic, tool I/O, start/shutdown, W-13 recovery) |
+| `569644e` | hk_fr5_gripper: grip / release actions (W-14..W-16) |

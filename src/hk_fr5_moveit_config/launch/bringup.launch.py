@@ -7,6 +7,8 @@ Args:
   use_rviz:=true|false           false = headless (scripts, tests).
   use_obstacles:=true|false      add static collision boxes (hk_fr5_motion/config/obstacles.yaml).
   use_motion_controller:=true|false  /motion/move_to, move_delta, get_state (hk_fr5_motion/config/motion.yaml).
+  use_gripper:=true|false        /gripper/grip, release, state (hk_fr5_gripper/config/gripper.yaml);
+                                 fake I/O with use_fake_hardware:=true, robot tool I/O (XML-RPC) with false.
 
 Uses the individual moveit_configs_utils launch helpers, not generate_demo_launch()
 (that one includes launch files and a warehouse DB we do not have).
@@ -52,6 +54,7 @@ def _setup(context):
     use_rviz = _bool_arg(context, "use_rviz")
     use_obstacles = _bool_arg(context, "use_obstacles")
     use_motion_controller = _bool_arg(context, "use_motion_controller")
+    use_gripper = _bool_arg(context, "use_gripper")
     update_rate = _int_arg(context, "update_rate")
 
     if not fake:
@@ -100,6 +103,11 @@ def _setup(context):
         motion_cfg = os.path.join(get_package_share_directory("hk_fr5_motion"), "config", "motion.yaml")
         actions.append(Node(package="hk_fr5_motion", executable="motion_controller", namespace="motion",
                             parameters=[motion_cfg], output="screen"))
+    if use_gripper:
+        gripper_cfg = os.path.join(get_package_share_directory("hk_fr5_gripper"), "config", "gripper.yaml")
+        # later parameter wins: fake / real I/O follows use_fake_hardware
+        actions.append(Node(package="hk_fr5_gripper", executable="gripper_controller", namespace="gripper",
+                            parameters=[gripper_cfg, {"use_fake_hardware": fake}], output="screen"))
     return actions
 
 
@@ -115,5 +123,7 @@ def generate_launch_description():
                               description="add static collision boxes from hk_fr5_motion/config/obstacles.yaml"),
         DeclareLaunchArgument("use_motion_controller", default_value="true",
                               description="start motion_controller (/motion/move_to, move_delta, get_state)"),
+        DeclareLaunchArgument("use_gripper", default_value="true",
+                              description="start gripper_controller (/gripper/grip, release, state)"),
         OpaqueFunction(function=_setup),
     ])

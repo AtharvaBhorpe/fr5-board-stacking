@@ -571,6 +571,11 @@ rclpy quirks found (step 20b):
   shutdown logs print but "Failed to publish log message to rosout: publisher's context is invalid".
   Fix: `rclpy.init(signal_handler_options=SignalHandlerOptions.NO)` + catch KeyboardInterrupt.
   (Only SIGINT is handled; ros2 launch sends SIGINT first, SIGTERM only after its timeout.)
+- Q20-4 With rclpy's handler off (Q20-2), a node started from a background / non-interactive shell inherits
+  SIGINT as **ignored** -> Ctrl+C / launch SIGINT did nothing (found in the 20d headless launch test; /proc SigIgn
+  bit 2 set). SIGTERM was not handled either (pumps would stay on). Fix: own `signal.signal(SIGINT / SIGTERM,
+  raise KeyboardInterrupt)`; during the switch-off both are ignored (bounded by rpc_timeout per call).
+  Verified: launch Ctrl+C -> both pumps off, all nodes "finished cleanly"; SIGTERM -> both off, exits.
 - Q20-3 Test gotcha: SIGINT to the `ros2 run` wrapper PID is not forwarded to the node; a terminal Ctrl+C
   hits the whole process group -> tests start nodes with `start_new_session=True` and `os.killpg(pid, SIGINT)`.
 
@@ -605,6 +610,13 @@ Step 20c results (grip / release actions, 2026-10-26, scratchpad `test_actions.p
   the timeout.
 - rclpy: several execute coroutines on the single-threaded executor; preemption = `self._active is not goal_handle`
   checked after each `_sleep` (timer-backed Future, same as motion_controller).
+
+Step 20d results (2026-10-26): `use_gripper:=true|false` (default true) in bringup, gripper node gets
+`use_fake_hardware` from the launch arg (later parameter wins, same pattern as update_rate); hk_fr5_gripper in
+`pixi run build` + exec_depend of hk_fr5_moveit_config. Headless sim: /gripper/* and /motion/* together, grip
+SUCCESS 0.60 s, state HOLDING, release SUCCESS, get_state OK, param use_fake_hardware True; use_gripper:=false ->
+no node; use_gripper:=bad -> clear launch error. Real-mode launch NOT run (no robot; the override is the same
+pattern as update_rate and the node's real path is tested against the mock).
 
 ---------------------------------------------------------------------------
 

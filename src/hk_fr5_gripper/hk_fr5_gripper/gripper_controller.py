@@ -20,6 +20,7 @@
 - Single-threaded executor; each I/O call is bounded by rpc_timeout.
 """
 import math
+import signal
 import time
 
 import rclpy
@@ -370,10 +371,17 @@ class GripperController(Node):
         return self._finish(goal_handle, r, C.SUCCESS, f"released (blow-off {blow_time:.1f} s)")
 
 
+def _interrupt(_signum, _frame):
+    raise KeyboardInterrupt
+
+
 def main():
-    # no rclpy signal handler: Ctrl+C raises KeyboardInterrupt while the context is still valid,
-    # so the shutdown switch-off below can still log to /rosout (W-10)
+    # Own handlers instead of rclpy's: the context stays valid for the shutdown switch-off (logs reach
+    # /rosout), SIGTERM (launch escalation, `timeout`) also switches the pumps off, and SIGINT works even
+    # when inherited as ignored (background shells) (W-10, implementation-ref Q20-2 / Q20-4).
     rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
+    signal.signal(signal.SIGINT, _interrupt)
+    signal.signal(signal.SIGTERM, _interrupt)
     try:
         node = GripperController()
     except RuntimeError as e:
@@ -383,8 +391,10 @@ def main():
     try:
         rclpy.spin(node)  # single-threaded executor
     except (KeyboardInterrupt, ExternalShutdownException):
-        pass  # Ctrl+C -> KeyboardInterrupt; ExternalShutdownException if shut down elsewhere
+        pass  # Ctrl+C / SIGTERM -> KeyboardInterrupt; ExternalShutdownException if shut down elsewhere
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # a 2nd Ctrl+C must not cut the switch-off short
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)  # (bounded: rpc_timeout per call)
         node.outputs_off()  # W-10
         node.destroy_node()
         if rclpy.ok():

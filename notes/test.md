@@ -48,6 +48,21 @@ More commands:
 - TCP frame: `MoveDelta "{dz: 0.05}"` = 5 cm along the cup axis (DOWN when the tool points down)
 - Rotate tool in place: `MoveDelta "{dyaw: 0.3}"`
 
+## C1. Gripper (terminal 2)  (decision-log 5l; DO0 vacuum pump, DO1 blow-off, DI0 vacuum achieved)
+Real robot: **ask before switching** (safety rule 3). First check = read only (step 20f):
+`pixi run python3 -c "import xmlrpc.client as x; r=x.ServerProxy('http://192.168.58.2:20003/RPC2'); print(r.GetToolDI(0, 0), r.GetToolDO())"`
+| # | Command | Expected |
+|---|---|---|
+| G1 | `pixi run ros2 topic echo /gripper/state` | state IDLE (or HOLDING if a board is held), DO/DI = web UI |
+| G2 | `pixi run ros2 action send_goal --feedback /gripper/grip hk_fr5_interfaces/action/Grip "{}"` | board held: `SUCCESS: vacuum achieved in x s`; no board: `NO_VACUUM` after 3 s, pump off |
+| G3 | `pixi run ros2 action send_goal /gripper/grip hk_fr5_interfaces/action/Grip "{timeout: 5.0}"` | own timeout |
+| G4 | `pixi run ros2 action send_goal /gripper/release hk_fr5_interfaces/action/Release "{}"` | pump off, blow-off 1 s, `SUCCESS: released` |
+- Sim: `pixi run ros2 param set /gripper/gripper_controller fake_vacuum false` -> grip fails (NO_VACUUM); while
+  HOLDING -> state PART_LOST.
+- Result codes (error_code.val): 1 SUCCESS | 2 NO_VACUUM | 3 CANCELLED | 4 PREEMPTED | 5 COMM_FAILURE |
+  6 CONTROLLER_ERROR | 7 INVALID_GOAL. `use_gripper:=false` starts the bringup without the gripper node.
+- Ctrl+C of the bringup switches **both pumps off** (a held board drops, W-10).
+
 ## Troubleshooting
 - Default control rate is **50 Hz** (P-9). Check terminal 1: `controller_manager update_rate: 50 Hz`.
   At 125 Hz the FR5 lagged 2 s behind every command (and every stop). Arg is `update_rate` (underscore!).
