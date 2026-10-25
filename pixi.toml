@@ -37,3 +37,27 @@ scripts = ["install/setup.sh"]
 
 [activation.env]
 LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/external/frcobot_ros2/fairino_hardware_v3_9_0_1/libfairino/lib:$LD_LIBRARY_PATH"
+
+
+[feature.vision.dependencies]
+python = "3.12.*"
+numpy = ">=1.26,<2"
+py-opencv = ">=4.10,<5"
+
+[environments]
+default = []
+vision = { features = ["vision"], no-default-feature = true }
+
+[feature.camera-ros.dependencies]
+ros-humble-usb-cam = "*"
+ros-humble-camera-calibration = "*"
+ros-humble-ros2run = "*"
+ros-humble-ros2topic = "*"
+ros-humble-ros2param = "*"
+py-opencv = ">=4.10,<5"
+numpy = ">=1.26,<2.3"
+setuptools = "*"
+
+[environments.camera-ros]
+features = ["camera-ros"]
+no-default-feature = true

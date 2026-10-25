@@ -1,0 +1,26 @@
+image_width: 1920
+image_height: 1080
+camera_name: c920_overhead
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [1436.42826,    0.     ,  919.21711,
+            0.     , 1443.62286,  580.92138,
+            0.     ,    0.     ,    1.     ]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.058070, -0.225583, 0.006891, 0.000031, 0.236451]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1., 0., 0.,
+         0., 1., 0.,
+         0., 0., 1.]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [1448.02064,    0.     ,  920.16286,    0.     ,
+            0.     , 1454.41361,  587.53369,    0.     ,
+            0.     ,    0.     ,    1.     ,    0.     ]
