@@ -117,9 +117,10 @@ class Debounce:
         self.value = None  # None until the first read
         self._candidate, self._count = None, 0
 
-    def reset(self):
-        """Forget the value (e.g. after a lost connection): the next read is taken as is."""
-        self.value, self._candidate, self._count = None, None, 0
+    def reset(self, value=None):
+        """Set the value without a read. None (e.g. after a lost connection): the next read is taken
+        as is. False (start of a grip): True needs `reads` fresh reads."""
+        self.value, self._candidate, self._count = value, None, 0
 
     def update(self, raw):
         """Feed one raw read; returns True if the debounced value changed."""

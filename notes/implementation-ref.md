@@ -591,6 +591,21 @@ GetToolDI / GetToolDO + test hooks):
   Ctrl+C -> SetToolDO(0, 0) + SetToolDO(1, 0) (W-10), rc 0, no rosout warning; unreachable at Ctrl+C ->
   "NOT switched off" logged, exits in 0.17 s.
 
+Step 20c results (grip / release actions, 2026-10-26, scratchpad `test_actions.py`, 27/27; 20b suites re-run 27/27 + 20/20):
+- Fake: grip SUCCESS ttv 0.60 s (0.5 s fake delay + 2 debounce reads), 11 feedback msgs; grip while HOLDING ->
+  SUCCESS in 2 ms, nothing switched; release 1.00 s (RELEASING with DO1 on seen, then IDLE all off);
+  blow_off_time 0.3 -> 0.30 s; no vacuum: timeout 1.0 -> NO_VACUUM 1.01 s, default -> 3.03 s, pump off;
+  timeout -1 / nan, blow_off_time -0.5 -> INVALID_GOAL; cancel grip -> CANCELED + pump off; release during grip
+  -> grip PREEMPTED; grip during release -> release PREEMPTED, DO1 off, HOLDING; cancel release -> DO1 off at
+  once; vacuum lost -> PART_LOST; grip from PART_LOST (pump still on) -> SUCCESS after 0.10 s (fresh reads);
+  Ctrl+C during blow-off -> both off, rc 0.
+- Real code path vs mock: grip = SetToolDO(1,0), (0,1); release = (0,0), (1,1), (1,0); no vacuum adds (0,0);
+  controller error 14 -> CONTROLLER_ERROR (state + result), next grip clears it; robot unreachable -> COMM_FAILURE
+  in 0.00 s (connection refused); robot back -> COMM_ERROR clears to IDLE; comm lost mid-grip -> COMM_FAILURE at
+  the timeout.
+- rclpy: several execute coroutines on the single-threaded executor; preemption = `self._active is not goal_handle`
+  checked after each `_sleep` (timer-backed Future, same as motion_controller).
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders

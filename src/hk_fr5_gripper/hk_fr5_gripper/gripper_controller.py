@@ -2,7 +2,13 @@
 
     ros2 run hk_fr5_gripper gripper_controller --ros-args --params-file <hk_fr5_gripper>/config/gripper.yaml
 
-Status: state topic, start / shutdown behaviour (step 20b). Grip / release actions: step 20c.
+- /gripper/grip (Grip): blow-off off, vacuum pump on, wait up to timeout for vacuum achieved;
+  success -> pump stays on (HOLDING); timeout -> pump off, NO_VACUUM; cancel -> pump off, CANCELLED (W-3);
+  already HOLDING with vacuum -> SUCCESS at once, nothing switched (W-5).
+- /gripper/release (Release): vacuum pump off, blow-off on for blow_off_time, blow-off off (W-6).
+- One active goal for both actions: a new goal preempts the running one (PREEMPTED, W-7). The preempted
+  goal switches nothing; the new goal takes over the outputs. Invalid goals -> INVALID_GOAL.
+- I/O error inside a goal -> both pumps off (best effort), COMM_FAILURE / CONTROLLER_ERROR.
 - /gripper/state (GripperState, latched): DO / DI values + state, at state_rate and on every change.
 - I/O: vacuum pump = vacuum_do, blow-off pump = blow_off_do, vacuum achieved = vacuum_di.
   Real robot via XML-RPC (SetToolDO / GetToolDI / GetToolDO), fake mode in memory.
@@ -13,21 +19,27 @@ Status: state topic, start / shutdown behaviour (step 20b). Grip / release actio
   (W-13); PART_LOST / CONTROLLER_ERROR are cleared by a new grip / release.
 - Single-threaded executor; each I/O call is bounded by rpc_timeout.
 """
+import math
 import time
 
 import rclpy
-from hk_fr5_interfaces.msg import GripperState
+from hk_fr5_interfaces.action import Grip, Release
+from hk_fr5_interfaces.msg import GripperErrorCode, GripperState
+from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.signals import SignalHandlerOptions
+from rclpy.task import Future
 
 from hk_fr5_gripper.gripper_io import CommError, ControllerError, Debounce, FakeIo, XmlRpcIo
 
 S = GripperState
+C = GripperErrorCode
 ERROR_STATES = (S.PART_LOST, S.COMM_ERROR, S.CONTROLLER_ERROR)
+CODE_NAMES = {v: k for k, v in vars(C).items() if k.isupper() and isinstance(v, int)}
 
 # name -> type; values come only from config/gripper.yaml (no defaults in code)
 PARAMS = {
@@ -50,6 +62,13 @@ PARAMS = {
 POSITIVE = ("rpc_timeout", "comm_retry_period", "grip_timeout", "blow_off_time", "poll_period",
             "state_rate")
 TOOL_IO = ("vacuum_do", "blow_off_do", "vacuum_di")  # FR5 tool I/O: index 0 or 1
+
+
+def validate_time(value, name):
+    """Error message for a bad goal time (s, 0 = config default), else None."""
+    if not math.isfinite(value) or value < 0.0:
+        return f"'{name}' must be a finite number >= 0 (0 = default), got {value}"
+    return None
 
 
 def validate_config(cfg):
@@ -108,6 +127,14 @@ class GripperController(Node):
         self._read_start()
         self.create_timer(c["poll_period"], self._poll)
         self.create_timer(1.0 / c["state_rate"], self.publish_state)
+
+        self._active = None  # goal handle of the running goal (both actions)
+        self._grip = ActionServer(self, Grip, "grip", self._execute_grip,
+                                  goal_callback=self._accept, cancel_callback=self._cancel,
+                                  handle_accepted_callback=self._start)
+        self._release = ActionServer(self, Release, "release", self._execute_release,
+                                     goal_callback=self._accept, cancel_callback=self._cancel,
+                                     handle_accepted_callback=self._start)
 
     # ---- state -------------------------------------------------------------------------------
     def publish_state(self):
@@ -171,6 +198,8 @@ class GripperController(Node):
         vac = self.outputs[self.vacuum_do]
         detail = (f"communication restored: vacuum pump {'on' if vac else 'off'}, "
                   f"vacuum {'achieved' if held else 'not achieved'}")
+        if state in (S.GRIPPING, S.RELEASING) and not self._goal_running():
+            state = S.HOLDING if vac and held else S.IDLE  # that goal has ended meanwhile
         if state == S.HOLDING and not (vac and held):
             state, detail = S.PART_LOST, detail + " -> vacuum lost while holding"
         self.set_state(state, detail)
@@ -208,6 +237,137 @@ class GripperController(Node):
                 self.get_logger().info(f"shutdown: {name} (DO{index}) off")
             except (CommError, ControllerError) as e:
                 self.get_logger().error(f"shutdown: {name} (DO{index}) NOT switched off: {e}")
+
+
+    # ---- goal handling (shared by both actions) ----------------------------------------------
+    def _accept(self, _goal_request):
+        return GoalResponse.ACCEPT  # invalid goals are aborted with a reason in execute
+
+    def _cancel(self, _goal_handle):
+        self.get_logger().info("cancel requested")
+        return CancelResponse.ACCEPT
+
+    def _start(self, goal_handle):
+        if self._goal_running():
+            self.get_logger().info("new goal received: preempting the running goal")
+        self._active = goal_handle  # the old goal sees this and ends PREEMPTED (W-7)
+        goal_handle.execute()
+
+    def _goal_running(self):
+        return self._active is not None and self._active.is_active
+
+    def _finish(self, goal_handle, result_type, code, detail, **fields):
+        message = f"{CODE_NAMES.get(code, str(code))}: {detail}"
+        result = result_type(success=(code == C.SUCCESS), error_code=C(val=code), message=message, **fields)
+        if code == C.SUCCESS:
+            goal_handle.succeed()
+        elif goal_handle.is_cancel_requested:
+            goal_handle.canceled()
+        else:
+            goal_handle.abort()
+        if self._active is goal_handle:
+            self._active = None
+        name = result_type.__name__.split("_")[0].lower()  # Grip_GetResult_Response... -> grip
+        if code == C.SUCCESS:  # rclpy fixes the severity per call site: one call per severity
+            self.get_logger().info(f"{name}: {message}")
+        else:
+            self.get_logger().warn(f"{name}: {message}")
+        return result
+
+    def _io_abort(self, goal_handle, result_type, e, **fields):
+        """I/O error inside a goal: error state, both pumps off (best effort), failure result."""
+        self.io_error(e)
+        off = []
+        for index in (self.vacuum_do, self.blow_off_do):
+            try:
+                self.switch(index, False)
+                off.append(f"DO{index} off")
+            except (CommError, ControllerError):
+                off.append(f"DO{index} NOT confirmed off")
+        code = C.COMM_FAILURE if isinstance(e, CommError) else C.CONTROLLER_ERROR
+        return self._finish(goal_handle, result_type, code, f"{e} ({', '.join(off)})", **fields)
+
+    async def _sleep(self, seconds):
+        """Non-blocking sleep inside an async callback (timer-backed future)."""
+        done = Future()
+        timer = self.create_timer(seconds, lambda: done.done() or done.set_result(None))
+        await done
+        self.destroy_timer(timer)
+
+    # ---- grip ----------------------------------------------------------------------------------
+    async def _execute_grip(self, goal_handle):
+        r, fail = Grip.Result, {"time_to_vacuum": -1.0}
+        error = validate_time(goal_handle.request.timeout, "timeout")
+        if error:
+            return self._finish(goal_handle, r, C.INVALID_GOAL, error, **fail)
+        timeout = goal_handle.request.timeout or self.cfg["grip_timeout"]
+        if self.state == S.HOLDING and self.vacuum.value:  # W-5
+            return self._finish(goal_handle, r, C.SUCCESS, "already holding (vacuum achieved), nothing switched",
+                                time_to_vacuum=0.0)
+        self.set_state(S.GRIPPING, f"vacuum pump on, waiting up to {timeout:.1f} s for vacuum")
+        try:
+            self.switch(self.blow_off_do, False)
+            self.switch(self.vacuum_do, True)
+        except (CommError, ControllerError) as e:
+            return self._io_abort(goal_handle, r, e, **fail)
+        self.vacuum.reset(False)  # only fresh reads after pump on count (debounced)
+        start = time.monotonic()
+        while True:
+            await self._sleep(self.cfg["poll_period"])
+            elapsed = time.monotonic() - start
+            if self._active is not goal_handle:  # preempted: the new goal owns the outputs
+                return self._finish(goal_handle, r, C.PREEMPTED, "interrupted by a new gripper goal", **fail)
+            if goal_handle.is_cancel_requested:
+                return self._pump_off(goal_handle, C.CANCELLED, "cancelled, vacuum pump off")
+            if self.vacuum.value:
+                self.set_state(S.HOLDING, f"vacuum achieved in {elapsed:.2f} s")
+                return self._finish(goal_handle, r, C.SUCCESS, f"vacuum achieved in {elapsed:.2f} s",
+                                    time_to_vacuum=elapsed)
+            if elapsed >= timeout:
+                if self.state == S.COMM_ERROR:  # DI could not be read: say so, not just "no vacuum"
+                    return self._io_abort(goal_handle, r, CommError(f"no DI reading: {self.message}"), **fail)
+                return self._pump_off(goal_handle, C.NO_VACUUM, f"no vacuum within {timeout:.1f} s, vacuum pump off")
+            goal_handle.publish_feedback(Grip.Feedback(elapsed=elapsed))
+
+    def _pump_off(self, goal_handle, code, detail):
+        """End a grip with the vacuum pump off (timeout / cancel)."""
+        try:
+            self.switch(self.vacuum_do, False)
+        except (CommError, ControllerError) as e:
+            return self._io_abort(goal_handle, Grip.Result, e, time_to_vacuum=-1.0)
+        self.set_state(S.IDLE, detail)
+        return self._finish(goal_handle, Grip.Result, code, detail, time_to_vacuum=-1.0)
+
+    # ---- release -------------------------------------------------------------------------------
+    async def _execute_release(self, goal_handle):
+        r = Release.Result
+        error = validate_time(goal_handle.request.blow_off_time, "blow_off_time")
+        if error:
+            return self._finish(goal_handle, r, C.INVALID_GOAL, error)
+        blow_time = goal_handle.request.blow_off_time or self.cfg["blow_off_time"]
+        self.set_state(S.RELEASING, f"vacuum pump off, blow-off on for {blow_time:.1f} s")
+        try:
+            self.switch(self.vacuum_do, False)
+            self.switch(self.blow_off_do, True)
+        except (CommError, ControllerError) as e:
+            return self._io_abort(goal_handle, r, e)
+        goal_handle.publish_feedback(Release.Feedback(phase="BLOW_OFF"))
+        end = time.monotonic() + blow_time
+        while (remaining := end - time.monotonic()) > 0.0:
+            await self._sleep(min(self.cfg["poll_period"], remaining))
+            if self._active is not goal_handle:  # preempted: the new goal owns the outputs
+                return self._finish(goal_handle, r, C.PREEMPTED, "interrupted by a new gripper goal")
+            if goal_handle.is_cancel_requested:
+                break
+        try:
+            self.switch(self.blow_off_do, False)
+        except (CommError, ControllerError) as e:
+            return self._io_abort(goal_handle, r, e)
+        if goal_handle.is_cancel_requested:
+            self.set_state(S.IDLE, "release cancelled, blow-off stopped early")
+            return self._finish(goal_handle, r, C.CANCELLED, "cancelled, blow-off stopped early")
+        self.set_state(S.IDLE, f"released (blow-off {blow_time:.1f} s)")
+        return self._finish(goal_handle, r, C.SUCCESS, f"released (blow-off {blow_time:.1f} s)")
 
 
 def main():
