@@ -904,6 +904,9 @@ environments:
       - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-moveit-simple-controller-manager-2.5.10-hb0f4dca_22.conda
       - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-ros2-control-2.54.3-hb0f4dca_22.conda
       - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-ros2-controllers-2.54.1-hb0f4dca_22.conda
+      - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-ros2bag-0.15.17-hb0f4dca_22.conda
+      - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-rosbag2-storage-default-plugins-0.15.17-hb0f4dca_22.conda
+      - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-rosbag2-transport-0.15.17-hb0f4dca_22.conda
       - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-xacro-2.1.1-hb0f4dca_22.conda
       - conda: https://prefix.dev/robostack-humble/linux-64/ros2-ackermann-msgs-2.0.2-np2py314h53a0733_22.conda
       - conda: https://prefix.dev/robostack-humble/linux-64/ros2-ackermann-steering-controller-2.54.1-np2py314h53a0733_22.conda
@@ -12402,6 +12405,15 @@ packages:
   run_exports: {}
   size: 44683
   timestamp: 1778998632886
+- conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-ros2bag-0.15.17-hb0f4dca_22.conda
+  sha256: 89a0945c1af4858fd49c02453d311b133ecd31956db89d2323b4ca513a641fc5
+  md5: 902a3178c676f93556c28d7d0e57f2d5
+  depends:
+  - ros2-ros2bag ==0.15.17
+  - ros2-distro-mutex 0.11.* humble_*
+  run_exports: {}
+  size: 2062
+  timestamp: 1792811245180
 - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-ros2cli-0.18.18-np2py312h2ed9cc7_18.conda
   sha256: dee1e8c2fae935f5c6e8c6887e02a3617da19517e9cb665afa04e48b2eabafe9
   md5: 9a8765f764919f079206e41254d40ba4
@@ -12740,6 +12752,24 @@ packages:
   run_exports: {}
   size: 71877
   timestamp: 1778998606727
+- conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-rosbag2-storage-default-plugins-0.15.17-hb0f4dca_22.conda
+  sha256: 46d706231f68af99d57a2f24d7e191ed8a8e873cb5e6452339f84e7fd14d8059
+  md5: 7fd6e25d6a97452ebc24e531be3f05f0
+  depends:
+  - ros2-rosbag2-storage-default-plugins ==0.15.17
+  - ros2-distro-mutex 0.11.* humble_*
+  run_exports: {}
+  size: 2186
+  timestamp: 1792808462020
+- conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-rosbag2-transport-0.15.17-hb0f4dca_22.conda
+  sha256: 4ca8c41e8be3d22cb7e6689a4ce76ac47aab06a86946ee17fcb7db1357266971
+  md5: ebaaa45af5407bfaf42d4e7402163ad3
+  depends:
+  - ros2-rosbag2-transport ==0.15.17
+  - ros2-distro-mutex 0.11.* humble_*
+  run_exports: {}
+  size: 2106
+  timestamp: 1792810034559
 - conda: https://prefix.dev/robostack-humble/linux-64/ros-humble-rosgraph-msgs-1.2.2-np2py312h2ed9cc7_18.conda
   sha256: ecb86d22f14bf9735533f73823e67e24a6267879ca89cb04acf1ee9140ff1f66
   md5: 5917822ba54d2965c6bc7586466ea424

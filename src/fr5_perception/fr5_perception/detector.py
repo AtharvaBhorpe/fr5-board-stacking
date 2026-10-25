@@ -6,6 +6,9 @@ from collections import Counter
 import cv2
 import numpy as np
 
+from .colour_masks import foreground_mask
+from .measurements import describe_region
+
 
 class Detector(ABC):
     @abstractmethod
@@ -64,10 +67,10 @@ class ClassicalDetector(Detector):
         return observations
 
     def foreground(self, bgr):
-        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, (0, 0, self.settings['min_value']),
-                           (179, self.settings['max_saturation'], 255))
-        return cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        ranges = self.settings.get('foreground_hsv_ranges', [
+            [0, 0, self.settings['min_value'],
+             179, self.settings['max_saturation'], 255]])
+        return foreground_mask(bgr, ranges)
 
     def detect(self, bgr):
         if not isinstance(bgr, np.ndarray) or bgr.dtype != np.uint8 or bgr.ndim != 3 or bgr.shape[2] != 3:
@@ -113,7 +116,8 @@ class ClassicalDetector(Detector):
             candidates.append({'pixel_corners': corners.tolist(),
                                'pixel_center': np.mean(corners, axis=0).tolist(),
                                'area_pixels': float(area), 'rectangularity': float(rectangularity),
-                               'contained_markers': contained, 'metric_pose': None})
+                               'contained_markers': contained, 'metric_pose': None,
+                               **describe_region(bgr, component)})
         candidates.sort(key=lambda candidate: candidate['pixel_center'][0])
         for index, candidate in enumerate(candidates):
             candidate['id'] = f'candidate_{index + 1}'
