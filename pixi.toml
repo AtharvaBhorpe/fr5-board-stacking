@@ -6,6 +6,7 @@ platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34"
 version = "0.1.0"
 
 [tasks]
+build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description src/hk_fr5_description'
 
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"
@@ -25,4 +26,10 @@ cmake = "<4"
 ninja = ">=1.13.2,<2"
 pkg-config = ">=0.29.2,<0.30"
 sysroot_linux-64 = ">=2.34"
+
+[activation]
+scripts = ["install/setup.sh"]
+
+[activation.env]
+CMAKE_GENERATOR = "Ninja"
 

@@ -1,0 +1,26 @@
+# Tool stack geometry on the FR5 flange. Metres / radians.
+# Sources: teammate's xacro + STL bounding boxes (see notes/decision-log.md G3-G5).
+
+flange:
+  z: 0.100                  # wrist3_link -> flange face (FR5 DH d6)
+
+mount:                      # 3D-printed D405 plate between flange and gripper
+  yaw: 0.0                  # camera arm direction about tool z. TODO: measure on robot
+  plate_thickness: 0.0095   # flange face -> gripper mount face
+  ring_radius: 0.0375
+  arm_size: [0.060, 0.042, 0.006]
+  arm_xyz: [0.070, 0.0, 0.0075]
+  arm_pitch: -0.1396        # arm tilted 8 deg
+
+d405:                       # camera body, approximate box
+  body_size: [0.042, 0.042, 0.023]
+  body_xyz: [0.0869, 0.0, 0.0256]   # relative to mount link
+  body_pitch: -0.1396
+  # camera frame sits on the front face, x = viewing direction (RealSense camera_link)
+
+gripper:                    # Schmalz vacuum gripper
+  body_radius: 0.032
+  body_length: 0.0734       # mount face -> start of cup
+  cup_radius: 0.018
+  tcp_z: 0.1034             # mount face -> relaxed cup tip (flange -> tip = 0.1129)
+  cup_collision_gap: 0.005  # cup collision stops this far short of tcp
