@@ -1,0 +1,18 @@
+controller_manager:
+  ros__parameters:
+    # 125 Hz = Fairino driver ServoJ period (cmdT 0.008 s). Launch arg update_rate:=100
+    # overrides it (teammate's proven value) if the real robot stutters (decision M-3).
+    update_rate: 125
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+arm_controller:
+  ros__parameters:
+    joints: [j1, j2, j3, j4, j5, j6]
+    command_interfaces: [position]   # driver supports position only
+    state_interfaces: [position]
+    # Future JTC default; MoveIt trajectories end at zero velocity (decision M-12)
+    allow_nonzero_velocity_at_trajectory_end: false

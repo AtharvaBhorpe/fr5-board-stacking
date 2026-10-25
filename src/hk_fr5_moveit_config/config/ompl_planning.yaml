@@ -1,0 +1,22 @@
+planning_plugin: ompl_interface/OMPLPlanner
+request_adapters: >-
+  default_planner_request_adapters/AddTimeOptimalParameterization
+  default_planner_request_adapters/ResolveConstraintFrames
+  default_planner_request_adapters/FixWorkspaceBounds
+  default_planner_request_adapters/FixStartStateBounds
+  default_planner_request_adapters/FixStartStateCollision
+  default_planner_request_adapters/FixStartStatePathConstraints
+start_state_max_bounds_error: 0.1
+jiggle_fraction: 0.05
+
+# Only the planner we use (F6). Defining planner_configs here stops
+# moveit_configs_utils from adding all ~25 OMPL default planners.
+planner_configs:
+  RRTConnect:
+    type: geometric::RRTConnect
+    range: 0.0    # 0 = OMPL chooses from the workspace size
+
+arm:
+  default_planner_config: RRTConnect
+  planner_configs:
+    - RRTConnect

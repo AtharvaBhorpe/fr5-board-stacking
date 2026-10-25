@@ -1,0 +1,5 @@
+# File name must stay "pilz_industrial_motion_planner_planning.yaml": moveit_configs_utils
+# loads pilz_cartesian_limits.yaml only for a pipeline with exactly this name.
+planning_plugin: pilz_industrial_motion_planner/CommandPlanner
+request_adapters: ""          # Pilz time-parameterises itself
+default_planner_config: PTP

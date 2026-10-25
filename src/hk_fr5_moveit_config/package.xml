@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypeversion="1.0"?>
+<package format="3">
+  <name>hk_fr5_moveit_config</name>
+  <version>0.1.0</version>
+  <description>MoveIt 2 + ros2_control config for hk_fr5 (group arm: base_link -> tcp, OMPL + Pilz).</description>
+  <maintainer email="69069296+vortexcv@users.noreply.github.com">vortexcv</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>hk_fr5_description</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_kinematics</exec_depend>
+  <exec_depend>moveit_planners</exec_depend>
+  <exec_depend>moveit_simple_controller_manager</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <!-- Real robot (step 19): fairino_hardware_v3_9_0_1 -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

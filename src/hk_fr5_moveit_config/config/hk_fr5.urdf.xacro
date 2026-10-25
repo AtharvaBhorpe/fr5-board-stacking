@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- Robot for MoveIt + ros2_control: hk_fr5_description geometry + ros2_control block.
+     use_fake_hardware: true = mock joints (default), false = real FR5 via Fairino driver. -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="hk_fr5">
+
+  <xacro:arg name="use_fake_hardware" default="true"/>
+  <xacro:arg name="initial_positions_file"
+             default="$(find hk_fr5_moveit_config)/config/initial_positions.yaml"/>
+
+  <xacro:include filename="$(find hk_fr5_description)/urdf/hk_fr5.urdf.xacro"/>
+  <xacro:include filename="$(find hk_fr5_moveit_config)/config/hk_fr5.ros2_control.xacro"/>
+
+  <xacro:hk_fr5_ros2_control name="FR5System"
+                             use_fake_hardware="$(arg use_fake_hardware)"
+                             initial_positions_file="$(arg initial_positions_file)"/>
+</robot>
