@@ -1,4 +1,7 @@
 import argparse
+import json
+import math
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import rclpy
@@ -65,7 +68,57 @@ class RobotInterface(Node):
             )
         self.get_logger().info("Verified mock_components/GenericSystem")
 
+    def saved_goal(self, name):
+        data = json.loads(Path(self.waypoint_file).read_text())
+        if (
+            data.get("schema_version") != 1
+            or data.get("hardware_mode") != "fake"
+            or data.get("units") != "radians"
+        ):
+            raise RuntimeError("Expected a version-1 fake waypoint file in radians")
+
+        waypoint = data.get("waypoints", {}).get(name)
+        if not isinstance(waypoint, dict):
+            raise RuntimeError(f"Waypoint {name!r} not found")
+        positions = waypoint.get("joint_positions")
+        if not isinstance(positions, dict) or not positions:
+            raise RuntimeError("Waypoint contains no joint positions")
+        if not all(
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(value)
+            for value in positions.values()
+        ):
+            raise RuntimeError("Waypoint joint values must be finite numbers")
+
+        semantic = self.read_string_parameter(
+            "/move_group", "robot_description_semantic"
+        )
+        root = ET.fromstring(semantic)
+        groups = [
+            group for group in root.findall("group")
+            if {j.get("name") for j in group.findall("joint")} == set(positions)
+        ]
+        if len(groups) != 1:
+            raise RuntimeError(
+                "Waypoint joints must exactly match one explicit SRDF joint group"
+            )
+
+        constraints = Constraints()
+        constraints.name = name
+        for joint_name, position in positions.items():
+            constraint = JointConstraint()
+            constraint.joint_name = joint_name
+            constraint.position = float(position)
+            constraint.tolerance_above = 0.001
+            constraint.tolerance_below = 0.001
+            constraint.weight = 1.0
+            constraints.joint_constraints.append(constraint)
+        return groups[0].attrib["name"], constraints
+
     def named_goal(self, name):
+        if getattr(self, "waypoint_file", None):
+            return self.saved_goal(name)
         semantic = self.read_string_parameter(
             "/move_group", "robot_description_semantic"
         )
@@ -163,10 +216,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", required=True)
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--waypoint-file", type=Path)
     args = parser.parse_args()
 
     rclpy.init()
     robot = RobotInterface()
+    robot.waypoint_file = args.waypoint_file
     status = 0
     try:
         robot.move_named(args.target, execute=args.execute)
