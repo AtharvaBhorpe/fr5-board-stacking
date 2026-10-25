@@ -1,0 +1,30 @@
+# Static collision boxes for MoveIt, all in base_link, metres / radians.
+# position = box centre. Values = teammate's workcell estimates (fr5_bringup/config/workcell.yaml),
+# TODO measure (decision-log T4). Boxes keep 1 mm gaps so MoveIt never sees permanent contacts.
+#
+# table_top_z = -0.045 (estimate): table surface relative to base_link. If it changes, update:
+#   table.position.z       = table_top_z - table.size.z / 2
+#   profile.size.z         = -table_top_z - 0.002
+#   profile.position.z     = -0.001 - profile.size.z / 2
+#   camera_post.position.z = table_top_z + 0.001 + camera_post.size.z / 2
+#   floor_guard.position.z = table_top_z - 0.001 - floor_guard.size.z / 2
+boxes:
+  - name: table                 # table top slab, 1.00 (depth) x 2.00 (width) m
+    size: [1.00, 2.00, 0.03]
+    position: [-0.42, 0.03, -0.060]
+    yaw: 0.0
+
+  - name: profile               # 16 cm aluminium profile the robot stands on
+    size: [1.00, 0.16, 0.043]
+    position: [-0.42, 0.0, -0.0225]
+    yaw: 0.0
+
+  - name: camera_post           # wooden post with the overhead webcam (generous box)
+    size: [0.10, 0.07, 1.70]
+    position: [-0.87, 0.116, 0.806]
+    yaw: 0.0
+
+  - name: floor_guard           # virtual: keeps the arm above table level past the table edges
+    size: [3.0, 3.0, 0.02]
+    position: [0.0, 0.0, -0.056]
+    yaw: 0.0

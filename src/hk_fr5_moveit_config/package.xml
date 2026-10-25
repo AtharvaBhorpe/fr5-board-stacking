@@ -24,6 +24,7 @@
   <exec_depend>moveit_ros_visualization</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>hk_fr5_motion</exec_depend>
   <!-- Real robot (step 19): fairino_hardware_v3_9_0_1 -->
 
   <export>

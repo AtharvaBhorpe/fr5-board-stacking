@@ -5,6 +5,7 @@ Args:
                                  false: real FR5 via the Fairino driver (must be built).
   update_rate:=125               controller_manager rate in Hz (decision M-3: 100 is the fallback).
   use_rviz:=true|false           false = headless (scripts, tests).
+  use_obstacles:=true|false      add static collision boxes (hk_fr5_motion/config/obstacles.yaml).
 
 Uses the individual moveit_configs_utils launch helpers, not generate_demo_launch()
 (that one includes launch files and a warehouse DB we do not have).
@@ -46,6 +47,7 @@ def _int_arg(context, name):
 def _setup(context):
     fake = _bool_arg(context, "use_fake_hardware")
     use_rviz = _bool_arg(context, "use_rviz")
+    use_obstacles = _bool_arg(context, "use_obstacles")
     update_rate = _int_arg(context, "update_rate")
 
     if not fake:
@@ -87,6 +89,9 @@ def _setup(context):
     actions += generate_move_group_launch(moveit_config).entities
     if use_rviz:
         actions += generate_moveit_rviz_launch(moveit_config).entities
+    if use_obstacles:
+        # one-shot: waits for move_group, adds the boxes, exits
+        actions.append(Node(package="hk_fr5_motion", executable="obstacle_loader", output="screen"))
     return actions
 
 
@@ -98,5 +103,7 @@ def generate_launch_description():
                               description="controller_manager rate in Hz (100 = fallback)"),
         DeclareLaunchArgument("use_rviz", default_value="true",
                               description="start RViz with the MotionPlanning display"),
+        DeclareLaunchArgument("use_obstacles", default_value="true",
+                              description="add static collision boxes from hk_fr5_motion/config/obstacles.yaml"),
         OpaqueFunction(function=_setup),
     ])
