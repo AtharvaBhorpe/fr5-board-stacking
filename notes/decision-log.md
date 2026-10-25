@@ -794,6 +794,7 @@ T1 answers (user, 2026-10-25):
 | W-10 | Node shutdown | **DO0 and DO1 both off** (user; proposal was DO1 off only) |
 | W-11 | F12 attach board box to tcp | later, in the control loop (knows the board size) |
 | W-12 | Distinct error states (user: no shared ERROR tag) | state: IDLE, GRIPPING, HOLDING, RELEASING, PART_LOST, COMM_ERROR (XML-RPC unreachable / timeout), CONTROLLER_ERROR (controller error code); result error_code: SUCCESS, NO_VACUUM (timeout, pump off), CANCELLED, PREEMPTED, COMM_FAILURE, CONTROLLER_ERROR, INVALID_GOAL. A new grip / release clears the error states (no reset command). No PART_LOST result code (user: the grip timeout covers vacuum lost before success) |
+| W-13 | COMM_ERROR recovery (user, 2026-10-26; amends W-12) | **COMM_ERROR clears by itself** on the first good read: outputs re-read (controller may have restarted), back to the state before the error; HOLDING without vacuum -> PART_LOST; unreachable at start -> the start read (W-9) runs when the robot appears. Debounced DI is reset during the outage (first read after it counts at once). PART_LOST / CONTROLLER_ERROR still cleared only by a new grip / release |
 - Fake mode: in-memory I/O, DI0 = 1 `fake_vacuum_delay` 0.5 s after DO0 on; runtime param `fake_vacuum`
   true/false to test the failure path. Single-threaded executor + async callbacks (like motion_controller),
   XML-RPC socket timeout 0.5 s. Config `hk_fr5_gripper/config/gripper.yaml` (IP, port, I/O numbers, times).
@@ -867,3 +868,4 @@ The rationale below is only what was recorded at the time.
 | `2004505` | move_to (OMPL/Pilz, named targets, plan_only, EXECUTING via controller status, retries) + tight tolerances + faster limits |
 | `cf5a745` | move_delta (Pilz LIN, TCP/base frame, zero delta, shared _prepare) |
 | `76ef200` | cancel / preempt fix: smooth stop via arm controller, speed-dependent deceleration |
+| `58e64da` | hk_fr5_interfaces: Grip, Release, GripperState, GripperErrorCode + decisions 5l |

@@ -552,6 +552,47 @@ Teammate workcell (`fr5_bringup/urdf/workcell_scene.xacro` + `config/workcell.ya
   `ros2 launch` ignores misspelled args silently (`update-rate:=50` -> still 125 Hz).
 - Re-measure after any driver / controller change: `pixi run python3 notes/lag_probe.py 15` + one small move.
 
+## 10n. Step 20a/20b gripper findings + results (2026-10-25)
+
+Fairino tool I/O (SDK header `fairino_hardware_v3_9_0_1/libfairino/include/robot.h`):
+- `SetToolDO(id, status, smooth, block)`, `GetToolDI(id, block, *result)`, `GetToolDO(*do_state)`;
+  tool I/O ids 0..1 only (`robot_types.h`: "only bit0-bit1 valid"). `GetDI` / `SetDO` = control box I/O.
+  `block` doc: 0 = blocking, 1 = non-blocking. We call GetToolDI(id, 0).
+- All three names exist as plain strings in `libfairino.so.2.3.0` (= XML-RPC method names, like ServoJ).
+  **Unverified:** XML-RPC reply of GetToolDI / GetToolDO. Assumed `[error, value]` (Fairino Python SDK style);
+  `gripper_io.parse_reply` also accepts a bare int, anything else -> CommError with the raw reply (20f).
+- xmlrpc.client's default Transport has no timeout -> own Transport sets `conn.timeout` (rpc_timeout).
+
+rclpy quirks found (step 20b):
+- Q20-1 **rclpy logger fixes the severity per call site**: `log = warn if x else info; log(msg)` raises
+  `ValueError: Logger severity cannot be changed between calls` the 2nd time with another severity
+  (crashed the node on the first PART_LOST). Use separate `.warn(...)` / `.info(...)` calls.
+- Q20-2 With rclpy's default signal handler, Ctrl+C shuts the context down before `finally:` runs ->
+  shutdown logs print but "Failed to publish log message to rosout: publisher's context is invalid".
+  Fix: `rclpy.init(signal_handler_options=SignalHandlerOptions.NO)` + catch KeyboardInterrupt.
+  (Only SIGINT is handled; ros2 launch sends SIGINT first, SIGTERM only after its timeout.)
+- Q20-3 Test gotcha: SIGINT to the `ros2 run` wrapper PID is not forwarded to the node; a terminal Ctrl+C
+  hits the whole process group -> tests start nodes with `start_new_session=True` and `os.killpg(pid, SIGINT)`.
+
+Step 20b results (scratchpad tests, mock Fairino XML-RPC server = SimpleXMLRPCServer with SetToolDO /
+GetToolDI / GetToolDO + test hooks):
+- I/O offline 27/27: debounce (glitch reset, reads = 1), parse_reply (controller code, bad replies), FakeIo
+  (delay, fake_vacuum false, pump off), XmlRpcIo vs mock (read/write, controller error 14, slow server ->
+  CommError after 0.50 s, recovery, connection refused -> CommError at once).
+- Debounce bug found by the W-13 test: after an outage the first good read is only 1 of 2 debounce reads, so
+  recovery decided from the pre-outage vacuum value (brief false HOLDING). Fix: `Debounce.reset()` on comm loss.
+- W-13 runtime (20/20 incl. the 17 below, updated): HOLDING -> server down -> back with vacuum -> HOLDING in
+  1.01 s (= comm_retry_period); back without vacuum -> PART_LOST; CONTROLLER_ERROR kept across an outage, DOs
+  re-read; unreachable at start -> robot appears -> start read -> HOLDING, nothing switched; 3 outages -> 3 logs.
+- Node runtime 17/17 (before W-13): missing params / vacuum_do == blow_off_do -> exit 1 with message; fake IDLE, state
+  10 Hz; real code path: start with DO0 on + DI0 = 1 -> HOLDING, no SetToolDO at start (W-9); DI0 drop ->
+  PART_LOST in 0.10 s (debounce 2 x 50 ms), pump still on (W-4); error 14 -> CONTROLLER_ERROR; server down
+  -> COMM_ERROR; server back -> DI read again, state stays COMM_ERROR (W-12); repeated errors logged once;
+  Ctrl+C -> SetToolDO(0, 0) + SetToolDO(1, 0) (W-10), rc 0, no rosout warning; unreachable at Ctrl+C ->
+  "NOT switched off" logged, exits in 0.17 s.
+
+---------------------------------------------------------------------------
+
 ## 11. Later-step reminders
 
 - Step 16 (T11): retry policy for OMPL failures `INVALID_MOTION_PLAN` ("Computed path is not valid ... possibly due to postprocessing") and `PLANNING_FAILED`; error code for impossible goals is `GOAL_STATE_INVALID` (-27); always set all 4 quaternion fields (Q-1); `start_state.is_diff = True`.
@@ -563,4 +604,5 @@ Teammate workcell (`fr5_bringup/urdf/workcell_scene.xacro` + `config/workcell.ya
 - Step 16/17: `/move_action` ids: `ompl`/`RRTConnect`, `pilz_industrial_motion_planner`/`PTP`|`LIN`.
 - Step 19: build `fairino_msgs` + driver (Q3-5 submodule side effect, Q3-6 LD_LIBRARY_PATH);
   IP is hard-coded in driver; consider 125 Hz update_rate if motion stutters; accel limits tuning.
-- Step 20: T1 gripper questions (Schmalz model, DOs, DI).
+- ~~Step 20: T1 gripper questions (Schmalz model, DOs, DI).~~ DONE (decision-log 5l).
+- Step 20f (lab): read-only GetToolDI / GetToolDO via XML-RPC first, check the reply format (10n).

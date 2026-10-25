@@ -1,0 +1,20 @@
+# gripper_controller parameters (ROS parameter file). Seconds. Decisions: decision-log 5l (W-*).
+/**/gripper_controller:
+  ros__parameters:
+    use_fake_hardware: true     # true = in-memory I/O, no robot connection (bringup sets it)
+    # real robot: tool I/O via the controller's XML-RPC server (works alongside the motion driver)
+    robot_ip: 192.168.58.2
+    xmlrpc_port: 20003
+    rpc_timeout: 0.5            # s per XML-RPC call (node never hangs on a lost connection)
+    comm_retry_period: 1.0      # s between polls after a communication failure
+    vacuum_do: 0                # tool DO: vacuum pump, 1 = on
+    blow_off_do: 1              # tool DO: blow-off pump, 1 = on
+    vacuum_di: 0                # tool DI: vacuum achieved, 1 = part gripped
+    grip_timeout: 3.0           # s, grip goal timeout 0 -> this (W-2)
+    blow_off_time: 1.0          # s, release goal blow_off_time 0 -> this
+    poll_period: 0.05           # s between DI reads
+    debounce_reads: 2           # equal DI reads in a row before a change counts (W-8)
+    state_rate: 10.0            # Hz, /gripper/state (also published on every change)
+    # fake mode only
+    fake_vacuum: true           # false -> no vacuum (test the NO_VACUUM / PART_LOST paths); settable at runtime
+    fake_vacuum_delay: 0.5      # s from vacuum pump on to vacuum achieved

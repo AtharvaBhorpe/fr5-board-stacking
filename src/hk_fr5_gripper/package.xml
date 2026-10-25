@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypeversion="1.0"?>
+<package format="3">
+  <name>hk_fr5_gripper</name>
+  <version>0.1.0</version>
+  <description>hk_fr5 gripper node: gripper_controller (Schmalz vacuum gripper via robot tool I/O).</description>
+  <maintainer email="69069296+vortexcv@users.noreply.github.com">vortexcv</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>hk_fr5_interfaces</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
