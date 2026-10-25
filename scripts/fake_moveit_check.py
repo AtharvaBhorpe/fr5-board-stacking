@@ -1,12 +1,15 @@
 import argparse
 import json
 import math
+import time
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
+from sensor_msgs.msg import JointState
 from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.msg import ParameterType
 from action_msgs.msg import GoalStatus
@@ -196,10 +199,68 @@ class RobotInterface(Node):
 
         points = len(result.planned_trajectory.joint_trajectory.points)
         if points == 0:
-            raise RuntimeError("MoveIt returned an empty joint trajectory")
+            self.verify_current_target(constraints)
+            print(f"ALREADY AT TARGET: {name}; fresh joint feedback verified")
+            return
 
         label = "FAKE EXECUTION SUCCEEDED" if execute else "PLAN SUCCEEDED"
         print(f"{label}: target={name}, trajectory_points={points}")
+
+    def verify_current_target(self, constraints):
+        observed = {}
+
+        def on_state(message):
+            if len(message.name) != len(message.position):
+                return
+            if len(set(message.name)) != len(message.name):
+                return
+
+            stamp_ns = (
+                message.header.stamp.sec * 1_000_000_000
+                + message.header.stamp.nanosec
+            )
+            age_s = (self.get_clock().now().nanoseconds - stamp_ns) / 1e9
+            if not 0 <= age_s <= 1.0:
+                return
+
+            positions = dict(zip(message.name, message.position))
+            required = [c.joint_name for c in constraints.joint_constraints]
+            if not all(
+                name in positions and math.isfinite(positions[name])
+                for name in required
+            ):
+                return
+            observed.update(positions)
+
+        subscription = self.create_subscription(
+            JointState, "/joint_states", on_state, qos_profile_sensor_data
+        )
+        try:
+            deadline = time.monotonic() + 5.0
+            while not observed and time.monotonic() < deadline:
+                rclpy.spin_once(self, timeout_sec=0.1)
+
+            if not observed:
+                raise RuntimeError(
+                    "Empty trajectory: no fresh joint feedback to verify target"
+                )
+
+            errors = {}
+            for constraint in constraints.joint_constraints:
+                delta = observed[constraint.joint_name] - constraint.position
+                if not (
+                    -constraint.tolerance_below - 1e-9
+                    <= delta
+                    <= constraint.tolerance_above + 1e-9
+                ):
+                    errors[constraint.joint_name] = delta
+
+            if errors:
+                raise RuntimeError(
+                    f"Empty trajectory but target not reached; errors_rad={errors}"
+                )
+        finally:
+            self.destroy_subscription(subscription)
 
     def request_cancel(self):
         if self.active_goal is not None and self.active_goal.accepted:

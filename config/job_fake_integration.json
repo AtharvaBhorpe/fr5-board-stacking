@@ -1,0 +1,17 @@
+{
+  "purpose": "synthetic_fake_integration_only",
+  "motion_targets": {
+    "approach_source": "pos1",
+    "descend_source": "pos1",
+    "lift_source": "pos1",
+    "approach_profile": "pos2",
+    "descend_profile": "pos2",
+    "retreat_to_wait": "pos1",
+    "approach_profile_retrieve": "pos2",
+    "descend_profile_retrieve": "pos2",
+    "lift_profile": "pos2",
+    "approach_destination": "pos1",
+    "descend_destination": "pos1",
+    "retreat_destination": "pos2"
+  }
+}
