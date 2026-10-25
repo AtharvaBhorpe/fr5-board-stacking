@@ -6,7 +6,7 @@ platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34"
 version = "0.1.0"
 
 [tasks]
-build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description src/hk_fr5_description src/hk_fr5_moveit_config'
+build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description src/hk_fr5_description src/hk_fr5_moveit_config src/hk_fr5_interfaces'
 sim = "ros2 launch hk_fr5_moveit_config bringup.launch.py"
 
 [dependencies]

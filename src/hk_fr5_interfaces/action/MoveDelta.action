@@ -1,0 +1,24 @@
+# Relative TCP move, always Pilz LIN (straight TCP line). Metres / radians.
+# D = translation(dx, dy, dz) then rotation R = Rz(dyaw) * Ry(dpitch) * Rx(droll); T = tcp pose in base_link.
+# FRAME_TCP:  T_target = T_current * D (move/rotate along the TCP's own axes).
+# FRAME_BASE: p_target = p_current + (dx, dy, dz); R_target = R(d...) * R_current
+#             (rotation about base axes, pivoting at the TCP point).
+uint8 FRAME_TCP=0               # default
+uint8 FRAME_BASE=1
+
+float64 dx
+float64 dy
+float64 dz
+float64 droll
+float64 dpitch
+float64 dyaw
+uint8 frame
+float64 velocity_scaling        # (0, 1]; 0 -> 0.2. Also used as acceleration scaling
+bool plan_only                  # true -> plan and check only, do not move
+---
+bool success
+string message                  # human-readable reason
+moveit_msgs/MoveItErrorCodes error_code   # machine-readable reason (SUCCESS = 1, see MoveItErrorCodes)
+geometry_msgs/PoseStamped final_tcp_pose  # tcp pose in base_link after the move (plan_only: current pose)
+---
+string phase                    # PLANNING | EXECUTING
