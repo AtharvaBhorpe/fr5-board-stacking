@@ -813,7 +813,7 @@ T1 answers (user, 2026-10-25):
 
 | # | Topic | Decision (user) |
 |---|---|---|
-| X-1 | Lost test scripts (steps 15-18 scratchpads gone) | OK **as long as every test is documented** (implementation-ref 10i-10l, 10n). D1: commit the surviving gripper test scripts + mock XML-RPC server with run commands. Rebuilding motion tests: not planned (to confirm) |
+| X-1 | Lost test scripts (steps 15-18 scratchpads gone) | OK **as long as every test is documented** (implementation-ref 10i-10l, 10n). D1: commit the surviving gripper test scripts + mock XML-RPC server with run commands. Motion tests are **not** rebuilt (user confirmed) |
 | X-2 | Attached board (F12, W-11 amended) | **Only our nodes talk to MoveIt.** The control loop needs our API to attach a picked board (variable w, l, h) to `tcp`, and detach it. Design pending |
 | X-3 | Dynamic obstacles (D3) | assume the control loop needs to add / remove **dynamic stack obstacles** (placed boards, stack). Same API family as X-2. Design pending |
 | X-4 | Driver hides a lost connection (Q3-1) | OK for a demo; plus the cheap check: motion_controller warns when the read-back stays frozen while motion is commanded |
@@ -832,6 +832,31 @@ T1 answers (user, 2026-10-25):
   ruler / pendant; tests units, kinematics, driver). T6 = tool geometry check (real flange -> cup tip length vs our
   112.9 mm in the URDF; an error shifts every tcp target and makes rotations about the tcp wobble). T5 passes even
   with a wrong tool length for pure translations.
+
+---------------------------------------------------------------------------
+
+## 5n. Scene objects API, T20 (S)  (decided 2026-10-26, user: "all recommended", S-4 amended)
+
+Problem found in the design: a board attached while resting on the table (or placed onto the stack) is in
+contact -> MoveIt rejects the lift (START_STATE_IN_COLLISION) / the place goal. Fix: attached box shorter at its
+bottom by a contact margin.
+
+| # | Topic | Decision |
+|---|---|---|
+| S-1 | Node | new node `scene_manager` in `hk_fr5_motion`, **obstacle_loader merged into it** (one node owns the planning scene). Only our nodes talk to MoveIt (X-2) |
+| S-2 | ROS names | `/scene/*` (MoveIt does not use `/scene`) |
+| S-3 | Services | `/scene/attach_board` (length, width, height, yaw vs tcp x, dx / dy offset of the board centre from the cup; box under the cup attached to `tcp`, touching the gripper allowed, one board at a time); `/scene/detach_board` (keep_as_obstacle: true -> stays as a fixed obstacle where it is, the stack grows; false -> removed); `/scene/add_box` (name, size, position, yaw in base_link, obstacles.yaml format); `/scene/remove_box` (name, "" = all dynamic boxes; static obstacles.yaml boxes cannot be removed). Responses: success, message |
+| S-4 | Contact margin | **default 2 mm (yaml) and also settable per request** (user) |
+| S-5 | attach only while gripper HOLDING? | no: the caller's job (F12 rule documented); nodes stay independent |
+| S-6 | Name of a kept detached board | `stack_<n>`, returned in the message |
+| S-7 | motion_shell | `attach L W H`, `detach [keep]`, `box add / rm` commands |
+- Merge safety (user: "be extra extra careful"): motion_controller has **no** obstacle code (checked 2026-10-26: only
+  error hints + an empty `planning_scene_diff` with `is_diff = True` in every MoveGroup goal, which must stay: it means
+  "current scene, no change"). obstacle_loader touches: bringup `use_obstacles` arg + Node, setup.py entry point, package
+  descriptions, obstacles.yaml, notes (5e O-*, test.md). OMPL's FixStartStateCollision adapter may nudge start states
+  that are slightly in collision: keep in mind when testing the margin.
+- Sub-steps: T20a interfaces, T20b scene_manager (static boxes = obstacle_loader behaviour, then the services),
+  T20c tests in sim, T20d launch (obstacle_loader removed), T20e motion_shell commands.
 
 ---------------------------------------------------------------------------
 
@@ -870,8 +895,8 @@ The rationale below is only what was recorded at the time.
 | T2 | ~~Pilz available in RoboStack Humble~~ | DONE (E4) |
 | T3 | D405 mount yaw on the real robot | open |
 | T4 | Measure workcell (table, profile, camera post) via `/motion/get_state` | open |
-| T5 | Commanded vs. real distance (`move_delta dz=0.10` -> 100 mm) | open |
-| T6 | TCP ruler check (112.9 mm flange -> cup tip) | open |
+| T5 | ~~Commanded vs. real distance (`move_delta dz=0.10` -> 100 mm)~~ | CLOSED 2026-10-26 (user): assumed correct for the demo |
+| T6 | ~~TCP ruler check (112.9 mm flange -> cup tip)~~ | CLOSED 2026-10-26 (user): assumed correct for the demo |
 | T7 | ~~D-h launch file name~~ | DONE: `view_robot.launch.py` |
 | T9 | Get real FR5 joint acceleration (and velocity) limits from the Fairino web app / datasheet before step 19; then raise `joint_limits.yaml` max_acceleration (0.7 vendor default) and re-test Pilz LIN at high scaling (L-7 B). | open |
 | T10 | Home pose yaw (+pi/2 at j6 = 0): revisit with T3 when camera use is designed; change = j6 of SRDF `ready` (+ initial_positions.yaml). | open |
@@ -893,7 +918,7 @@ The rationale below is only what was recorded at the time.
 
 ---------------------------------------------------------------------------
 
-## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `14ad348` on 2026-10-26)
+## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `dd8140d`+1 (this notes commit) on 2026-10-26)
 
 | Commit | Content |
 |---|---|
@@ -915,3 +940,4 @@ The rationale below is only what was recorded at the time.
 | `569644e` | hk_fr5_gripper: grip / release actions (W-14..W-16) |
 | `50d563d` | bringup use_gripper, build task, gripper SIGINT/SIGTERM handlers (Q20-4), test.md C1 |
 | `14ad348` | motion_shell: grip / release / gstate, works without the gripper node (W-17) |
+| `dd8140d` | notes: branch review 5m, open items T15-T24, housekeeping |
