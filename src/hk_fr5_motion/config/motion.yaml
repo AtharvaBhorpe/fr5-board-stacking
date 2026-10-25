@@ -6,10 +6,13 @@
     base_frame: base_link             # all poses in this frame (F1)
     move_group_action: /move_action   # MoveIt MoveGroup action
     default_velocity_scaling: 0.2     # used when a goal sends 0 (F14), also for acceleration
-    planning_time: 5.0                # s per planning attempt
+    planning_time: 1.0                # s per planning attempt (T-11: plans take 12-70 ms; failures report in 1 s)
     planning_attempts: 1              # MoveIt num_planning_attempts
     replan_retries: 2                 # extra planning tries on PLANNING_FAILED / INVALID_MOTION_PLAN (T11)
-    position_tolerance: 0.0005        # m, goal sphere radius   (provisional, decided in step 16)
-    orientation_tolerance: 0.005      # rad per axis            (provisional, decided in step 16)
+    position_tolerance: 0.0001        # m, goal sphere radius (T-10: tight, no planning-time cost)
+    orientation_tolerance: 0.001      # rad per axis, ~0.06 deg (T-10)
+    joint_tolerance: 0.0001           # rad per joint, named_target goals (T-10; 0.01 gave 4-6 mm at the tcp)
     server_timeout: 10.0              # s to wait for move_group
     state_timeout: 1.0                # s, max age of the latest /joint_states
+    # arm controller's trajectory action status: its EXECUTING goal -> our EXECUTING phase (T-7)
+    trajectory_status_topic: /arm_controller/follow_joint_trajectory/_action/status

@@ -2,22 +2,29 @@
 
     ros2 run hk_fr5_motion motion_controller --ros-args --params-file <hk_fr5_motion>/config/motion.yaml
 
-Status: interfaces advertised, config loaded, every goal validated (step 14); get_state (step 15).
-move_to / move_delta: valid goals still end with FAILURE "not implemented yet" (steps 16/17).
-Decisions: decision-log 5f (C-*), 5g (S-*).
+Status: validation (step 14), get_state (step 15), move_to (step 16).
+move_delta: valid goals still end with FAILURE "not implemented yet" (step 17).
+Decisions: decision-log 5f (C-*), 5g (S-*), 5h (T-*).
 - Single-threaded executor + async callbacks (await MoveIt without blocking the node).
-- One active goal for both actions: a new goal preempts the running one (PREEMPTED).
+- One active goal for both actions: a new goal preempts the running one (PREEMPTED);
+  cancel / preempt cancel the running MoveIt goal.
 - Invalid goals are accepted, then aborted with INVALID_GOAL_CONSTRAINTS and a clear message.
+- move_to: one /move_action call (plan + execute, or plan only); OMPL retried on -1/-2 (T-3).
 """
 import math
 import xml.etree.ElementTree as ET
 
 import rclpy
-from geometry_msgs.msg import PoseStamped
+from action_msgs.msg import GoalStatus, GoalStatusArray
+from geometry_msgs.msg import Pose, PoseStamped
 from hk_fr5_interfaces.action import MoveDelta, MoveTo
 from hk_fr5_interfaces.srv import GetState
-from moveit_msgs.msg import MoveItErrorCodes
-from rclpy.action import ActionServer, CancelResponse, GoalResponse
+from moveit_msgs.action import MoveGroup
+from moveit_msgs.msg import (BoundingVolume, Constraints, JointConstraint, MoveItErrorCodes,
+                             OrientationConstraint, PositionConstraint)
+from rclpy.action import ActionClient, ActionServer, CancelResponse, GoalResponse
+from rclpy.task import Future
+from shape_msgs.msg import SolidPrimitive
 from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -30,6 +37,44 @@ from tf2_ros import Buffer, TransformException, TransformListener
 
 E = MoveItErrorCodes
 PLANNERS = ("", "PTP", "LIN")  # "" = OMPL RRTConnect, else Pilz (F6)
+PIPELINES = {"": ("ompl", "RRTConnect"),  # planner field -> (pipeline_id, planner_id)
+             "PTP": ("pilz_industrial_motion_planner", "PTP"),
+             "LIN": ("pilz_industrial_motion_planner", "LIN")}
+RETRY_CODES = (E.PLANNING_FAILED, E.INVALID_MOTION_PLAN)  # OMPL is random: retry these (T-3)
+CODE_NAMES = {v: k for k, v in vars(E).items() if k.isupper() and isinstance(v, int)}
+HINTS = {  # short explanations for the common codes (T-6)
+    E.SUCCESS: "done",
+    E.PLANNING_FAILED: "no plan found (try another target or planner)",
+    E.INVALID_MOTION_PLAN: "planned path is in collision (obstacle in the way?)",
+    E.CONTROL_FAILED: "controller failed to execute the trajectory",
+    E.TIMED_OUT: "timed out",
+    E.PREEMPTED: "stopped (cancel or new goal)",
+    E.START_STATE_IN_COLLISION: "robot is currently in collision",
+    E.GOAL_IN_COLLISION: "target is in collision",
+    E.GOAL_STATE_INVALID: "target unreachable or in collision (check pose / obstacles)",
+    E.NO_IK_SOLUTION: "target out of reach (no IK solution)",
+}
+# MoveIt Humble /move_action feedback only sends PLANNING / IDLE; EXECUTING comes from the arm
+# controller's trajectory action status instead (T-7).
+
+
+def describe(code, detail=""):
+    """'<CODE_NAME>: <detail or hint>' (T-6)."""
+    return f"{CODE_NAMES.get(code, str(code))}: {detail or HINTS.get(code, 'see MoveItErrorCodes')}"
+
+
+def rpy_to_quat(roll, pitch, yaw):
+    """(x, y, z, w) for R = Rz(yaw) * Ry(pitch) * Rx(roll); inverse of quat_to_rpy."""
+    cr, sr = math.cos(roll / 2), math.sin(roll / 2)
+    cp, sp = math.cos(pitch / 2), math.sin(pitch / 2)
+    cy, sy = math.cos(yaw / 2), math.sin(yaw / 2)
+    return (sr * cp * cy - cr * sp * sy, cr * sp * cy + sr * cp * sy,
+            cr * cp * sy - sr * sp * cy, cr * cp * cy + sr * sp * sy)
+
+
+def down_quat(yaw):
+    """(x, y, z, w) for MODE_DOWN_YAW: R = Rz(yaw) * Rx(pi) (F7)."""
+    return math.cos(yaw / 2), math.sin(yaw / 2), 0.0, 0.0
 
 # name -> type; values come only from config/motion.yaml (no defaults in code)
 PARAMS = {
@@ -43,8 +88,10 @@ PARAMS = {
     "replan_retries": Parameter.Type.INTEGER,
     "position_tolerance": Parameter.Type.DOUBLE,
     "orientation_tolerance": Parameter.Type.DOUBLE,
+    "joint_tolerance": Parameter.Type.DOUBLE,
     "server_timeout": Parameter.Type.DOUBLE,
     "state_timeout": Parameter.Type.DOUBLE,
+    "trajectory_status_topic": Parameter.Type.STRING,
 }
 
 
@@ -159,6 +206,12 @@ class MotionController(Node):
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)  # runs on this executor (S-7)
 
+        self._move_group = ActionClient(self, MoveGroup, self.cfg["move_group_action"])
+        self._moveit_goal = None   # handle of the running MoveIt goal (to cancel it)
+        self._on_executing = None  # set while a MoveIt goal runs: publishes EXECUTING (T-7)
+        self.create_subscription(GoalStatusArray, self.cfg["trajectory_status_topic"], self._on_trajectory_status, 10)
+        self._stopped = set()      # goal ids that were cancelled or preempted
+
         self._active = None  # goal handle of the running goal (both actions)
         self._move_to = ActionServer(self, MoveTo, "move_to", self._execute_move_to,
                                      goal_callback=self._accept, cancel_callback=self._cancel,
@@ -187,6 +240,11 @@ class MotionController(Node):
     def _on_joint_states(self, msg):
         self._last_js = msg
         self._last_js_time = self.get_clock().now()
+
+    def _on_trajectory_status(self, msg):
+        """Arm controller executing a trajectory -> EXECUTING phase for our running goal (T-7)."""
+        if self._on_executing and any(s.status == GoalStatus.STATUS_EXECUTING for s in msg.status_list):
+            self._on_executing()
 
     def read_state(self):
         """(code, message, JointState, PoseStamped, (roll, pitch, yaw)); code SUCCESS if valid (S-3)."""
@@ -221,31 +279,156 @@ class MotionController(Node):
     def _accept(self, _goal_request):
         return GoalResponse.ACCEPT  # invalid goals are aborted with a reason in execute (C-3)
 
-    def _cancel(self, _goal_handle):
+    def _cancel(self, goal_handle):
+        self.get_logger().info("cancel requested")
+        self._stop(goal_handle)
         return CancelResponse.ACCEPT
 
     def _start(self, goal_handle):
         if self._active is not None and self._active.is_active:
-            self._preempt(self._active)
+            self.get_logger().info("new goal received: preempting the running goal")
+            self._stop(self._active)
         self._active = goal_handle
         goal_handle.execute()
 
-    def _preempt(self, old_goal_handle):
-        # step 16+: cancel the running MoveIt goal; the old execute callback then ends with PREEMPTED
-        self.get_logger().info("new goal received: preempting the running goal")
+    def _stop(self, goal_handle):
+        """Mark a goal as stopped and cancel its MoveIt goal (cancel / preempt, C-2)."""
+        self._stopped.add(bytes(goal_handle.goal_id.uuid))
+        if self._active is goal_handle and self._moveit_goal is not None:
+            self._moveit_goal.cancel_goal_async()
 
-    def _finish(self, goal_handle, result_type, code, message):
+    def _is_stopped(self, goal_handle):
+        return bytes(goal_handle.goal_id.uuid) in self._stopped
+
+    def _finish(self, goal_handle, result_type, code, detail=""):
+        if self._is_stopped(goal_handle) and code != E.SUCCESS:
+            code, detail = E.PREEMPTED, ""
+        message = describe(code, detail)
         result = result_type(success=(code == E.SUCCESS), message=message, error_code=E(val=code))
-        result.final_tcp_pose.header.frame_id = self.cfg["base_frame"]
+        state_code, _, _, pose, _ = self.read_state()
+        if state_code == E.SUCCESS:
+            result.final_tcp_pose = pose
+        else:
+            result.final_tcp_pose.header.frame_id = self.cfg["base_frame"]
         if code == E.SUCCESS:
             goal_handle.succeed()
+        elif goal_handle.is_cancel_requested:
+            goal_handle.canceled()
         else:
             goal_handle.abort()
+        self._stopped.discard(bytes(goal_handle.goal_id.uuid))
         if self._active is goal_handle:
             self._active = None
-        log = self.get_logger().info if code == E.SUCCESS else self.get_logger().warn
-        log(f"{result_type.__module__.split('.')[-1]}: code {code}: {message}")
+        # rclpy fixes the severity per call site: one call per severity
+        text = f"{result_type.__module__.split('.')[-1]}: code {code}: {message}"
+        if code == E.SUCCESS:
+            self.get_logger().info(text)
+        else:
+            self.get_logger().warn(text)
         return result
+
+    # ---- MoveIt ------------------------------------------------------------------------------
+    async def _sleep(self, seconds):
+        """Non-blocking sleep inside an async callback (timer-backed future)."""
+        done = Future()
+        timer = self.create_timer(seconds, lambda: done.done() or done.set_result(None))
+        await done
+        self.destroy_timer(timer)
+
+    async def _wait_moveit_idle(self):
+        """A preempted goal's MoveIt goal must finish before the next one is sent."""
+        waited = 0.0
+        while self._moveit_goal is not None and waited < self.cfg["server_timeout"]:
+            await self._sleep(0.02)
+            waited += 0.02
+        return self._moveit_goal is None
+
+    async def _wait_server(self):
+        waited = 0.0
+        while not self._move_group.server_is_ready() and waited < self.cfg["server_timeout"]:
+            await self._sleep(0.1)
+            waited += 0.1
+        return self._move_group.server_is_ready()
+
+    def _request(self, goal, constraints, planner, scaling):
+        """MoveGroup goal (request + options) for the arm group."""
+        mg = MoveGroup.Goal()
+        r = mg.request
+        r.group_name = self.cfg["group"]
+        r.pipeline_id, r.planner_id = PIPELINES[planner]
+        r.num_planning_attempts = self.cfg["planning_attempts"]
+        r.allowed_planning_time = self.cfg["planning_time"]
+        scaling = scaling if scaling > 0.0 else self.cfg["default_velocity_scaling"]  # F14
+        r.max_velocity_scaling_factor = r.max_acceleration_scaling_factor = scaling
+        r.start_state.is_diff = True  # plan from the current state
+        r.goal_constraints = [constraints]
+        mg.planning_options.plan_only = goal.plan_only
+        mg.planning_options.planning_scene_diff.is_diff = True
+        mg.planning_options.planning_scene_diff.robot_state.is_diff = True
+        return mg
+
+    def _pose_constraints(self, x, y, z, quat):
+        """Goal sphere (position_tolerance) + orientation (orientation_tolerance) for the tcp."""
+        base, tcp = self.cfg["base_frame"], self.cfg["tcp_link"]
+        centre = Pose()
+        centre.position.x, centre.position.y, centre.position.z = x, y, z
+        centre.orientation.w = 1.0
+        pc = PositionConstraint(link_name=tcp, weight=1.0)
+        pc.header.frame_id = base
+        pc.constraint_region = BoundingVolume(
+            primitives=[SolidPrimitive(type=SolidPrimitive.SPHERE, dimensions=[self.cfg["position_tolerance"]])],
+            primitive_poses=[centre])
+        tol = self.cfg["orientation_tolerance"]
+        oc = OrientationConstraint(link_name=tcp, weight=1.0, absolute_x_axis_tolerance=tol,
+                                   absolute_y_axis_tolerance=tol, absolute_z_axis_tolerance=tol)
+        oc.header.frame_id = base
+        n = math.sqrt(sum(v * v for v in quat))
+        # all 4 components set explicitly: Quaternion defaults to w = 1 (Q-1)
+        oc.orientation.x, oc.orientation.y, oc.orientation.z, oc.orientation.w = (v / n for v in quat)
+        return Constraints(position_constraints=[pc], orientation_constraints=[oc])
+
+    def _joint_constraints(self, targets):
+        tol = self.cfg["joint_tolerance"]
+        return Constraints(joint_constraints=[
+            JointConstraint(joint_name=j, position=v, tolerance_above=tol, tolerance_below=tol, weight=1.0)
+            for j, v in targets.items()])
+
+    async def _run_moveit(self, goal_handle, moveit_goal, feedback_type, retry):
+        """Send to /move_action (with OMPL retries); returns the MoveIt error code."""
+        last_phase = ["PLANNING"]  # already published by the caller
+
+        def publish(phase):
+            if phase != last_phase[0] and goal_handle.is_active:
+                last_phase[0] = phase
+                goal_handle.publish_feedback(feedback_type(phase=phase))
+
+        def on_feedback(msg):  # MoveIt: PLANNING at start (again on retries), IDLE at the end
+            if msg.feedback.state == "PLANNING":
+                publish("PLANNING")
+
+        self._on_executing = lambda: publish("EXECUTING")
+
+        tries = 1 + (self.cfg["replan_retries"] if retry else 0)
+        code = E.FAILURE
+        for attempt in range(1, tries + 1):
+            if self._is_stopped(goal_handle):
+                return E.PREEMPTED
+            send = self._move_group.send_goal_async(moveit_goal, feedback_callback=on_feedback)
+            handle = await send
+            if not handle.accepted:
+                return E.COMMUNICATION_FAILURE
+            self._moveit_goal = handle
+            if self._is_stopped(goal_handle):  # stopped while the goal was being sent
+                handle.cancel_goal_async()
+            response = await handle.get_result_async()
+            self._moveit_goal = None
+            self._on_executing = None
+            code = response.result.error_code.val
+            if code in RETRY_CODES and attempt < tries and not self._is_stopped(goal_handle):
+                self.get_logger().warn(f"attempt {attempt}/{tries}: {describe(code)} -> planning again")
+                continue
+            return code
+        return code
 
     # ---- actions -----------------------------------------------------------------------------
     async def _execute_move_to(self, goal_handle):
@@ -257,7 +440,26 @@ class MotionController(Node):
         error = validate_move_to(g, self.named_targets)
         if error:
             return self._finish(goal_handle, MoveTo.Result, *error)
-        return self._finish(goal_handle, MoveTo.Result, E.FAILURE, "move_to not implemented yet (step 16)")
+        if not await self._wait_moveit_idle():
+            return self._finish(goal_handle, MoveTo.Result, E.TIMED_OUT, "previous MoveIt goal did not stop")
+        code, message, _, _, _ = self.read_state()
+        if code != E.SUCCESS:
+            return self._finish(goal_handle, MoveTo.Result, code, message)
+        if not await self._wait_server():
+            return self._finish(goal_handle, MoveTo.Result, E.COMMUNICATION_FAILURE,
+                                f"{self.cfg['move_group_action']} not available (is move_group running?)")
+
+        if g.named_target:
+            constraints = self._joint_constraints(self.named_targets[g.named_target])
+        else:
+            quat = down_quat(g.yaw) if g.mode == MoveTo.Goal.MODE_DOWN_YAW else rpy_to_quat(g.roll, g.pitch, g.yaw)
+            constraints = self._pose_constraints(g.x, g.y, g.z, quat)
+        goal_handle.publish_feedback(MoveTo.Feedback(phase="PLANNING"))
+        code = await self._run_moveit(goal_handle, self._request(g, constraints, g.planner, g.velocity_scaling),
+                                      MoveTo.Feedback, retry=(g.planner == ""))
+        detail = ("plan found (plan_only, not executed)" if g.plan_only else "target reached") \
+            if code == E.SUCCESS else ""
+        return self._finish(goal_handle, MoveTo.Result, code, detail)
 
     async def _execute_move_delta(self, goal_handle):
         g = goal_handle.request

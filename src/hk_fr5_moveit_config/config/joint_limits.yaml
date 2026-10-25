@@ -1,12 +1,13 @@
 # Overrides/additions to the URDF limits. Pilz needs acceleration limits on every joint.
-# Velocities = URDF values. Acceleration 0.7 rad/s^2 = Fairino default (conservative, tune on robot).
+# Velocities = URDF values. Acceleration 2.0 rad/s^2 (decision T-11; was Fairino's 0.7, which made
+# every move mostly acceleration). Real FR5 limits still unknown: replace with datasheet/web-app values (T9).
 default_velocity_scaling_factor: 0.2      # F14
 default_acceleration_scaling_factor: 0.2
 
 joint_limits:
-  j1: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 0.7}
-  j2: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 0.7}
-  j3: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 0.7}
-  j4: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 0.7}
-  j5: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 0.7}
-  j6: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 0.7}
+  j1: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j2: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j3: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j4: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
+  j5: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
+  j6: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
