@@ -6,10 +6,13 @@ Args:
   update_rate:=125               controller_manager rate in Hz (decision M-3: 100 is the fallback).
   use_rviz:=true|false           false = headless (scripts, tests).
   use_obstacles:=true|false      add static collision boxes (hk_fr5_motion/config/obstacles.yaml).
+  use_motion_controller:=true|false  /motion/move_to, move_delta, get_state (hk_fr5_motion/config/motion.yaml).
 
 Uses the individual moveit_configs_utils launch helpers, not generate_demo_launch()
 (that one includes launch files and a warehouse DB we do not have).
 """
+import os
+
 from ament_index_python.packages import PackageNotFoundError, get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
@@ -48,6 +51,7 @@ def _setup(context):
     fake = _bool_arg(context, "use_fake_hardware")
     use_rviz = _bool_arg(context, "use_rviz")
     use_obstacles = _bool_arg(context, "use_obstacles")
+    use_motion_controller = _bool_arg(context, "use_motion_controller")
     update_rate = _int_arg(context, "update_rate")
 
     if not fake:
@@ -92,6 +96,10 @@ def _setup(context):
     if use_obstacles:
         # one-shot: waits for move_group, adds the boxes, exits
         actions.append(Node(package="hk_fr5_motion", executable="obstacle_loader", output="screen"))
+    if use_motion_controller:
+        motion_cfg = os.path.join(get_package_share_directory("hk_fr5_motion"), "config", "motion.yaml")
+        actions.append(Node(package="hk_fr5_motion", executable="motion_controller", namespace="motion",
+                            parameters=[motion_cfg], output="screen"))
     return actions
 
 
@@ -105,5 +113,7 @@ def generate_launch_description():
                               description="start RViz with the MotionPlanning display"),
         DeclareLaunchArgument("use_obstacles", default_value="true",
                               description="add static collision boxes from hk_fr5_motion/config/obstacles.yaml"),
+        DeclareLaunchArgument("use_motion_controller", default_value="true",
+                              description="start motion_controller (/motion/move_to, move_delta, get_state)"),
         OpaqueFunction(function=_setup),
     ])

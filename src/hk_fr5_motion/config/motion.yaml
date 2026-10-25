@@ -1,0 +1,15 @@
+# motion_controller parameters (ROS parameter file). Metres / radians / seconds.
+/**/motion_controller:
+  ros__parameters:
+    group: arm                        # MoveIt planning group (SRDF)
+    tcp_link: tcp                     # all targets are for this link (F2)
+    base_frame: base_link             # all poses in this frame (F1)
+    move_group_action: /move_action   # MoveIt MoveGroup action
+    default_velocity_scaling: 0.2     # used when a goal sends 0 (F14), also for acceleration
+    planning_time: 5.0                # s per planning attempt
+    planning_attempts: 1              # MoveIt num_planning_attempts
+    replan_retries: 2                 # extra planning tries on PLANNING_FAILED / INVALID_MOTION_PLAN (T11)
+    position_tolerance: 0.0005        # m, goal sphere radius   (provisional, decided in step 16)
+    orientation_tolerance: 0.005      # rad per axis            (provisional, decided in step 16)
+    server_timeout: 10.0              # s to wait for move_group
+    state_timeout: 1.0                # s, max age of the latest /joint_states
