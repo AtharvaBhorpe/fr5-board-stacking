@@ -759,6 +759,10 @@ Open items reviewed after step 18 (A = doable now without robot, B = needs user/
   Pitfall during the test: `update-rate:=50` (hyphen) is silently ignored by ros2 launch (log still said
   125 Hz) -> always check the `controller_manager update_rate: N Hz` log line. (Todo: reject unknown launch args.)
   Open: confirm motion is smooth at 50 Hz (robot interpolates each 8 ms cmdT point, then waits ~12 ms).
+- Real-robot session result (2026-10-25, user: "ok this works now"): at 50 Hz moves start at once and
+  cancel / smooth stop works on the real FR5. Next session: step 20 gripper (T1 questions first).
+  Still open: smoothness check at 50 Hz, reject unknown launch args, vendor-ref acceleration re-test (P-6/P-7),
+  T3 / T4 / T5 / T6 / T12 measurements.
 
 ---------------------------------------------------------------------------
 
