@@ -1,0 +1,4 @@
+[submodule "external/frcobot_ros2"]
+	path = external/frcobot_ros2
+	url = https://github.com/FAIR-INNOVATION/frcobot_ros2.git
+	ignore = dirty
