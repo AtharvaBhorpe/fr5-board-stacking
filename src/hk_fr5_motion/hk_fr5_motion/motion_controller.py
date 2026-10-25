@@ -2,14 +2,14 @@
 
     ros2 run hk_fr5_motion motion_controller --ros-args --params-file <hk_fr5_motion>/config/motion.yaml
 
-Status: validation (step 14), get_state (step 15), move_to (step 16).
-move_delta: valid goals still end with FAILURE "not implemented yet" (step 17).
-Decisions: decision-log 5f (C-*), 5g (S-*), 5h (T-*).
+Status: validation (step 14), get_state (step 15), move_to (step 16), move_delta (step 17).
+Decisions: decision-log 5f (C-*), 5g (S-*), 5h (T-*), 5i (U-*).
 - Single-threaded executor + async callbacks (await MoveIt without blocking the node).
 - One active goal for both actions: a new goal preempts the running one (PREEMPTED);
   cancel / preempt cancel the running MoveIt goal.
 - Invalid goals are accepted, then aborted with INVALID_GOAL_CONSTRAINTS and a clear message.
 - move_to: one /move_action call (plan + execute, or plan only); OMPL retried on -1/-2 (T-3).
+- move_delta: target from the current tcp pose (TF) + delta, always Pilz LIN, no retry (U-*).
 """
 import math
 import xml.etree.ElementTree as ET
@@ -75,6 +75,52 @@ def rpy_to_quat(roll, pitch, yaw):
 def down_quat(yaw):
     """(x, y, z, w) for MODE_DOWN_YAW: R = Rz(yaw) * Rx(pi) (F7)."""
     return math.cos(yaw / 2), math.sin(yaw / 2), 0.0, 0.0
+
+
+def quat_to_matrix(x, y, z, w):
+    n = math.sqrt(x * x + y * y + z * z + w * w)
+    x, y, z, w = x / n, y / n, z / n, w / n
+    return [[1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+            [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+            [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]]
+
+
+def matrix_to_quat(m):
+    """(x, y, z, w) of a rotation matrix (Shepperd's method, numerically stable)."""
+    tr = m[0][0] + m[1][1] + m[2][2]
+    if tr > 0:
+        s = 2 * math.sqrt(tr + 1)
+        return (m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s, s / 4
+    if m[0][0] > m[1][1] and m[0][0] > m[2][2]:
+        s = 2 * math.sqrt(1 + m[0][0] - m[1][1] - m[2][2])
+        return s / 4, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s, (m[2][1] - m[1][2]) / s
+    if m[1][1] > m[2][2]:
+        s = 2 * math.sqrt(1 + m[1][1] - m[0][0] - m[2][2])
+        return (m[0][1] + m[1][0]) / s, s / 4, (m[1][2] + m[2][1]) / s, (m[0][2] - m[2][0]) / s
+    s = 2 * math.sqrt(1 + m[2][2] - m[0][0] - m[1][1])
+    return (m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, s / 4, (m[1][0] - m[0][1]) / s
+
+
+def _matmul(a, b):
+    return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+
+
+def delta_target(position, quat, d, drpy, frame):
+    """Target (position, quat) of a relative move (frozen semantics, decision U-2).
+
+    D = translation d then rotation Rd = Rz(dyaw) Ry(dpitch) Rx(droll).
+    FRAME_TCP:  p' = p + R d, R' = R Rd (along / about the tcp's own axes).
+    FRAME_BASE: p' = p + d,   R' = Rd R (about base axes, pivoting at the tcp point).
+    """
+    r = quat_to_matrix(*quat)
+    rd = quat_to_matrix(*rpy_to_quat(*drpy))
+    if frame == MoveDelta.Goal.FRAME_TCP:
+        step = [sum(r[i][k] * d[k] for k in range(3)) for i in range(3)]
+        rot = _matmul(r, rd)
+    else:
+        step = list(d)
+        rot = _matmul(rd, r)
+    return [position[i] + step[i] for i in range(3)], matrix_to_quat(rot)
 
 # name -> type; values come only from config/motion.yaml (no defaults in code)
 PARAMS = {
@@ -350,6 +396,17 @@ class MotionController(Node):
             waited += 0.1
         return self._move_group.server_is_ready()
 
+    async def _prepare(self):
+        """Common checks before planning (U-5): (code, message) on failure, else None."""
+        if not await self._wait_moveit_idle():
+            return E.TIMED_OUT, "previous MoveIt goal did not stop"
+        code, message, _, _, _ = self.read_state()
+        if code != E.SUCCESS:
+            return code, message
+        if not await self._wait_server():
+            return E.COMMUNICATION_FAILURE, f"{self.cfg['move_group_action']} not available (is move_group running?)"
+        return None
+
     def _request(self, goal, constraints, planner, scaling):
         """MoveGroup goal (request + options) for the arm group."""
         mg = MoveGroup.Goal()
@@ -437,17 +494,9 @@ class MotionController(Node):
             f"move_to: named_target='{g.named_target}' xyz=({g.x:.4f}, {g.y:.4f}, {g.z:.4f}) "
             f"rpy=({g.roll:.3f}, {g.pitch:.3f}, {g.yaw:.3f}) mode={g.mode} planner='{g.planner}' "
             f"scaling={g.velocity_scaling} plan_only={g.plan_only}")
-        error = validate_move_to(g, self.named_targets)
+        error = validate_move_to(g, self.named_targets) or await self._prepare()
         if error:
             return self._finish(goal_handle, MoveTo.Result, *error)
-        if not await self._wait_moveit_idle():
-            return self._finish(goal_handle, MoveTo.Result, E.TIMED_OUT, "previous MoveIt goal did not stop")
-        code, message, _, _, _ = self.read_state()
-        if code != E.SUCCESS:
-            return self._finish(goal_handle, MoveTo.Result, code, message)
-        if not await self._wait_server():
-            return self._finish(goal_handle, MoveTo.Result, E.COMMUNICATION_FAILURE,
-                                f"{self.cfg['move_group_action']} not available (is move_group running?)")
 
         if g.named_target:
             constraints = self._joint_constraints(self.named_targets[g.named_target])
@@ -469,7 +518,24 @@ class MotionController(Node):
         error = validate_move_delta(g)
         if error:
             return self._finish(goal_handle, MoveDelta.Result, *error)
-        return self._finish(goal_handle, MoveDelta.Result, E.FAILURE, "move_delta not implemented yet (step 17)")
+        d, drpy = (g.dx, g.dy, g.dz), (g.droll, g.dpitch, g.dyaw)
+        if all(v == 0.0 for v in d + drpy):  # nothing to do (C-9, U-3)
+            return self._finish(goal_handle, MoveDelta.Result, E.SUCCESS, "zero delta, no motion")
+        error = await self._prepare()
+        if error:
+            return self._finish(goal_handle, MoveDelta.Result, *error)
+        _, _, _, pose, _ = self.read_state()  # current tcp pose (U-1)
+        p, q = pose.pose.position, pose.pose.orientation
+        target, quat = delta_target((p.x, p.y, p.z), (q.x, q.y, q.z, q.w), d, drpy, g.frame)
+        self.get_logger().info(f"move_delta target: xyz=({target[0]:.4f}, {target[1]:.4f}, {target[2]:.4f}) "
+                               f"rpy={tuple(round(v, 3) for v in quat_to_rpy(*quat))}")
+        goal_handle.publish_feedback(MoveDelta.Feedback(phase="PLANNING"))
+        constraints = self._pose_constraints(*target, quat)
+        code = await self._run_moveit(goal_handle, self._request(g, constraints, "LIN", g.velocity_scaling),
+                                      MoveDelta.Feedback, retry=False)  # always Pilz LIN, deterministic (U-4)
+        detail = ("plan found (plan_only, not executed)" if g.plan_only else "target reached") \
+            if code == E.SUCCESS else ""
+        return self._finish(goal_handle, MoveDelta.Result, code, detail)
 
     # ---- service -----------------------------------------------------------------------------
     def _get_state(self, _request, response):
