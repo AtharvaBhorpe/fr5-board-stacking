@@ -1,0 +1,41 @@
+# Static workcell geometry in the robot base frame (base_link), metres.
+# base_link: origin at the bottom centre of the robot base, +z up.
+#
+# IMPORTANT: base_link (Fairino URDF, used by MoveIt) is rotated 180 deg about z
+# relative to the controller's base frame shown on the teach pendant:
+#   x_base_link = -x_pendant,  y_base_link = -y_pendant,  z unchanged.
+# In base_link: -x runs along the profile away from the near table edge;
+# -y points toward the 89 cm (pick) side.
+#
+# Layout from the team sketch: table 200 x 100 cm; 16 cm profile runs the full
+# 100 cm depth, 89 cm from the left edge / 95 cm from the right edge;
+# robot base centre 8 cm from the near edge.
+
+table:
+  size: [1.00, 2.00, 0.03]     # depth (x), width (y), top-slab thickness
+  top_z: -0.045                # table surface relative to robot base   TODO measure
+  center_xy: [-0.42, 0.03]
+
+profile:
+  size_xy: [1.00, 0.16]
+  center_xy: [-0.42, 0.0]
+
+camera_post:                   # wooden post at the far end of the profile
+  size: [0.10, 0.07, 1.70]     # generous box around the post            TODO check
+  center_xy: [-0.87, 0.116]
+
+overhead_camera:               # approximate; replaced by extrinsic calibration
+  xy: [-0.87, 0.116]
+  height_above_table: 1.61     # measured above the table
+  rpy: [0.0, 1.5708, 3.1416]   # looking straight down
+
+pick_zone:                     # 89 cm side
+  center_xy: [-0.40, -0.40]    # TODO
+  yaw: 0.0
+
+place_zone:                    # 95 cm side
+  center_xy: [-0.40, 0.40]     # TODO
+  yaw: 0.0
+
+board:
+  size: [0.27, 0.20, 0.006]    # measured: 27 x 20 cm, 6 mm thick

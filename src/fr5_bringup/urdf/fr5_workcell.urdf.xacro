@@ -9,6 +9,10 @@
   <xacro:include filename="$(find fr5_bringup)/urdf/fr5.ros2_control.xacro"/>
   <xacro:include filename="$(find fr5_bringup)/urdf/d405_wrist_mount.xacro"/>
   <xacro:include filename="$(find fr5_bringup)/urdf/schmalz_gripper.xacro"/>
+  <xacro:include filename="$(find fr5_bringup)/urdf/workcell_scene.xacro"/>
+
+  <!-- Table, profile, camera post and zone frames from config/workcell.yaml -->
+  <xacro:workcell_scene config_file="$(find fr5_bringup)/config/workcell.yaml"/>
 
   <!-- Tool flange face: 100 mm along +z of wrist3_link (FR5 DH d6). -->
   <joint name="flange_joint" type="fixed">

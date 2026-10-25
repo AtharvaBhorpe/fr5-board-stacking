@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fr5_gripper</name>
+  <version>0.1.0</version>
+  <description>Schmalz vacuum gripper control via the Fairino controller's XML-RPC (SetToolDO).</description>
+  <maintainer email="athborpe@gmail.com">AtharvaBhorpe</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
