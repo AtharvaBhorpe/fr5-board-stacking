@@ -798,6 +798,7 @@ T1 answers (user, 2026-10-25):
 | W-14 | Goal concurrency (20c, Claude; user confirmed 2026-10-26) | any new goal preempts the running one (grip / release, both actions; same rule as motion_controller): the old goal ends PREEMPTED and switches nothing, the new goal takes over the outputs. Extends W-7 to grip-during-grip, grip-during-release, release-during-release |
 | W-15 | Cancel during release (20c, Claude; user confirmed 2026-10-26) | blow-off off at once, state IDLE, CANCELLED (vacuum pump is already off) |
 | W-16 | I/O failure inside a goal (20c, Claude; user confirmed 2026-10-26) | try both pumps off, result COMM_FAILURE / CONTROLLER_ERROR (message says which DOs are confirmed off). DI unreadable for the whole grip -> COMM_FAILURE at the timeout (not NO_VACUUM). Grip start resets the debounced DI to False: success needs `debounce_reads` fresh reads after pump on |
+| W-17 | motion_shell without gripper (user, 2026-10-26: "use_gripper false -> shell must not crash or work improperly") | `grip` / `release` / `gstate` check the gripper node first (grip server, 1 s) and say "gripper node not running: use_gripper:=false?"; a missing node drops the cached state (no stale data); `status` shows the gripper line; result wait checks the server every 0.5 s -> "action server disappeared" instead of hanging if a node stops mid-goal (also for motion goals) |
 - Fake mode: in-memory I/O, DI0 = 1 `fake_vacuum_delay` 0.5 s after DO0 on; runtime param `fake_vacuum`
   true/false to test the failure path. Single-threaded executor + async callbacks (like motion_controller),
   XML-RPC socket timeout 0.5 s. Config `hk_fr5_gripper/config/gripper.yaml` (IP, port, I/O numbers, times).
@@ -874,3 +875,4 @@ The rationale below is only what was recorded at the time.
 | `58e64da` | hk_fr5_interfaces: Grip, Release, GripperState, GripperErrorCode + decisions 5l |
 | `7cf694c` | hk_fr5_gripper: gripper_controller (state topic, tool I/O, start/shutdown, W-13 recovery) |
 | `569644e` | hk_fr5_gripper: grip / release actions (W-14..W-16) |
+| `50d563d` | bringup use_gripper, build task, gripper SIGINT/SIGTERM handlers (Q20-4), test.md C1 |

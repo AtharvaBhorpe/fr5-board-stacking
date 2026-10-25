@@ -3,7 +3,8 @@
     pixi run shell        (next to `pixi run sim` or `pixi run robot`)
 
 Input in mm / deg (sent as m / rad). Uses only the public API: /motion/move_to, /motion/move_delta,
-/motion/get_state. Ctrl+C while a goal runs = cancel (smooth stop). Type `help` for commands.
+/motion/get_state, and /gripper/grip, /gripper/release, /gripper/state (step 20e).
+Ctrl+C while a goal runs = cancel (smooth stop / gripper cancel). Type `help` for commands.
 """
 import math
 import readline  # noqa: F401  (line editing + history for input())
@@ -12,11 +13,13 @@ import threading
 import time
 
 import rclpy
-from hk_fr5_interfaces.action import MoveDelta, MoveTo
+from hk_fr5_interfaces.action import Grip, MoveDelta, MoveTo, Release
+from hk_fr5_interfaces.msg import GripperState
 from hk_fr5_interfaces.srv import GetState
 from moveit_msgs.msg import MoveItErrorCodes
 from rclpy.action import ActionClient
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.signals import SignalHandlerOptions
 
 from hk_fr5_motion.motion_controller import quat_to_rpy
@@ -34,23 +37,32 @@ units: mm and deg (sent as m / rad). '.' = keep the current value of that field.
   d DX DY DZ [DROLL DPITCH DYAW] [tcp|base]   move_delta (frame default: `frame` setting)
   jog +z [MM] | jog -yaw [DEG]    move_delta along / about one axis (step / rstep, frame setting)
   v 0.1 | planner ompl|ptp|lin | plan on|off | frame tcp|base | step MM | rstep DEG | set
+  grip [TIMEOUT_S] | release [BLOW_S] | gstate   gripper (s; omitted / 0 = gripper.yaml default)
   history | help | quit
-  Ctrl+C while moving = cancel (smooth stop)
+  Ctrl+C while moving = cancel (smooth stop); during grip / release = cancel (pump / blow-off off)
 TCP frame: +z = out of the cup (DOWN when the tool points down). base frame: +z = up."""
 
 
 class Shell:
-    def __init__(self, ns="/motion"):
+    def __init__(self, ns="/motion", gripper_ns="/gripper"):
         self.node = rclpy.create_node("motion_shell")
         self.move_to = ActionClient(self.node, MoveTo, f"{ns}/move_to")
         self.move_delta = ActionClient(self.node, MoveDelta, f"{ns}/move_delta")
         self.get_state = self.node.create_client(GetState, f"{ns}/get_state")
+        self.grip = ActionClient(self.node, Grip, f"{gripper_ns}/grip")
+        self.release = ActionClient(self.node, Release, f"{gripper_ns}/release")
+        self.gripper_state, self.gripper_stamp = None, 0.0  # latest /gripper/state + arrival time
+        self.node.create_subscription(GripperState, f"{gripper_ns}/state", self._on_gripper_state,
+                                      QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self.executor = SingleThreadedExecutor()
         self.executor.add_node(self.node)
         threading.Thread(target=self._spin, daemon=True).start()
         self.scale, self.planner, self.plan_only = 0.10, "ompl", False
         self.frame, self.step, self.rstep = "tcp", 10.0, 5.0
         self.history = []
+
+    def _on_gripper_state(self, msg):
+        self.gripper_state, self.gripper_stamp = msg, time.time()
 
     def _spin(self):
         try:
@@ -101,6 +113,7 @@ class Shell:
         print(f"  move_to {ok(self.move_to.wait_for_server(timeout_sec=1.0))}   "
               f"move_delta {ok(self.move_delta.wait_for_server(timeout_sec=1.0))}   "
               f"get_state {ok(self.get_state.wait_for_service(timeout_sec=1.0))}")
+        print(f"  gripper {'● (grip, release, state)' if self.gripper_up() else '○ not running (use_gripper:=false?)'}")
         s = self.state()
         print(f"  state: {'OK' if s is not None and s.success else 'INVALID'}  "
               f"{'' if s is None else s.message}")
@@ -111,36 +124,56 @@ class Shell:
               f" | frame {self.frame} | step {self.step:g} mm | rstep {self.rstep:g} deg")
 
     # ---- goals -------------------------------------------------------------------------------
-    def run(self, client, goal, label):
+    def run(self, client, goal, label, describe=None, missing="is the bringup running?"):
+        """Send a goal, print phase feedback, Ctrl+C = cancel; describe(result) -> extra text (default: tcp pose)."""
         if not client.wait_for_server(timeout_sec=2.0):
-            print("✘ action server not available (is the bringup running?)")
+            print(f"✘ action server not available ({missing})")
             return
         print(f"→ {label}")
         t0 = time.time()
-        feedback = lambda m: print(f"   … {m.feedback.phase} ({time.time() - t0:.2f} s)")
+        # only feedback with a `phase` is printed (grip feedback = elapsed time every poll, too chatty)
+        feedback = lambda m: hasattr(m.feedback, "phase") and print(f"   … {m.feedback.phase} ({time.time() - t0:.2f} s)")
         handle = self._wait(client.send_goal_async(goal, feedback_callback=feedback), 5.0)
         if handle is None or not handle.accepted:
             print("✘ goal not accepted")
             return
         result = handle.get_result_async()
         try:
-            while not result.done():
-                time.sleep(0.01)
+            gone = self._wait_result(client, result)
         except KeyboardInterrupt:
-            print("   ■ cancel requested (smooth stop) ...")
+            print("   ■ cancel requested ...")
             handle.cancel_goal_async()
-            while not result.done():
-                time.sleep(0.01)
+            gone = self._wait_result(client, result)
+        if gone:
+            print("✘ action server disappeared while the goal was running (node stopped or crashed?)")
+            self.history.append(f"{time.strftime('%H:%M:%S')} {label} -> ✘ server disappeared")
+            return
         r = result.result().result
+        extra = (describe or self._describe_pose)(r)
+        line = (f"{'✔' if r.success else '✘'} {r.message} (code {r.error_code.val}) | "
+                f"{extra + ' | ' if extra else ''}{time.time() - t0:.2f} s")
+        print(line)
+        self.history.append(f"{time.strftime('%H:%M:%S')} {label} -> {line}")
+
+    @staticmethod
+    def _wait_result(client, result):
+        """Wait for a goal result; True if the action server disappeared meanwhile (node stopped / crashed)."""
+        next_check = time.time() + 0.5
+        while not result.done():
+            time.sleep(0.01)
+            if time.time() >= next_check:
+                if not client.server_is_ready():
+                    return True
+                next_check = time.time() + 0.5
+        return False
+
+    @staticmethod
+    def _describe_pose(r):
         p = r.final_tcp_pose.pose.position
         o = r.final_tcp_pose.pose.orientation
         rpy = [math.degrees(a) for a in quat_to_rpy(o.x, o.y, o.z, o.w)] if (o.x or o.y or o.z or o.w) else [0, 0, 0]
-        code = r.error_code.val
-        line = (f"{'✔' if r.success else '✘'} {r.message} (code {code}) | "
-                f"final ({p.x * 1000:.1f}, {p.y * 1000:.1f}, {p.z * 1000:.1f}) mm, "
-                f"rpy ({rpy[0]:.1f}, {rpy[1]:.1f}, {rpy[2]:.1f}) deg | {time.time() - t0:.2f} s")
-        print(line)
-        self.history.append(f"{time.strftime('%H:%M:%S')} {label} -> {line}")
+        return (f"final ({p.x * 1000:.1f}, {p.y * 1000:.1f}, {p.z * 1000:.1f}) mm, "
+                f"rpy ({rpy[0]:.1f}, {rpy[1]:.1f}, {rpy[2]:.1f}) deg")
 
     def _values(self, args, n_expected, current_index_offset=0):
         """Parse numbers; '.' -> current value (mm / deg)."""
@@ -209,6 +242,58 @@ class Shell:
         v[axis] = amount if args[0][0] == "+" else -amount
         self.cmd_delta([str(x) for x in v])
 
+    # ---- gripper -----------------------------------------------------------------------------
+    GRIPPER_MISSING = "gripper node not running: bringup started with use_gripper:=false?"
+
+    def gripper_up(self):
+        """True if the gripper node is there (its grip action server). Not there -> drop the cached
+        state, so a stopped gripper node never shows old data."""
+        if self.grip.wait_for_server(timeout_sec=1.0):
+            return True
+        self.gripper_state = None
+        return False
+
+    @staticmethod
+    def _seconds(args, usage):
+        if len(args) > 1:
+            raise ValueError(usage)
+        value = float(args[0]) if args else 0.0
+        if value < 0.0:
+            raise ValueError(f"{usage}  (seconds >= 0, 0 = default)")
+        return value
+
+    def cmd_grip(self, args):
+        timeout = self._seconds(args, "grip [TIMEOUT_S]")
+        if not self.gripper_up():
+            print(f"✘ {self.GRIPPER_MISSING}")
+            return
+        ttv = lambda r: f"time_to_vacuum {r.time_to_vacuum:.2f} s" if r.time_to_vacuum >= 0 else ""
+        self.run(self.grip, Grip.Goal(timeout=timeout),
+                 f"grip, timeout {f'{timeout:g} s' if timeout else 'default'}", describe=ttv,
+                 missing=self.GRIPPER_MISSING)
+
+    def cmd_release(self, args):
+        blow = self._seconds(args, "release [BLOW_S]")
+        if not self.gripper_up():
+            print(f"✘ {self.GRIPPER_MISSING}")
+            return
+        self.run(self.release, Release.Goal(blow_off_time=blow),
+                 f"release, blow-off {f'{blow:g} s' if blow else 'default'}", describe=lambda r: "",
+                 missing=self.GRIPPER_MISSING)
+
+    def print_gripper(self):
+        if not self.gripper_up():
+            print(f"✘ {self.GRIPPER_MISSING}")
+            return
+        g = self.gripper_state
+        if g is None:
+            print("✘ gripper node is up but no /gripper/state received yet, try again")
+            return
+        onoff = lambda b: "on " if b else "off"
+        print(f"  gripper {g.state}  ({time.time() - self.gripper_stamp:.1f} s ago)  {g.message}")
+        print(f"  vacuum pump {onoff(g.vacuum_on)} | blow-off {onoff(g.blow_off_on)} | "
+              f"vacuum {'achieved' if g.vacuum_achieved else 'not achieved'}")
+
     def _opts(self):
         return f"planner {self.planner}, v {self.scale:.2f}{', plan_only' if self.plan_only else ''}"
 
@@ -259,6 +344,12 @@ class Shell:
             self.print_settings()
         elif c == "set":
             self.print_settings()
+        elif c == "grip":
+            self.cmd_grip(a)
+        elif c == "release":
+            self.cmd_release(a)
+        elif c == "gstate":
+            self.print_gripper()
         elif c == "history":
             print("\n".join(self.history) or "  (empty)")
         else:
@@ -271,7 +362,7 @@ def main():
     rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
     signal.signal(signal.SIGINT, signal.default_int_handler)  # Ctrl+C -> KeyboardInterrupt even if inherited as ignored
     shell = Shell()
-    print("FR5 motion shell. Type `help`. Ctrl+C while moving = cancel (smooth stop).")
+    print("FR5 motion shell. Type `help`. Ctrl+C while a goal runs = cancel.")
     shell.status()
     try:
         while True:

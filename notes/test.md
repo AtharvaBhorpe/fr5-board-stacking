@@ -28,6 +28,9 @@ to . . 300                 # keep x, y (and yaw), z = 300 mm
 jog +z 10  | frame base    # jog along one axis (frame setting)
 planner lin|ptp|ompl       # planner for `to`
 Ctrl+C while moving        # cancel = smooth stop
+grip [TIMEOUT_S]            # gripper: vacuum on, wait for vacuum (default 3 s)  | Ctrl+C = cancel (pump off)
+release [BLOW_S]            # vacuum off + blow-off (default 1 s)
+gstate                      # gripper state (DO0 / DO1 / DI0); says so if the gripper node is not running
 history | help | quit
 ```
 

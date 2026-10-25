@@ -618,6 +618,15 @@ SUCCESS 0.60 s, state HOLDING, release SUCCESS, get_state OK, param use_fake_har
 no node; use_gripper:=bad -> clear launch error. Real-mode launch NOT run (no robot; the override is the same
 pattern as update_rate and the node's real path is tested against the mock).
 
+Step 20e results (motion_shell gripper commands, 2026-10-26, headless sim, shell driven via stdin):
+- `grip [TIMEOUT_S]`, `release [BLOW_S]`, `gstate`, gripper line in `status`; `run()` generic (describe callback,
+  only `phase` feedback printed). Sim: grip 0.61 s, grip while holding 0.02 s, release 1.00 s / 0.3 s, `grip -1` /
+  `grip 1 2` / `grip abc` -> usage errors, NO_VACUUM 1.01 s, Ctrl+C during grip -> CANCELLED (pump off); motion
+  `d` commands unchanged.
+- W-17 (use_gripper:=false): status "gripper not running", grip / release / gstate -> clear message after ~1 s, motion
+  works; gripper started later -> works; stopped -> gstate says not running (no stale state); stopped mid-goal
+  (SIGINT and SIGKILL) -> "action server disappeared" (no hang). `server_is_ready()` noticed the SIGKILLed node too.
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders
