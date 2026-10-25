@@ -1,0 +1,9 @@
+# Release: vacuum pump (DO0) off, blow-off pump (DO1) on for `blow_off_time`, then DO1 off.
+# Always runs the full sequence (also with nothing held). Preempts a running grip (PREEMPTED). Seconds.
+float64 blow_off_time           # s; 0 -> config blow_off_time
+---
+bool success
+GripperErrorCode error_code     # machine-readable reason (SUCCESS = 1)
+string message                  # human-readable reason
+---
+string phase                    # BLOW_OFF

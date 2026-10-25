@@ -766,6 +766,42 @@ Open items reviewed after step 18 (A = doable now without robot, B = needs user/
 
 ---------------------------------------------------------------------------
 
+## 5l. Gripper controller, step 20 (W)  (decided 2026-10-25, user)
+
+T1 answers (user, 2026-10-25):
+- Schmalz gripper, 24 V DC, own vacuum pump and own blow-off pump (no compressed air).
+- Tool **DO0** = vacuum pump (1 on, 0 off); tool **DO1** = blow-off pump (1 on, 0 off);
+  tool **DI0** = vacuum achieved (1 = vacuum reached = part gripped, 0 = no vacuum).
+- Sequencing (when to grip / release) belongs to the control loop, not to this sub-project.
+- Grip: DO1 off, DO0 on, start timer (3 or 5 s, configurable); DI0 = 1 within the timeout -> keep DO0 on,
+  report success; else DO0 off, report failure. Release: DO0 off, DO1 on for 1 s, DO1 off.
+- I/O access: XML-RPC `http://<robot_ip>:20003/RPC2` (Python stdlib xmlrpc.client), `SetToolDO(id, status,
+  smooth, block)`, **`GetToolDI(id, block)`** (tool inputs; `GetDI` = control-box inputs, user + SDK header
+  `robot.h` agree), `GetToolDO`. All three exist as XML-RPC method names in libfairino.so.2.3.0; the
+  XML-RPC return format of GetToolDI / GetToolDO is **unverified** (check read-only at the lab, 20f).
+
+| # | Topic | Decision |
+|---|---|---|
+| W-1 | Command interface | actions `/gripper/grip` (Grip.action), `/gripper/release` (Release.action) + topic `/gripper/state` (GripperState.msg, latched, 10 Hz + on change); options were B services, C topics (no cancel, no result link) |
+| W-2 | Grip timeout | yaml `grip_timeout` 3.0 s + per-goal override (0 = default); same for `blow_off_time` 1.0 s |
+| W-3 | Cancel during GRIPPING | DO0 off, result CANCELLED |
+| W-4 | DI0 drops while HOLDING | report only (state PART_LOST + message), pump stays on, control loop decides |
+| W-5 | Grip while HOLDING with DI0 = 1 | immediate SUCCESS, no I/O switching |
+| W-6 | Release with nothing held | always the full sequence (harmless) |
+| W-7 | Release during GRIPPING | aborts the grip (PREEMPTED), then releases |
+| W-8 | DI0 debounce | 2 equal reads in a row (poll 50 ms -> 100 ms) |
+| W-9 | Node start | read + publish the I/O state, switch nothing (safety rule 3) |
+| W-10 | Node shutdown | **DO0 and DO1 both off** (user; proposal was DO1 off only) |
+| W-11 | F12 attach board box to tcp | later, in the control loop (knows the board size) |
+| W-12 | Distinct error states (user: no shared ERROR tag) | state: IDLE, GRIPPING, HOLDING, RELEASING, PART_LOST, COMM_ERROR (XML-RPC unreachable / timeout), CONTROLLER_ERROR (controller error code); result error_code: SUCCESS, NO_VACUUM (timeout, pump off), CANCELLED, PREEMPTED, COMM_FAILURE, CONTROLLER_ERROR, INVALID_GOAL. A new grip / release clears the error states (no reset command). No PART_LOST result code (user: the grip timeout covers vacuum lost before success) |
+- Fake mode: in-memory I/O, DI0 = 1 `fake_vacuum_delay` 0.5 s after DO0 on; runtime param `fake_vacuum`
+  true/false to test the failure path. Single-threaded executor + async callbacks (like motion_controller),
+  XML-RPC socket timeout 0.5 s. Config `hk_fr5_gripper/config/gripper.yaml` (IP, port, I/O numbers, times).
+- Sub-steps: 20a interfaces, 20b package + fake I/O + state topic, 20c grip/release actions + tests,
+  20d launch `use_gripper` + build task, 20e optional motion_shell commands, 20f lab checks (confirmation).
+
+---------------------------------------------------------------------------
+
 ## 6. Control design / algorithms (C)
 
 Frozen 2026-10-25, before this log (full text and interfaces in CLAUDE.md §5).
@@ -781,7 +817,7 @@ The rationale below is only what was recorded at the time.
 | F6 | Planners | `move_to`: OMPL RRTConnect default (obstacle avoidance), optional Pilz PTP/LIN; `move_delta`: always Pilz LIN | straight TCP line for deltas |
 | F7 | Orientation | default TCP down + yaw, R = Rz(yaw) Rx(pi); FULL = rpy | boards picked from above |
 | F8 | Deltas | dx..dyaw, TCP frame (default) or base frame | |
-| F9 | Gripper | separate `gripper_controller` node in `hk_fr5_gripper` | details postponed (T1) |
+| F9 | Gripper | separate `gripper_controller` node in `hk_fr5_gripper` | details: 5l (W-*) |
 | F10 | Joint state | `/joint_states` + `/motion/get_state` | |
 | F11 | Obstacles | yaml + loader node, collision boxes in planning scene | not in URDF |
 | F12 | Attached board | attach box to `tcp` after vacuum confirmed | |
@@ -797,7 +833,7 @@ The rationale below is only what was recorded at the time.
 
 | # | Item | Status |
 |---|---|---|
-| T1 | Before step 20 ask: Schmalz model, tool DO suction, DO blow-off, DI vacuum-achieved, lift/blow-off control | open |
+| T1 | ~~Before step 20 ask: Schmalz model, tool DO suction, DO blow-off, DI vacuum-achieved, lift/blow-off control~~ | DONE: 5l (DO0 vacuum, DO1 blow-off, DI0 vacuum achieved) |
 | T2 | ~~Pilz available in RoboStack Humble~~ | DONE (E4) |
 | T3 | D405 mount yaw on the real robot | open |
 | T4 | Measure workcell (table, profile, camera post) via `/motion/get_state` | open |
