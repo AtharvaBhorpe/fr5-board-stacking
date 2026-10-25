@@ -443,7 +443,7 @@ TF tree added below the vendor chain:
      Fix: range rounded **inward** (`ceil(lo*1000)`, `floor(hi*1000)`): never past a limit.
 - Test (offscreen, URDF fed directly; no DDS discovery needed): 6 joints with
   correct limits, all 0.000 at start, 9 msgs/s on `/joint_states`, j2 max -> 1.483.
-- Leftover: pixi dep `ros-humble-joint-state-publisher-gui` now unused (removal = separate step, ask user).
+- ~~Leftover: pixi dep `ros-humble-joint-state-publisher-gui` now unused~~ removed in `8aefffb` (E9).
 
 ### D-j: KDL root-inertia warning (2026-10-25, ACCEPTED, revisit if needed)
 - robot_state_publisher: `The root link base_link has an inertia specified in
@@ -737,6 +737,8 @@ Open items reviewed after step 18 (A = doable now without robot, B = needs user/
   J3 +-160 deg limit applied (pure restriction). Vendor-ref acc to be re-tested next session.
   Done: A1 driver build + LD_LIBRARY_PATH (libfairino.so.2 resolves; submodule link change accepted), A2
   `pixi run robot`, A6. Postponed (no time): A3 dry run, A5 written plan, gripper (step 20), Qt app (step 21).
+  Later status (2026-10-26): A3 superseded by the first real session (P-9), A5 covered by notes/test.md,
+  gripper DONE (step 20a-e), Qt app replaced by motion_shell (P-8).
 - P-8 (2026-10-25, user): instead of the Qt test app, a **command shell** (`motion_shell`, `pixi run shell`):
   faster to build and debug; all features of the proposed app mapped to commands (state, status, to / named /
   home, d, jog with step/frame, v / planner / plan settings, live phases, result + code + message + final pose,
@@ -758,10 +760,10 @@ Open items reviewed after step 18 (A = doable now without robot, B = needs user/
   Applied: ros2_controllers.yaml update_rate 50, state_publish_rate 50; bringup default `update_rate:=50`.
   Pitfall during the test: `update-rate:=50` (hyphen) is silently ignored by ros2 launch (log still said
   125 Hz) -> always check the `controller_manager update_rate: N Hz` log line. (Todo: reject unknown launch args.)
-  Open: confirm motion is smooth at 50 Hz (robot interpolates each 8 ms cmdT point, then waits ~12 ms).
+  ~~Open: confirm motion is smooth at 50 Hz~~ CLOSED 2026-10-26 (user: very smooth, 5m).
 - Real-robot session result (2026-10-25, user: "ok this works now"): at 50 Hz moves start at once and
   cancel / smooth stop works on the real FR5. Next session: step 20 gripper (T1 questions first).
-  Still open: smoothness check at 50 Hz, reject unknown launch args, vendor-ref acceleration re-test (P-6/P-7),
+  Still open: ~~smoothness check at 50 Hz~~ (closed, 5m), reject unknown launch args (X-7), vendor-ref acceleration re-test (P-6/P-7),
   T3 / T4 / T5 / T6 / T12 measurements.
 
 ---------------------------------------------------------------------------
@@ -807,6 +809,32 @@ T1 answers (user, 2026-10-25):
 
 ---------------------------------------------------------------------------
 
+## 5m. Branch review (X)  (2026-10-26, user answers to the review of all open / closed items)
+
+| # | Topic | Decision (user) |
+|---|---|---|
+| X-1 | Lost test scripts (steps 15-18 scratchpads gone) | OK **as long as every test is documented** (implementation-ref 10i-10l, 10n). D1: commit the surviving gripper test scripts + mock XML-RPC server with run commands. Rebuilding motion tests: not planned (to confirm) |
+| X-2 | Attached board (F12, W-11 amended) | **Only our nodes talk to MoveIt.** The control loop needs our API to attach a picked board (variable w, l, h) to `tcp`, and detach it. Design pending |
+| X-3 | Dynamic obstacles (D3) | assume the control loop needs to add / remove **dynamic stack obstacles** (placed boards, stack). Same API family as X-2. Design pending |
+| X-4 | Driver hides a lost connection (Q3-1) | OK for a demo; plus the cheap check: motion_controller warns when the read-back stays frozen while motion is commanded |
+| X-5 | CONTROLLER_ERROR not auto-cleared (W-12 vs W-13) | keep |
+| X-6 | Gripper start with robot unreachable shows pumps off (unknown) | accept |
+| X-7 | Unknown launch args silently ignored (P-9 pitfall) | reject them with a clear error listing the valid names |
+| X-8 | Team README (API for teammates) | final goal of this session, after the other items |
+| X-9 | T13 blended motion, T8 IK benchmark | parked (optional) |
+| X-10 | Gripper XML-RPC polling (20 Hz) next to the motion driver | other teams run both at once; test tomorrow at the lab (lag_probe while the gripper polls, T17) |
+- **P-9 smoothness CLOSED** (user, 2026-10-26: "the motion was very smooth with 50 Hz").
+- T12: the teammate repo only verified the **position** mapping (x = -x_pendant, y = -y_pendant, mm; `tf2_echo base_link
+  flange` vs web UI, tool 0); no orientation / RPY data. Our tcp has the flange orientation (pure z offsets). If the
+  pendant uses the same fixed-axis X-Y-Z convention: R_base = Rz(pi) R_pendant -> **roll = rx, pitch = ry, yaw = rz +- 180 deg**
+  expected. Verify at the lab (tool 0 on the pendant: position differs by the 112.9 mm tool length along tool z).
+- T5 vs T6: T5 = arm motion check (a commanded delta gives the same real travel, e.g. dz 0.10 -> 100 mm, measured with a
+  ruler / pendant; tests units, kinematics, driver). T6 = tool geometry check (real flange -> cup tip length vs our
+  112.9 mm in the URDF; an error shifts every tcp target and makes rotations about the tcp wobble). T5 passes even
+  with a wrong tool length for pure translations.
+
+---------------------------------------------------------------------------
+
 ## 6. Control design / algorithms (C)
 
 Frozen 2026-10-25, before this log (full text and interfaces in CLAUDE.md §5).
@@ -848,14 +876,24 @@ The rationale below is only what was recorded at the time.
 | T9 | Get real FR5 joint acceleration (and velocity) limits from the Fairino web app / datasheet before step 19; then raise `joint_limits.yaml` max_acceleration (0.7 vendor default) and re-test Pilz LIN at high scaling (L-7 B). | open |
 | T10 | Home pose yaw (+pi/2 at j6 = 0): revisit with T3 when camera use is designed; change = j6 of SRDF `ready` (+ initial_positions.yaml). | open |
 | T11 | ~~Step 16: OMPL re-plan on INVALID_MOTION_PLAN / PLANNING_FAILED~~ | DONE in step 16 (T-3, `replan_retries` 2). Padding / longest_valid_segment_fraction not needed so far. |
-| T12 | Step 19: check GetState RPY on the real robot: same pose on pendant vs `/motion/get_state` (pendant base is rotated 180 deg about z, G6; Fairino may use another RPY convention). Change the extraction / interface comment if it does not match expectations. | open |
+| T12 | (expected result: 5m) Step 19: check GetState RPY on the real robot: same pose on pendant vs `/motion/get_state` (pendant base is rotated 180 deg about z, G6; Fairino may use another RPY convention). Change the extraction / interface comment if it does not match expectations. | open |
 | T13 | Optional after step 18: blended / continuous motion (Pilz MoveGroupSequence: approach -> descend -> retreat without stops), e.g. a `move_sequence` action, if stop-and-go still matters. | open, optional |
 | T14 | ~~collision-check stop end state / stop harder at high speed~~ | DONE: V-7 (speed-dependent deceleration); revisit points listed in V-7 |
+| T15 | 20f-1 lab: XML-RPC reply format of GetToolDI / GetToolDO (read-only first) + meaning of `block` | open (lab) |
+| T16 | 20f-2 lab: real grip / release with a board (confirmation); time_to_vacuum, debounce, vacuum decay after release | open (lab) |
+| T17 | 20f-3 lab: `notes/lag_probe.py` while the gripper polls; motion lag must stay ~0.1 s (X-10) | open (lab) |
+| T18 | 20f-4 lab: first `pixi run robot` with the gripper node (real launch never run) | open (lab) |
+| T19 | Vendor-ref acceleration 6.283 rad/s^2 re-test (P-6/P-7); then revisit V-7 stop values, L-7 Pilz limits, M-11 execution tolerances | open (lab) |
+| T20 | Scene objects API for the control loop: attach / detach picked board (w, l, h) + add / remove stack obstacles (X-2, X-3) | open, next |
+| T21 | Frozen read-back warning in motion_controller (X-4) | open |
+| T22 | Reject unknown bringup launch args (X-7) | open |
+| T23 | Commit gripper test scripts + mock XML-RPC server (X-1 / D1) | open |
+| T24 | Team README: run, ROS names, interfaces, result codes (X-8) | open, last of this session |
 | T8 | OPTIONAL IK benchmark KDL vs pick_ik (`/compute_ik`, same random tcp poses: success rate, time, joint distance to seed; throwaway `pixi add`). **Only if KDL fails noticeably** (IK failures in move_to/move_delta/RViz drag). Not in the step plan. | open, optional |
 
 ---------------------------------------------------------------------------
 
-## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `76ef200` on 2026-10-25)
+## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `14ad348` on 2026-10-26)
 
 | Commit | Content |
 |---|---|
@@ -876,3 +914,4 @@ The rationale below is only what was recorded at the time.
 | `7cf694c` | hk_fr5_gripper: gripper_controller (state topic, tool I/O, start/shutdown, W-13 recovery) |
 | `569644e` | hk_fr5_gripper: grip / release actions (W-14..W-16) |
 | `50d563d` | bringup use_gripper, build task, gripper SIGINT/SIGTERM handlers (Q20-4), test.md C1 |
+| `14ad348` | motion_shell: grip / release / gstate, works without the gripper node (W-17) |

@@ -16,8 +16,8 @@ Sections
 7. IK solver options
 8. Kinematics facts (FK check, poses)
 9. Teammate setup (reference only)
-10. Step 10 proposal (pending user)
-11. Later-step reminders (11-20)
+10. Step 10 proposal (DONE, decided in decision-log 5b) + per-step findings / results 10a-10n
+11. Later-step reminders
 
 ---------------------------------------------------------------------------
 
@@ -164,7 +164,7 @@ scratch build/install/log dirs (`colcon --log-base X build --build-base Y --inst
 - `generate_spawn_controllers_launch` spawns `moveit_simple_controller_manager.controller_names` + `joint_state_broadcaster`.
 - move_group gets `publish_robot_description_semantic: True`, monitored planning scene publishing on.
 - RViz MotionPlanning: without SRDF `end_effector`, the interactive marker is
-  placed at the chain tip (tcp) when the group has an IK solver. (To confirm in step 11.)
+  placed at the chain tip (tcp) when the group has an IK solver. (Step 11: user RViz check passed.)
 
 ---------------------------------------------------------------------------
 
@@ -243,14 +243,14 @@ KDL fails noticeably; not part of the step plan.
 - Launch: rsp + move_group + rviz helpers, own `ros2_control_node` (description as **parameter**),
   spawners, gripper node; LogInfo banner "REAL ROBOT MODE ... e-stop".
 - `use_fake_hardware` arg validated as "true"/"false" strings.
-- `hardware.yaml`: robot_ip 192.168.58.2, gripper `tool_do: 0` (unverified, see T1).
+- `hardware.yaml`: robot_ip 192.168.58.2, gripper `tool_do: 0` (T1 done: DO0 = vacuum pump, user 2026-10-26).
 - `workcell.yaml`: table 1.00 x 2.00 x 0.03 m, top_z -0.045 (TODO), centre (-0.42, 0.03);
   profile 1.00 x 0.16 at (-0.42, 0); camera post 0.10 x 0.07 x 1.70 at (-0.87, 0.116);
   board 0.27 x 0.20 x 0.006 m. Base for our obstacles.yaml (F11, step 13).
 
 ---------------------------------------------------------------------------
 
-## 10. Step 10 proposal: `hk_fr5_moveit_config` (PENDING user)
+## 10. Step 10 proposal: `hk_fr5_moveit_config` (DONE: decided in decision-log 5b, kept for history)
 
 Proposed files:
 
@@ -275,7 +275,7 @@ d405_mount_link-d405_link (Adjacent), wrist3_link-gripper_link (Never),
 wrist3_link-d405_link (Never), d405_link-gripper_link (Never).
 wrist1/wrist2 vs tool links stay **enabled** (j5/j6 move them relative to each other).
 
-Open choices: see the chat proposal of 2026-10-25 (to be moved to decision-log once decided).
+Open choices: decided, see decision-log 5b (M-*).
 
 ---------------------------------------------------------------------------
 
