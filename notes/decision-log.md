@@ -464,7 +464,7 @@ Package `hk_fr5_moveit_config`. Findings behind these choices: `implementation-r
 |---|---|---|---|---|
 | M-1 | SRDF disable_collisions | A: hand-written (vendor 11 arm pairs + 6 rigid/touching tool pairs; wrist1/wrist2 vs tool stay enabled); B: temporary MoveIt Setup Assistant (heavy GUI) | **A** | rigid-pair rule is exact; no extra dep |
 | M-2 | Controller name | `arm_controller` / vendor `fairino5_controller` | **`arm_controller`** | ours, matches group `arm` |
-| M-3 | controller_manager `update_rate` | 100 Hz (vendor, teammate proven) / 125 Hz (= driver ServoJ cmdT 0.008 s) | **125 Hz default + launch arg `update_rate` to switch to 100** | match driver period; keep a 1-line fallback if the real robot misbehaves |
+| M-3 | controller_manager `update_rate` (**SUPERSEDED by P-9: 50 Hz**) | 100 Hz (vendor, teammate proven) / 125 Hz (= driver ServoJ cmdT 0.008 s) | **125 Hz default + launch arg `update_rate` to switch to 100** | match driver period; keep a 1-line fallback if the real robot misbehaves |
 | M-4 | Joint acceleration limit | keep vendor 0.7 rad/s^2 / raise | **0.7** | safe; slow (at 0.2 scaling ~4.5 s to reach speed); tune at step 19 |
 | M-5 | Default scaling in joint_limits.yaml | 0.2/0.2 (F14) / vendor 0.1 | **0.2 / 0.2** | consistent with F14 |
 | M-6 | IK solver | KDL / pick_ik 1.1.2 (review table in chat 2026-10-25, facts in implementation-ref sec. 7) | **KDL**, timeout 0.05 s | lowest error risk (ships with MoveIt 2.5.10), good LIN continuity; pick_ik only if KDL fails in practice |
@@ -744,6 +744,21 @@ Open items reviewed after step 18 (A = doable now without robot, B = needs user/
   PREEMPTED + smooth stop). Test gotchas: background processes in a non-interactive bash inherit SIGINT as
   IGNORED (shell now restores `signal.default_int_handler`); grep patterns in cleanup must not match the own
   command line (R-5). Manual CLI steps: notes/test.md. Qt app (step 21) no longer needed unless asked.
+- **P-9 (2026-10-25, real FR5, user: "50 Hz is the best setting") controller_manager update_rate 125 -> 50 Hz.**
+  Symptom: every command started 1-2 s late on the real robot and a cancel stopped the arm only after it had
+  swept most of the path (sim: instant). Debugged before changing values (user's call):
+  `notes/lag_probe.py` (controller_state: commanded `reference` vs read-back `feedback`):
+  | update_rate | loop measured | lag start / end | max commanded-actual |
+  |---|---|---|---|
+  | 125 Hz (M-3) | 79 Hz | +2.07 / +2.12 s | 0.052 rad (2.96 deg) |
+  | **50 Hz** | 50 Hz | **+0.10 / +0.06 s** | **0.0078 rad (0.44 deg)** |
+  Cause: the FR5 controller queues the ServoJ points the driver streams every cycle (cmdT 0.008 s hard-coded
+  in the vendor driver); at 79-125 points/s it falls behind and the queue settles ~2.1 s deep -> start and
+  stop both late. At 50 points/s no queue builds. The smooth stop (5j) and the limits were not the cause.
+  Applied: ros2_controllers.yaml update_rate 50, state_publish_rate 50; bringup default `update_rate:=50`.
+  Pitfall during the test: `update-rate:=50` (hyphen) is silently ignored by ros2 launch (log still said
+  125 Hz) -> always check the `controller_manager update_rate: N Hz` log line. (Todo: reject unknown launch args.)
+  Open: confirm motion is smooth at 50 Hz (robot interpolates each 8 ms cmdT point, then waits ~12 ms).
 
 ---------------------------------------------------------------------------
 

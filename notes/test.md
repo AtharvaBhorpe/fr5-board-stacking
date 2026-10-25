@@ -49,7 +49,9 @@ More commands:
 - Rotate tool in place: `MoveDelta "{dyaw: 0.3}"`
 
 ## Troubleshooting
-- Stutter / jerky motion: restart with `pixi run robot update_rate:=100`.
+- Default control rate is **50 Hz** (P-9). Check terminal 1: `controller_manager update_rate: 50 Hz`.
+  At 125 Hz the FR5 lagged 2 s behind every command (and every stop). Arg is `update_rate` (underscore!).
+- Lag check: `pixi run python3 notes/lag_probe.py 15`, then one small move: lag should be ~0.1 s.
 - All plans fail `START_STATE_IN_COLLISION`: obstacle estimates (T4) do not match reality -> stop, report.
 - Anything unexpected: **e-stop first**, then Ctrl+C in terminal 1.
 

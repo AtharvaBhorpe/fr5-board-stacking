@@ -532,6 +532,26 @@ Teammate workcell (`fr5_bringup/urdf/workcell_scene.xacro` + `config/workcell.ya
 - Test-script gotcha: scenarios must start from a known pose (from `zero` MoveIt said "Goal constraints
   are already satisfied" and PTP paths from `zero` hit the table).
 
+## 10m. Real robot: command lag (2026-10-25, first real session)
+
+- User: cancel looked like it did not stop; then: stop works but "sweeps almost the full path", and every
+  command takes 1-2 s before the robot moves (instant in sim). Motion controller result was PREEMPTED
+  (3.48 s) with a mid-way pose, i.e. the smooth stop was sent and accepted by the arm controller.
+- `notes/lag_probe.py` (controller_state reference = commanded, feedback = read back by the driver):
+  run 2 (one `d 0 0 20 base` at v 0.1): commanded 2.96 -> 3.63 s (0.67 s), actual 5.03 -> 5.75 s
+  (0.72 s): **constant lag +2.07 / +2.12 s**, same motion shape. Max |commanded - actual| 0.052 rad.
+  (Run 1 not usable: user command timing.)
+- controller_state arrives at **79 Hz** (set 125 Hz): the control loop does not reach 125 Hz on the real
+  robot (~12.6 ms per cycle; driver SDK calls each cycle: GetActualJointPosDegree + ServoJ over the network).
+- Interpretation: the FR5 executes the streamed ServoJ points from a queue (FIFO) ~2.1 s deep (~166 points
+  at 79 Hz) -> both start and stop reach the arm 2 s late; smooth stop + limits are not the cause.
+  Driver: ServoJ every write() with cmdT 0.008 s hard-coded, no ServoMoveStart/ServoMoveEnd (Q3-4).
+- **SOLVED at 50 Hz (P-9):** probe with update_rate 50: loop 50 Hz, lag +0.10 / +0.06 s, max error 0.0078 rad
+  (0.44 deg). The FR5 queues streamed ServoJ points when they arrive faster than it consumes them.
+  RULE: real robot runs at **update_rate 50**; check the log line `controller_manager update_rate: 50 Hz`.
+  `ros2 launch` ignores misspelled args silently (`update-rate:=50` -> still 125 Hz).
+- Re-measure after any driver / controller change: `pixi run python3 notes/lag_probe.py 15` + one small move.
+
 ## 11. Later-step reminders
 
 - Step 16 (T11): retry policy for OMPL failures `INVALID_MOTION_PLAN` ("Computed path is not valid ... possibly due to postprocessing") and `PLANNING_FAILED`; error code for impossible goals is `GOAL_STATE_INVALID` (-27); always set all 4 quaternion fields (Q-1); `start_state.is_diff = True`.

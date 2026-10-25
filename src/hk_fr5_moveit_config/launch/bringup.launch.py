@@ -3,7 +3,7 @@
 Args:
   use_fake_hardware:=true|false  true (default): mock joints, no robot connection.
                                  false: real FR5 via the Fairino driver (must be built).
-  update_rate:=125               controller_manager rate in Hz (decision M-3: 100 is the fallback).
+  update_rate:=50                controller_manager rate in Hz (decision P-9: 125 gave a 2 s lag on the real FR5).
   use_rviz:=true|false           false = headless (scripts, tests).
   use_obstacles:=true|false      add static collision boxes (hk_fr5_motion/config/obstacles.yaml).
   use_motion_controller:=true|false  /motion/move_to, move_delta, get_state (hk_fr5_motion/config/motion.yaml).
@@ -107,8 +107,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("use_fake_hardware", default_value="true",
                               description="true = mock joints, false = real FR5"),
-        DeclareLaunchArgument("update_rate", default_value="125",
-                              description="controller_manager rate in Hz (100 = fallback)"),
+        DeclareLaunchArgument("update_rate", default_value="50",
+                              description="controller_manager rate in Hz (50 = real-FR5 proven, P-9)"),
         DeclareLaunchArgument("use_rviz", default_value="true",
                               description="start RViz with the MotionPlanning display"),
         DeclareLaunchArgument("use_obstacles", default_value="true",

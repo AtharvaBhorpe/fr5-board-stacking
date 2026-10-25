@@ -1,8 +1,9 @@
 controller_manager:
   ros__parameters:
-    # 125 Hz = Fairino driver ServoJ period (cmdT 0.008 s). Launch arg update_rate:=100
-    # overrides it (teammate's proven value) if the real robot stutters (decision M-3).
-    update_rate: 125
+    # 50 Hz (decision P-9, measured on the real FR5): at 125 Hz the loop only reached 79 Hz and the FR5
+    # queued the streamed ServoJ points -> constant 2.1 s lag (start AND stop late). At 50 Hz: lag 0.06-0.10 s.
+    # (The driver still sends ServoJ with cmdT 0.008 s, hard-coded in vendor code.) Launch arg update_rate overrides.
+    update_rate: 50
 
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
@@ -16,5 +17,5 @@ arm_controller:
     state_interfaces: [position]
     # Future JTC default; MoveIt trajectories end at zero velocity (decision M-12)
     allow_nonzero_velocity_at_trajectory_end: false
-    # commanded state at the control rate: start state for the smooth stop trajectory (decision V-5)
-    state_publish_rate: 125.0
+    # commanded state at the control rate: start state for the smooth stop trajectory (V-5, P-9)
+    state_publish_rate: 50.0
