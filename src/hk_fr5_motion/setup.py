@@ -23,6 +23,7 @@ setup(
         "console_scripts": [
             "obstacle_loader = hk_fr5_motion.obstacle_loader:main",
             "motion_controller = hk_fr5_motion.motion_controller:main",
+            "motion_shell = hk_fr5_motion.motion_shell:main",
         ],
     },
 )

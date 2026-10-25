@@ -9,6 +9,7 @@ version = "0.1.0"
 build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description src/hk_fr5_description src/hk_fr5_moveit_config src/hk_fr5_interfaces src/hk_fr5_motion external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1'
 sim = "ros2 launch hk_fr5_moveit_config bringup.launch.py"
 robot = "ros2 launch hk_fr5_moveit_config bringup.launch.py use_fake_hardware:=false"
+shell = "ros2 run hk_fr5_motion motion_shell"
 
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"

@@ -1,0 +1,297 @@
+"""motion_shell: command shell for manual tests of /motion/* (sim and real robot).
+
+    pixi run shell        (next to `pixi run sim` or `pixi run robot`)
+
+Input in mm / deg (sent as m / rad). Uses only the public API: /motion/move_to, /motion/move_delta,
+/motion/get_state. Ctrl+C while a goal runs = cancel (smooth stop). Type `help` for commands.
+"""
+import math
+import readline  # noqa: F401  (line editing + history for input())
+import signal
+import threading
+import time
+
+import rclpy
+from hk_fr5_interfaces.action import MoveDelta, MoveTo
+from hk_fr5_interfaces.srv import GetState
+from moveit_msgs.msg import MoveItErrorCodes
+from rclpy.action import ActionClient
+from rclpy.executors import SingleThreadedExecutor
+from rclpy.signals import SignalHandlerOptions
+
+from hk_fr5_motion.motion_controller import quat_to_rpy
+
+CODES = {v: k for k, v in vars(MoveItErrorCodes).items() if k.isupper() and isinstance(v, int)}
+PLANNERS = {"ompl": "", "ptp": "PTP", "lin": "LIN"}
+AXES = {"x": 0, "y": 1, "z": 2, "roll": 3, "pitch": 4, "yaw": 5}
+HELP = """\
+units: mm and deg (sent as m / rad). '.' = keep the current value of that field.
+  state | s                       joints (deg, rad), tcp (mm), rpy (deg)
+  status                          servers available, state ok / age
+  to X Y Z [YAW]                  move_to, tool pointing down (no YAW: keep current yaw)
+  to X Y Z ROLL PITCH YAW         move_to, full orientation
+  home | named NAME               move_to an SRDF state (ready = home, zero)
+  d DX DY DZ [DROLL DPITCH DYAW] [tcp|base]   move_delta (frame default: `frame` setting)
+  jog +z [MM] | jog -yaw [DEG]    move_delta along / about one axis (step / rstep, frame setting)
+  v 0.1 | planner ompl|ptp|lin | plan on|off | frame tcp|base | step MM | rstep DEG | set
+  history | help | quit
+  Ctrl+C while moving = cancel (smooth stop)
+TCP frame: +z = out of the cup (DOWN when the tool points down). base frame: +z = up."""
+
+
+class Shell:
+    def __init__(self, ns="/motion"):
+        self.node = rclpy.create_node("motion_shell")
+        self.move_to = ActionClient(self.node, MoveTo, f"{ns}/move_to")
+        self.move_delta = ActionClient(self.node, MoveDelta, f"{ns}/move_delta")
+        self.get_state = self.node.create_client(GetState, f"{ns}/get_state")
+        self.executor = SingleThreadedExecutor()
+        self.executor.add_node(self.node)
+        threading.Thread(target=self._spin, daemon=True).start()
+        self.scale, self.planner, self.plan_only = 0.10, "ompl", False
+        self.frame, self.step, self.rstep = "tcp", 10.0, 5.0
+        self.history = []
+
+    def _spin(self):
+        try:
+            self.executor.spin()
+        except Exception:  # shutdown
+            pass
+
+    @staticmethod
+    def _wait(future, timeout):
+        end = time.time() + timeout
+        while not future.done() and time.time() < end:
+            time.sleep(0.005)
+        return future.result() if future.done() else None
+
+    # ---- state -------------------------------------------------------------------------------
+    def state(self):
+        if not self.get_state.wait_for_service(timeout_sec=2.0):
+            return None
+        return self._wait(self.get_state.call_async(GetState.Request()), 3.0)
+
+    def current(self):
+        """[x, y, z (mm), roll, pitch, yaw (deg)] or None."""
+        s = self.state()
+        if s is None or not s.success:
+            return None
+        p = s.tcp_pose.pose.position
+        return [p.x * 1000, p.y * 1000, p.z * 1000] + [math.degrees(a) for a in (s.roll, s.pitch, s.yaw)]
+
+    def print_state(self):
+        s = self.state()
+        if s is None:
+            print("✘ /motion/get_state not available (is the bringup running?)")
+            return
+        if not s.success:
+            print(f"✘ state invalid: {s.message}")
+            return
+        print(f"  {s.message}")
+        for name, q in zip(s.joints.name, s.joints.position):
+            print(f"  {name}  {math.degrees(q):9.3f} deg  {q:9.5f} rad")
+        p = s.tcp_pose.pose.position
+        o = s.tcp_pose.pose.orientation
+        print(f"  tcp  x {p.x * 1000:9.2f}  y {p.y * 1000:9.2f}  z {p.z * 1000:9.2f} mm   (base_link)")
+        print(f"  rpy  {math.degrees(s.roll):8.2f} {math.degrees(s.pitch):8.2f} {math.degrees(s.yaw):8.2f} deg"
+              f"   quat ({o.x:.4f}, {o.y:.4f}, {o.z:.4f}, {o.w:.4f})")
+
+    def status(self):
+        ok = lambda b: "●" if b else "○ (missing)"
+        print(f"  move_to {ok(self.move_to.wait_for_server(timeout_sec=1.0))}   "
+              f"move_delta {ok(self.move_delta.wait_for_server(timeout_sec=1.0))}   "
+              f"get_state {ok(self.get_state.wait_for_service(timeout_sec=1.0))}")
+        s = self.state()
+        print(f"  state: {'OK' if s is not None and s.success else 'INVALID'}  "
+              f"{'' if s is None else s.message}")
+        self.print_settings()
+
+    def print_settings(self):
+        print(f"  settings: v {self.scale:.2f} | planner {self.planner} | plan_only {'on' if self.plan_only else 'off'}"
+              f" | frame {self.frame} | step {self.step:g} mm | rstep {self.rstep:g} deg")
+
+    # ---- goals -------------------------------------------------------------------------------
+    def run(self, client, goal, label):
+        if not client.wait_for_server(timeout_sec=2.0):
+            print("✘ action server not available (is the bringup running?)")
+            return
+        print(f"→ {label}")
+        t0 = time.time()
+        feedback = lambda m: print(f"   … {m.feedback.phase} ({time.time() - t0:.2f} s)")
+        handle = self._wait(client.send_goal_async(goal, feedback_callback=feedback), 5.0)
+        if handle is None or not handle.accepted:
+            print("✘ goal not accepted")
+            return
+        result = handle.get_result_async()
+        try:
+            while not result.done():
+                time.sleep(0.01)
+        except KeyboardInterrupt:
+            print("   ■ cancel requested (smooth stop) ...")
+            handle.cancel_goal_async()
+            while not result.done():
+                time.sleep(0.01)
+        r = result.result().result
+        p = r.final_tcp_pose.pose.position
+        o = r.final_tcp_pose.pose.orientation
+        rpy = [math.degrees(a) for a in quat_to_rpy(o.x, o.y, o.z, o.w)] if (o.x or o.y or o.z or o.w) else [0, 0, 0]
+        code = r.error_code.val
+        line = (f"{'✔' if r.success else '✘'} {r.message} (code {code}) | "
+                f"final ({p.x * 1000:.1f}, {p.y * 1000:.1f}, {p.z * 1000:.1f}) mm, "
+                f"rpy ({rpy[0]:.1f}, {rpy[1]:.1f}, {rpy[2]:.1f}) deg | {time.time() - t0:.2f} s")
+        print(line)
+        self.history.append(f"{time.strftime('%H:%M:%S')} {label} -> {line}")
+
+    def _values(self, args, n_expected, current_index_offset=0):
+        """Parse numbers; '.' -> current value (mm / deg)."""
+        cur = None
+        out = []
+        for i, a in enumerate(args):
+            if a == ".":
+                cur = cur or self.current()
+                if cur is None:
+                    raise ValueError("no valid current state for '.'")
+                out.append(cur[i + current_index_offset])
+            else:
+                out.append(float(a))
+        return out
+
+    def cmd_to(self, args):
+        if len(args) not in (3, 4, 6):
+            raise ValueError("to X Y Z [YAW]  or  to X Y Z ROLL PITCH YAW")
+        v = self._values(args[:3], 3)
+        g = MoveTo.Goal(x=v[0] / 1000, y=v[1] / 1000, z=v[2] / 1000, velocity_scaling=self.scale,
+                        planner=PLANNERS[self.planner], plan_only=self.plan_only)
+        if len(args) == 6:
+            r = self._values(args[3:], 3, current_index_offset=3)
+            g.mode, (g.roll, g.pitch, g.yaw) = MoveTo.Goal.MODE_FULL, (math.radians(x) for x in r)
+            orient = f"rpy ({r[0]:.1f}, {r[1]:.1f}, {r[2]:.1f}) deg full"
+        else:
+            if len(args) == 4 and args[3] != ".":
+                yaw = float(args[3])
+            else:
+                cur = self.current()
+                if cur is None:
+                    raise ValueError("no valid current state to keep the yaw")
+                yaw = cur[5]
+            g.mode, g.yaw = MoveTo.Goal.MODE_DOWN_YAW, math.radians(yaw)
+            orient = f"tool down, yaw {yaw:.1f} deg"
+        self.run(self.move_to, g, f"move_to ({v[0]:.1f}, {v[1]:.1f}, {v[2]:.1f}) mm, {orient}, {self._opts()}")
+
+    def cmd_named(self, name):
+        g = MoveTo.Goal(named_target=name, velocity_scaling=self.scale, planner=PLANNERS[self.planner],
+                        plan_only=self.plan_only)
+        self.run(self.move_to, g, f"move_to named '{name}', {self._opts()}")
+
+    def cmd_delta(self, args, frame=None):
+        frame = frame or self.frame
+        words = [a for a in args if a in ("tcp", "base")]
+        nums = [a for a in args if a not in ("tcp", "base")]
+        if words:
+            frame = words[-1]
+        if len(nums) not in (3, 6):
+            raise ValueError("d DX DY DZ [DROLL DPITCH DYAW] [tcp|base]")
+        v = [float(a) for a in nums] + [0.0] * (6 - len(nums))
+        g = MoveDelta.Goal(dx=v[0] / 1000, dy=v[1] / 1000, dz=v[2] / 1000,
+                           droll=math.radians(v[3]), dpitch=math.radians(v[4]), dyaw=math.radians(v[5]),
+                           frame=MoveDelta.Goal.FRAME_BASE if frame == "base" else MoveDelta.Goal.FRAME_TCP,
+                           velocity_scaling=self.scale, plan_only=self.plan_only)
+        self.run(self.move_delta, g, f"move_delta {frame} d ({v[0]:g}, {v[1]:g}, {v[2]:g}) mm "
+                                     f"drpy ({v[3]:g}, {v[4]:g}, {v[5]:g}) deg, v {self.scale:.2f}"
+                                     f"{', plan_only' if self.plan_only else ''}")
+
+    def cmd_jog(self, args):
+        if not args or args[0][0] not in "+-" or args[0][1:] not in AXES:
+            raise ValueError("jog +z [MM] | jog -yaw [DEG]   (axes: x y z roll pitch yaw)")
+        axis = AXES[args[0][1:]]
+        amount = float(args[1]) if len(args) > 1 else (self.step if axis < 3 else self.rstep)
+        v = [0.0] * 6
+        v[axis] = amount if args[0][0] == "+" else -amount
+        self.cmd_delta([str(x) for x in v])
+
+    def _opts(self):
+        return f"planner {self.planner}, v {self.scale:.2f}{', plan_only' if self.plan_only else ''}"
+
+    # ---- loop --------------------------------------------------------------------------------
+    def handle(self, line):
+        args = line.split()
+        if not args:
+            return True
+        c, a = args[0].lower(), args[1:]
+        if c in ("quit", "exit", "q"):
+            return False
+        if c == "help":
+            print(HELP)
+        elif c in ("state", "s"):
+            self.print_state()
+        elif c == "status":
+            self.status()
+        elif c == "to":
+            self.cmd_to(a)
+        elif c == "home":
+            self.cmd_named("ready")
+        elif c == "named" and len(a) == 1:
+            self.cmd_named(a[0])
+        elif c == "d":
+            self.cmd_delta(a)
+        elif c == "jog":
+            self.cmd_jog(a)
+        elif c == "v" and len(a) == 1:
+            value = float(a[0])
+            if not 0.0 < value <= 1.0:
+                raise ValueError("v must be in (0, 1]")
+            self.scale = value
+            self.print_settings()
+        elif c == "planner" and len(a) == 1 and a[0].lower() in PLANNERS:
+            self.planner = a[0].lower()
+            self.print_settings()
+        elif c == "plan" and len(a) == 1 and a[0] in ("on", "off"):
+            self.plan_only = a[0] == "on"
+            self.print_settings()
+        elif c == "frame" and len(a) == 1 and a[0] in ("tcp", "base"):
+            self.frame = a[0]
+            self.print_settings()
+        elif c == "step" and len(a) == 1:
+            self.step = float(a[0])
+            self.print_settings()
+        elif c == "rstep" and len(a) == 1:
+            self.rstep = float(a[0])
+            self.print_settings()
+        elif c == "set":
+            self.print_settings()
+        elif c == "history":
+            print("\n".join(self.history) or "  (empty)")
+        else:
+            print("? unknown command, type `help`")
+        return True
+
+
+def main():
+    # no rclpy SIGINT handler: Ctrl+C must cancel the goal, not shut down the node
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
+    signal.signal(signal.SIGINT, signal.default_int_handler)  # Ctrl+C -> KeyboardInterrupt even if inherited as ignored
+    shell = Shell()
+    print("FR5 motion shell. Type `help`. Ctrl+C while moving = cancel (smooth stop).")
+    shell.status()
+    try:
+        while True:
+            try:
+                line = input(f"fr5[v{shell.scale:.2f} {shell.planner}{' plan' if shell.plan_only else ''} {shell.frame}]> ")
+            except KeyboardInterrupt:
+                print()
+                continue
+            except EOFError:
+                break
+            try:
+                if not shell.handle(line):
+                    break
+            except (ValueError, KeyError) as e:
+                print(f"? {e}")
+    finally:
+        shell.executor.shutdown(timeout_sec=1.0)
+        shell.node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
