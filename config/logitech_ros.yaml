@@ -6,6 +6,6 @@
     output_encoding: "bgr8"
     image_size: [1920, 1080]
     # Load the validated camera_calibration output here after saving it.
-    camera_info_url: ""
+    camera_info_url: "file://${ROS_HOME}/camera_info/logitech_scene.yaml"
     focus_automatic_continuous: false
     focus_absolute: 35

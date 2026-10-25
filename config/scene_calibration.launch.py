@@ -23,7 +23,8 @@ def calibration_node(context):
                    '--charuco_marker_size', str(board['marker_length_m']),
                    '--aruco_dict', board['dictionary'].removeprefix('DICT_').lower(),
                    '--camera_name', profile['camera_name'], '--no-service-check'],
-        remappings=[('image', profile['image_topic']), ('camera', profile['camera_namespace'])],
+        remappings=[('image', profile['image_topic']), ('camera', profile['camera_namespace']),
+                    ('camera/set_camera_info', profile['camera_namespace'] + '/set_camera_info')],
         output='screen', emulate_tty=True)]
 
 

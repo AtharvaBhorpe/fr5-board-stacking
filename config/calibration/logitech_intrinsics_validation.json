@@ -1,0 +1,132 @@
+{
+  "frames_checked": 29,
+  "frames_skipped_without_full_grid": 21,
+  "median_rms_px": 0.29186415672302246,
+  "maximum_rms_px": 0.8246104121208191,
+  "limit_px": 1.0,
+  "reprojection_check_passed": true,
+  "distinct_pose_count_not_inferred_from_frame_count": true,
+  "metric_accuracy_validated": false,
+  "execution_allowed": false,
+  "views": [
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0001.png",
+      "rms_px": 0.1451961249113083
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0004.png",
+      "rms_px": 0.0894860327243805
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0005.png",
+      "rms_px": 0.09728892892599106
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0007.png",
+      "rms_px": 0.28128698468208313
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0008.png",
+      "rms_px": 0.29239532351493835
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0009.png",
+      "rms_px": 0.2985842227935791
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0011.png",
+      "rms_px": 0.3379002511501312
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0012.png",
+      "rms_px": 0.322767436504364
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0013.png",
+      "rms_px": 0.35361742973327637
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0014.png",
+      "rms_px": 0.3316682279109955
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0015.png",
+      "rms_px": 0.13854646682739258
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0020.png",
+      "rms_px": 0.1575496792793274
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0021.png",
+      "rms_px": 0.18934985995292664
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0022.png",
+      "rms_px": 0.17172418534755707
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0023.png",
+      "rms_px": 0.15592505037784576
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0025.png",
+      "rms_px": 0.18295536935329437
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0026.png",
+      "rms_px": 0.17613813281059265
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0028.png",
+      "rms_px": 0.166326105594635
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0029.png",
+      "rms_px": 0.29186415672302246
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0030.png",
+      "rms_px": 0.311368852853775
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0031.png",
+      "rms_px": 0.28530386090278625
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0032.png",
+      "rms_px": 0.40182337164878845
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0034.png",
+      "rms_px": 0.3299645483493805
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0035.png",
+      "rms_px": 0.30471986532211304
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0036.png",
+      "rms_px": 0.566227376461029
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0037.png",
+      "rms_px": 0.5594569444656372
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0038.png",
+      "rms_px": 0.5120137929916382
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0039.png",
+      "rms_px": 0.21978327631950378
+    },
+    {
+      "image": ".local/datasets/camera_slot_001/logitech_validation_raw/view_0040.png",
+      "rms_px": 0.8246104121208191
+    }
+  ],
+  "calibration_scope": "intrinsics_only",
+  "camera_info_sha256": "43d068308cfe0a31162ddc9628302c1508843af2e42bd293a2049ebcf3b26e5f",
+  "source_archive_sha256": "3938ee7d5a9a297eb3609019e1265bec3dcef617530849e4438d6f68f182b560"
+}
