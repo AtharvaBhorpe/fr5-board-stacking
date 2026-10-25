@@ -6,8 +6,9 @@ platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34"
 version = "0.1.0"
 
 [tasks]
-build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description src/hk_fr5_description src/hk_fr5_moveit_config src/hk_fr5_interfaces src/hk_fr5_motion'
+build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description src/hk_fr5_description src/hk_fr5_moveit_config src/hk_fr5_interfaces src/hk_fr5_motion external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1'
 sim = "ros2 launch hk_fr5_moveit_config bringup.launch.py"
+robot = "ros2 launch hk_fr5_moveit_config bringup.launch.py use_fake_hardware:=false"
 
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"
@@ -32,3 +33,5 @@ scripts = ["install/setup.sh"]
 
 [activation.env]
 CMAKE_GENERATOR = "Ninja"
+# Fairino driver: libfairino.so.2 is only found here (Q3-6)
+LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/external/frcobot_ros2/fairino_hardware_v3_9_0_1/libfairino/lib:$LD_LIBRARY_PATH"
