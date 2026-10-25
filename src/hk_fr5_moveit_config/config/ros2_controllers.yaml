@@ -16,3 +16,5 @@ arm_controller:
     state_interfaces: [position]
     # Future JTC default; MoveIt trajectories end at zero velocity (decision M-12)
     allow_nonzero_velocity_at_trajectory_end: false
+    # commanded state at the control rate: start state for the smooth stop trajectory (decision V-5)
+    state_publish_rate: 125.0

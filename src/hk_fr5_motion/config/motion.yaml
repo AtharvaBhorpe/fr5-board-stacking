@@ -16,3 +16,12 @@
     state_timeout: 1.0                # s, max age of the latest /joint_states
     # arm controller's trajectory action status: its EXECUTING goal -> our EXECUTING phase (T-7)
     trajectory_status_topic: /arm_controller/follow_joint_trajectory/_action/status
+    # smooth stop on cancel / preempt (decision-log 5j): MoveIt Humble ignores cancel, so we send the
+    # arm controller a deceleration trajectory from its latest commanded state
+    controller_action: /arm_controller/follow_joint_trajectory
+    controller_state_topic: /arm_controller/controller_state
+    # deceleration a = clamp(v_max^2 / (2 * stop_max_coast), stop_deceleration, stop_deceleration_max) (V-7)
+    stop_deceleration: 2.0            # rad/s^2, normal speeds (= joint acc limit; T9)
+    stop_max_coast: 0.1               # rad, max travel of the fastest joint while stopping (until the cap)
+    stop_deceleration_max: 5.0        # rad/s^2, cap at high speed (hard stop would be ~31)
+    stop_min_time: 0.05               # s, shortest stop trajectory

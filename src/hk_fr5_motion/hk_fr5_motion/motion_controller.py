@@ -3,19 +3,25 @@
     ros2 run hk_fr5_motion motion_controller --ros-args --params-file <hk_fr5_motion>/config/motion.yaml
 
 Status: validation (step 14), get_state (step 15), move_to (step 16), move_delta (step 17).
-Decisions: decision-log 5f (C-*), 5g (S-*), 5h (T-*), 5i (U-*).
+Decisions: decision-log 5f (C-*), 5g (S-*), 5h (T-*), 5i (U-*), 5j (V-*).
 - Single-threaded executor + async callbacks (await MoveIt without blocking the node).
 - One active goal for both actions: a new goal preempts the running one (PREEMPTED);
   cancel / preempt cancel the running MoveIt goal.
 - Invalid goals are accepted, then aborted with INVALID_GOAL_CONSTRAINTS and a clear message.
 - move_to: one /move_action call (plan + execute, or plan only); OMPL retried on -1/-2 (T-3).
 - move_delta: target from the current tcp pose (TF) + delta, always Pilz LIN, no retry (U-*).
+- Cancel / preempt: MoveIt Humble ignores cancel during execution, so a smooth deceleration
+  trajectory is sent to the arm controller (stop_deceleration), and the goal ends once stopped (5j).
 """
 import math
+import time
 import xml.etree.ElementTree as ET
 
 import rclpy
 from action_msgs.msg import GoalStatus, GoalStatusArray
+from builtin_interfaces.msg import Duration
+from control_msgs.action import FollowJointTrajectory
+from control_msgs.msg import JointTrajectoryControllerState
 from geometry_msgs.msg import Pose, PoseStamped
 from hk_fr5_interfaces.action import MoveDelta, MoveTo
 from hk_fr5_interfaces.srv import GetState
@@ -34,6 +40,7 @@ from rclpy.time import Time
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String
 from tf2_ros import Buffer, TransformException, TransformListener
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 E = MoveItErrorCodes
 PLANNERS = ("", "PTP", "LIN")  # "" = OMPL RRTConnect, else Pilz (F6)
@@ -56,6 +63,30 @@ HINTS = {  # short explanations for the common codes (T-6)
 }
 # MoveIt Humble /move_action feedback only sends PLANNING / IDLE; EXECUTING comes from the arm
 # controller's trajectory action status instead (T-7).
+
+
+def stop_deceleration(v_max, deceleration, max_coast, deceleration_max):
+    """Harder stop at high speed (V-7): keep the coast v^2 / (2 a) <= max_coast, within [decel, decel_max]."""
+    return min(max(deceleration, v_max * v_max / (2.0 * max_coast)), deceleration_max)
+
+
+def stop_trajectory(joint_names, positions, velocities, deceleration, min_time):
+    """2-point deceleration trajectory (decision V-1): (q, v) at t = 0 -> (q + v T / 2, 0) at T.
+
+    T = max_j |v_j| / deceleration (>= min_time), common to all joints. The controller's cubic spline
+    through these points gives a linear velocity ramp = constant deceleration (no jump in velocity).
+    Returns (FollowJointTrajectory.Goal, T).
+    """
+    v = list(velocities) if len(velocities) == len(positions) else [0.0] * len(positions)
+    duration = max(max(abs(x) for x in v) / deceleration, min_time)
+    goal = FollowJointTrajectory.Goal()
+    goal.trajectory.joint_names = list(joint_names)
+    start = JointTrajectoryPoint(positions=list(positions), velocities=v, time_from_start=Duration())
+    end = JointTrajectoryPoint(positions=[q + x * duration / 2 for q, x in zip(positions, v)],
+                               velocities=[0.0] * len(v), accelerations=[0.0] * len(v),
+                               time_from_start=Duration(sec=int(duration), nanosec=int((duration % 1.0) * 1e9)))
+    goal.trajectory.points = [start, end]
+    return goal, duration
 
 
 def describe(code, detail=""):
@@ -138,6 +169,12 @@ PARAMS = {
     "server_timeout": Parameter.Type.DOUBLE,
     "state_timeout": Parameter.Type.DOUBLE,
     "trajectory_status_topic": Parameter.Type.STRING,
+    "controller_action": Parameter.Type.STRING,
+    "controller_state_topic": Parameter.Type.STRING,
+    "stop_deceleration": Parameter.Type.DOUBLE,
+    "stop_max_coast": Parameter.Type.DOUBLE,
+    "stop_deceleration_max": Parameter.Type.DOUBLE,
+    "stop_min_time": Parameter.Type.DOUBLE,
 }
 
 
@@ -254,7 +291,15 @@ class MotionController(Node):
 
         self._move_group = ActionClient(self, MoveGroup, self.cfg["move_group_action"])
         self._moveit_goal = None   # handle of the running MoveIt goal (to cancel it)
+        self._moveit_owner = None  # our goal handle that owns the running MoveIt goal
         self._on_executing = None  # set while a MoveIt goal runs: publishes EXECUTING (T-7)
+        self._controller_executing = False  # arm controller is executing a trajectory
+        self._ctrl_state = None    # latest controller_state (commanded reference) + receipt time
+        self._stop_sent = False    # smooth stop already sent for the running MoveIt goal
+        self._stop_goal = None     # future of the stop trajectory goal (to wait for standstill)
+        self._controller = ActionClient(self, FollowJointTrajectory, self.cfg["controller_action"])
+        self.create_subscription(JointTrajectoryControllerState, self.cfg["controller_state_topic"],
+                                 self._on_controller_state, 10)
         self.create_subscription(GoalStatusArray, self.cfg["trajectory_status_topic"], self._on_trajectory_status, 10)
         self._stopped = set()      # goal ids that were cancelled or preempted
 
@@ -289,8 +334,39 @@ class MotionController(Node):
 
     def _on_trajectory_status(self, msg):
         """Arm controller executing a trajectory -> EXECUTING phase for our running goal (T-7)."""
-        if self._on_executing and any(s.status == GoalStatus.STATUS_EXECUTING for s in msg.status_list):
+        self._controller_executing = any(s.status == GoalStatus.STATUS_EXECUTING for s in msg.status_list)
+        if not self._controller_executing:
+            return
+        if self._on_executing:
             self._on_executing()
+        # stopped while planning: MoveIt executes the plan anyway -> stop it at once (V-3)
+        if self._moveit_owner is not None and self._is_stopped(self._moveit_owner):
+            self._smooth_stop()
+
+    def _on_controller_state(self, msg):
+        self._ctrl_state = (msg, time.monotonic())
+
+    def _smooth_stop(self):
+        """Send the deceleration trajectory once per MoveIt goal (V-1); MoveIt then aborts its execution."""
+        if self._stop_sent:
+            return
+        if self._ctrl_state is None:
+            self.get_logger().error("smooth stop impossible: no controller_state received")
+            return
+        msg, received = self._ctrl_state
+        age = time.monotonic() - received
+        v = list(msg.reference.velocities)
+        if len(v) != len(msg.reference.positions):
+            v = [0.0] * len(msg.reference.positions)
+        q = [p + x * age for p, x in zip(msg.reference.positions, v)]  # extrapolate to now (V-5)
+        v_max = max((abs(x) for x in v), default=0.0)
+        decel = stop_deceleration(v_max, self.cfg["stop_deceleration"], self.cfg["stop_max_coast"],
+                                  self.cfg["stop_deceleration_max"])
+        goal, duration = stop_trajectory(msg.joint_names, q, v, decel, self.cfg["stop_min_time"])
+        self._stop_sent = True
+        self._stop_goal = self._controller.send_goal_async(goal)
+        self.get_logger().info(f"smooth stop: |v|max {v_max:.3f} rad/s, decel {decel:.2f} rad/s^2, "
+                               f"{duration * 1000:.0f} ms, coast {v_max * duration / 2:.3f} rad, state age {age * 1000:.0f} ms")
 
     def read_state(self):
         """(code, message, JointState, PoseStamped, (roll, pitch, yaw)); code SUCCESS if valid (S-3)."""
@@ -340,8 +416,10 @@ class MotionController(Node):
     def _stop(self, goal_handle):
         """Mark a goal as stopped and cancel its MoveIt goal (cancel / preempt, C-2)."""
         self._stopped.add(bytes(goal_handle.goal_id.uuid))
-        if self._active is goal_handle and self._moveit_goal is not None:
-            self._moveit_goal.cancel_goal_async()
+        if self._moveit_owner is goal_handle and self._moveit_goal is not None:
+            self._moveit_goal.cancel_goal_async()  # MoveIt Humble does not stop execution on this (5j)
+            if self._controller_executing:
+                self._smooth_stop()  # otherwise done when execution starts (V-3)
 
     def _is_stopped(self, goal_handle):
         return bytes(goal_handle.goal_id.uuid) in self._stopped
@@ -470,15 +548,20 @@ class MotionController(Node):
         for attempt in range(1, tries + 1):
             if self._is_stopped(goal_handle):
                 return E.PREEMPTED
+            self._stop_sent, self._stop_goal = False, None
             send = self._move_group.send_goal_async(moveit_goal, feedback_callback=on_feedback)
             handle = await send
             if not handle.accepted:
                 return E.COMMUNICATION_FAILURE
-            self._moveit_goal = handle
+            self._moveit_goal, self._moveit_owner = handle, goal_handle
             if self._is_stopped(goal_handle):  # stopped while the goal was being sent
                 handle.cancel_goal_async()
             response = await handle.get_result_async()
-            self._moveit_goal = None
+            if self._stop_goal is not None:  # wait until the stop trajectory has finished (V-2)
+                stop_handle = await self._stop_goal
+                if stop_handle.accepted:
+                    await stop_handle.get_result_async()
+            self._moveit_goal, self._moveit_owner = None, None
             self._on_executing = None
             code = response.result.error_code.val
             if code in RETRY_CODES and attempt < tries and not self._is_stopped(goal_handle):
