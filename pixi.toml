@@ -1,0 +1,28 @@
+[workspace]
+authors = ["vortexcv <69069296+vortexcv@users.noreply.github.com>"]
+channels = ["https://prefix.dev/robostack-humble", "https://prefix.dev/conda-forge"]
+name = "fr5-robot-motion-gripper"
+platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34" }]  # some RoboStack pkgs need glibc > conda default 2.17
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+ros-humble-desktop = ">=0.10.0,<0.11"
+colcon-common-extensions = ">=0.3.0,<0.4"
+ros-humble-moveit-ros-move-group = ">=2.5.10,<3"
+ros-humble-moveit-planners = ">=2.5.10,<3"
+ros-humble-moveit-kinematics = ">=2.5.10,<3"
+ros-humble-moveit-configs-utils = ">=2.5.10,<3"
+ros-humble-moveit-simple-controller-manager = ">=2.5.10,<3"
+ros-humble-moveit-ros-visualization = ">=2.5.10,<3"
+ros-humble-ros2-control = ">=2.54.3,<3"
+ros-humble-ros2-controllers = ">=2.54.1,<3"
+ros-humble-xacro = ">=2.1.1,<3"
+ros-humble-joint-state-publisher-gui = ">=2.4.0,<3"
+compilers = ">=2.0.0,<3"
+cmake = "<4"
+ninja = ">=1.13.2,<2"
+pkg-config = ">=0.29.2,<0.30"
+sysroot_linux-64 = ">=2.34"
+
