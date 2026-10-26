@@ -1,0 +1,14 @@
+{
+  "perception_config": "config/perception.toml",
+  "handeye": "config/calibration/wrist_handeye_candidate_002.json",
+  "bag": ".local/datasets/camera_slot_002/shared_target_001",
+  "image_topic": "/scene/image_raw",
+  "info_topic": "/scene/camera_info",
+  "scene_frame": "scene_camera_optical_frame",
+  "board": "small",
+  "grid_roi_px": [1105, 550, 1390, 755],
+  "detection_scale": 2,
+  "max_rms_px": 1.0,
+  "same_fixed_target_confirmed": true,
+  "output": "config/calibration/logitech_extrinsics_candidate_001.json"
+}

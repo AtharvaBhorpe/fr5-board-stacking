@@ -1,0 +1,12 @@
+{
+  "perception_config": "config/perception.toml",
+  "board": "small",
+  "image_topic": "/wrist/wrist_camera/color/image_raw",
+  "info_topic": "/wrist/wrist_camera/color/camera_info",
+  "joints_topic": "/joint_states",
+  "base_frame": "base_link",
+  "flange_frame": "flange",
+  "joint_names": ["j1", "j2", "j3", "j4", "j5", "j6"],
+  "joint_tolerance_rad": 0.003,
+  "max_rms_px": 1.0
+}

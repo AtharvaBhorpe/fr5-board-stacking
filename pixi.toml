@@ -60,6 +60,11 @@ test-perception = "python -m unittest discover -s tests -v"
 [feature.gpu.pypi-dependencies]
 torch = { version = "==2.7.1", index = "https://download.pytorch.org/whl/cu128" }
 
+torchvision = { version = "==0.22.1", index = "https://download.pytorch.org/whl/cu128" }
+transformers = "==4.57.1"
+pillow = ">=10,<12"
+
+
 [feature.gpu.tasks]
 check-cuda = "python scripts/check_perception_hardware.py cuda"
 
