@@ -88,22 +88,25 @@ destination_markers:
       offset_xy_m:
       - -0.15
       - 0.0
-      board_yaw_rad: null
+      board_yaw_rad: 1.5707963267948966
       physical_placement_validated: false
     '2':
       variant: VARb
       offset_xy_m:
       - -0.15
       - 0.0
-      board_yaw_rad: null
+      board_yaw_rad: 1.5707963267948966
       physical_placement_validated: false
     '16':
       variant: VARc
       offset_xy_m:
       - 0.14
       - 0.0
-      board_yaw_rad: null
+      board_yaw_rad: -1.5707963267948966
       physical_placement_validated: false
+  board_axes_convention: Board +X follows size_m[0]; board +Y follows the 0.210 m
+    size_m[1] side, pointing along the template away from the tag; board +Z points
+    upward.
 calibration_board:
   dictionary: DICT_5X5_100
   squares:
