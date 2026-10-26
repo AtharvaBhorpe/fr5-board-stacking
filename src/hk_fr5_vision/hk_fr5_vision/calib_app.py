@@ -31,7 +31,7 @@ SHARE = get_package_share_directory("hk_fr5_vision")
 def load_app_config(path):
     with open(path) as f:
         c = yaml.safe_load(f)
-    for sec, keys in {"camera": ("device", "width", "height", "name", "jpeg_quality", "stream_fps"),
+    for sec, keys in {"camera": ("device", "match", "width", "height", "name", "jpeg_quality", "stream_fps"),
                       "tags": ("dictionary", "allowed_ids", "verify_seen_s", "min_samples", "window", "stable_px", "seen_s",
                                "moved_px", "moved_frames"),
                       "record": ("max_per_tag", "spread_warn_mm", "table_z", "table_z_tol", "max_age_s"),
@@ -43,6 +43,33 @@ def load_app_config(path):
     c["robot_config"] = c.get("robot_config") or os.path.join(SHARE, "config", "robot.yaml")
     c["session_file"] = os.path.expanduser(c.get("session_file") or "~/.local/state/hk_fr5_vision/calib_session.json")
     return c
+
+
+def list_cameras():
+    """[(index, name, is_capture_node)] from /sys/class/video4linux (V4L2 'index' 0 = the capture node)."""
+    out = []
+    base = "/sys/class/video4linux"
+    for d in sorted(os.listdir(base) if os.path.isdir(base) else [], key=lambda n: int(n[5:]) if n[5:].isdigit() else 999):
+        if not d.startswith("video") or not d[5:].isdigit():
+            continue
+        try:
+            name = open(os.path.join(base, d, "name")).read().strip()
+        except OSError:
+            continue
+        try:
+            idx = int(open(os.path.join(base, d, "index")).read().strip())
+        except (OSError, ValueError):
+            idx = 0
+        out.append((int(d[5:]), name, idx == 0))
+    return out
+
+
+def find_camera(match):
+    """Index of the first capture node whose name contains match (case-insensitive), or None."""
+    for i, name, capture in list_cameras():
+        if capture and match.lower() in name.lower():
+            return i
+    return None
 
 
 class TagTracker:
@@ -111,11 +138,20 @@ class Camera(threading.Thread):
         p.perspectiveRemoveIgnoredMarginPerCell = 0.2
         self.det = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, t["dictionary"])), p)
         self.lock = threading.Lock()
-        self.jpeg, self.size, self.status, self.fps = None, None, "starting", 0.0
+        self.jpeg, self.size, self.status, self.fps, self.device_used = None, None, "starting", 0.0, ""
         self.running = True
 
     def _open(self):
         d = self.c["device"]
+        if d == "auto":                                  # by name, every (re)connect: survives a changed index
+            d = find_camera(self.c["match"])
+            if d is None:
+                self.status = (f"no camera named '{self.c['match']}' found "
+                               f"({', '.join(f'video{i} {n}' for i, n, c in list_cameras() if c) or 'no cameras'})")
+                return None
+            self.device_used = f"/dev/video{d} ({self.c['match']})"
+        else:
+            self.device_used = str(d)
         cap = cv2.VideoCapture(d if isinstance(d, str) else int(d), cv2.CAP_V4L2)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.c["width"])
@@ -139,6 +175,8 @@ class Camera(threading.Thread):
             else:
                 if cap is None:
                     cap = self._open()
+                    if cap is None:
+                        time.sleep(1.0); continue
                 ok, img = cap.read()
                 if not ok:
                     fails += 1
@@ -179,6 +217,7 @@ class App:
         self.reader = robot_pose.RobotReader(self.rcfg) if robot else None
         self.records, self.draft, self.verify, self.refs = {}, None, {"for": None, "spots": []}, []
         self.saved, self.saved_error, self.saved_stamp = None, "", None
+        self.client_log = []                             # browser errors / self-test results (POST /api/log)
         self._load_session()
         self._reload_saved()
 
@@ -291,8 +330,27 @@ class App:
             self._save_session()
         return {"ok": True, "refs": self.refs}
 
+    def cup_on(self):
+        """Reference tags hidden right now (the cup sits on them). Exactly one -> that is the tag to record."""
+        now = time.monotonic()
+        return [i for i in self.refs if (t := self.tracker.get(i, now)) and not t["visible"]
+                and t["n"] >= self.c["tags"]["min_samples"]]
+
+    def reset(self, _req=None):
+        """Start over: reference set, records, draft, verification spots (the saved calibration file stays)."""
+        with self.lock:
+            self.refs, self.records, self.draft, self.verify = [], {}, None, {"for": None, "spots": []}
+            self._save_session()
+        return {"ok": True}
+
     # ---- calibration records ----
     def record(self, req):
+        if req.get("id") is None:                        # big Record button / Space: the tag under the cup
+            hidden = self.cup_on()
+            if len(hidden) != 1:
+                raise ValueError("no reference tag is covered: put the cup on a tag (or use its row button)" if not hidden
+                                 else f"several reference tags hidden {hidden}: use the row button of the right tag")
+            req = dict(req, id=hidden[0])
         i = int(req["id"])
         if i not in self.refs:
             raise ValueError(f"tag {i} is not a reference tag (identify the reference tags first)")
@@ -387,7 +445,7 @@ class App:
                             f"{self.c['tags']['verify_seen_s']:.0f} s) - delete this spot if not")
             spots.append({"px": px, "py": py, "x": x, "y": y, "err_mm": round(err, 2),
                           "dx_mm": round((x - px) * 1000, 2), "dy_mm": round((y - py) * 1000, 2), "inside": inside,
-                          "epoch": tag["epoch"], "tag": vid, **info})
+                          "epoch": tag["epoch"], "tag": vid, "u": tag["u"], "v": tag["v"], **info})
             self._save_session()
         return {"ok": True, "spot": spots[-1], "summary": self.verify_summary(), "warnings": warn}
 
@@ -408,6 +466,9 @@ class App:
         if not cands:
             raise ValueError("no moving tag: place a tag that is not a reference tag in view (any id)")
         if len(cands) > 1:
+            hidden = [i for i, g in cands.items() if not g["visible"]]
+            if len(hidden) == 1:                         # the one under the cup
+                return hidden[0], cands[hidden[0]]
             raise ValueError(f"several non-reference tags {sorted(cands)}: choose one (id) or remove the others")
         return next(iter(cands.items()))
 
@@ -431,7 +492,7 @@ class App:
         mean, mx = float(e.mean()), float(e.max())
         passed = len(spots) >= v["min_spots"] and mean <= v["mean_mm"] and mx <= v["max_mm"]
         hint = ""
-        if not passed and len(spots) >= 3:
+        if mean > v["mean_mm"] or mx > v["max_mm"]:     # hints only when a limit is broken
             shift = float(np.linalg.norm(d.mean(axis=0)))
             if shift > 0.7 * mean:
                 hint = (f"errors point the same way (mean shift {shift:.1f} mm): systematic placement offset or a moved "
@@ -493,17 +554,28 @@ class App:
                 robot["pose"] = robot_pose.tcp_from_state(st, self.rcfg)
         c, which = self.active()
         with self.camera.lock:
-            cam = {"status": self.camera.status, "size": self.camera.size, "fps": round(self.camera.fps, 1)}
+            cam = {"status": self.camera.status, "size": self.camera.size, "fps": round(self.camera.fps, 1),
+                   "device": self.camera.device_used if not self.camera.image else f"image {self.camera.image}"}
         saved = None
         if self.saved:
             saved = {k: self.saved.get(k) for k in ("date", "rms_mm", "lens_k", "image_size", "camera", "verification")}
             saved["tags"] = len(self.saved["tags"])
-        return {"camera": cam, "tags": tags, "refs": self.refs, "robot": robot, "draft": self.draft, "active": which,
+        moving = [i for i, t in tags.items() if t.get("role") == "moving" and t.get("n", 0) >= self.c["tags"]["min_samples"]
+                  and t.get("age_s", 1e9) < self.c["tags"]["verify_seen_s"]]
+        return {"camera": cam, "tags": tags, "refs": self.refs, "cup_on": self.cup_on(), "moving": moving,
+                "log": self.client_log[-20:], "robot": robot, "draft": self.draft, "active": which,
                 "active_tags": [[t["u"], t["v"]] for t in c["tags"]] if c else [],
                 "saved": saved, "saved_error": self.saved_error, "verify": {"spots": self.verify["spots"],
                                                                             "summary": self.verify_summary()},
                 "config": {"max_per_tag": self.c["record"]["max_per_tag"],
                            "spread_warn_mm": self.c["record"]["spread_warn_mm"], "verify": self.c["verify"]}}
+
+    def log(self, req):
+        """Browser-side errors and self-test results (printed + kept for the tests)."""
+        e = {"level": str(req.get("level", "info"))[:10], "msg": str(req.get("msg", ""))[:2000], "t": time.time()}
+        self.client_log = (self.client_log + [e])[-200:]
+        print(f"[page {e['level']}] {e['msg']}", flush=True)
+        return {"ok": True}
 
     def pixel(self, u, v):
         c, which = self.active()
@@ -567,10 +639,12 @@ def make_app(app):
                   web.post("/api/fit", handler(lambda _: app.fit())),
                   web.post("/api/verify/record", handler(app.verify_record)),
                   web.post("/api/verify/delete", handler(app.verify_delete)),
-                  web.post("/api/save", handler(lambda _: app.save()))])
+                  web.post("/api/save", handler(lambda _: app.save())),
+                  web.post("/api/reset", handler(app.reset)), web.post("/api/log", handler(app.log)),
+                  web.get("/api/log", handler(lambda _: {"ok": True, "log": app.client_log}))])
     web_dir = os.path.join(SHARE, "web")
     if os.path.isdir(web_dir):
-        w.add_routes([web.static("/web", web_dir)])
+        w.add_routes([web.static("/web", web_dir, follow_symlinks=True)])   # symlink-install: files are symlinks
     return w
 
 
@@ -592,8 +666,13 @@ def main():
     ap.add_argument("--image", help="use this image file instead of the camera (re-read when it changes)")
     ap.add_argument("--no-robot", action="store_true", help="no port 20004 reader (pendant / manual values only)")
     ap.add_argument("--port", type=int, help="override the config port")
-    ap.add_argument("--camera", help="override camera.device: index (2 = /dev/video2) or a device path")
+    ap.add_argument("--camera", help="override camera.device: index (2 = /dev/video2), a device path, or 'auto'")
+    ap.add_argument("--list-cameras", action="store_true", help="list V4L2 cameras and exit")
     a = ap.parse_args()
+    if a.list_cameras:
+        for i, name, capture in list_cameras():
+            print(f"/dev/video{i}: {name}{'' if capture else '  (metadata node, not used)'}")
+        return
     cfg = load_app_config(a.config)
     if a.camera is not None:
         cfg["camera"]["device"] = int(a.camera) if a.camera.isdigit() else a.camera

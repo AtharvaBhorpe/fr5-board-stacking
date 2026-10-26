@@ -141,7 +141,9 @@ def fit(points, image_size, camera=""):
             suspect = ids[i]
     raw = _points(points)[1]   # store the measured (distorted) pixels
     tags = [{"id": ids[i], "u": float(raw[i, 0]), "v": float(raw[i, 1]), "x": float(w[i, 0]), "y": float(w[i, 1]),
-             "err_mm": round(float(err[i]), 2), "drop_rms_mm": None if drop[i] is None else round(drop[i], 2)}
+             "err_mm": round(float(err[i]), 2), "dx_mm": round(float(w[i, 0] - x[i]) * 1000, 2),
+             "dy_mm": round(float(w[i, 1] - y[i]) * 1000, 2),   # recorded - fitted (residual vector)
+             "drop_rms_mm": None if drop[i] is None else round(drop[i], 2)}
             for i in range(len(ids))]
     return {"version": VERSION, "calibrated": True, "date": time.strftime("%Y-%m-%d %H:%M:%S"),
             "camera": str(camera), "image_size": size, "lens_k": k, "homography": H.tolist(),

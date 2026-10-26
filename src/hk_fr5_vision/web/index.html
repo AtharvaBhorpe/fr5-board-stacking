@@ -4,136 +4,73 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Table Calibration</title>
-<style>
-:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2330;--mute:#6b7383;--line:#e2e5ea;--acc:#2f6fdf;--ok:#1f9d55;--warn:#c27c0e;--bad:#d64545;--ref:#2f6fdf;--mov:#e8780c;--un:#8a93a3}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e6e9ef;--mute:#9aa3b2;--line:#2b313d;--acc:#5b8ff0;--ok:#3fbf7a;--warn:#e0a23a;--bad:#ef6b6b;--ref:#5b8ff0;--mov:#f29a45;--un:#7b8494}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-header{display:flex;gap:16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5;flex-wrap:wrap}
-header h1{font-size:16px;margin:0 8px 0 0}.pill{padding:3px 9px;border-radius:99px;font-size:12px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
-.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.bad{color:var(--bad);border-color:var(--bad)}.pill.warn{color:var(--warn);border-color:var(--warn)}
-main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(380px,1fr);gap:14px;padding:14px;max-width:1900px;margin:auto}
-@media (max-width:1100px){main{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
-.card h2{font-size:14px;margin:0 0 8px;display:flex;align-items:center;gap:8px}.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;font-size:12px}
-.card.off{opacity:.55}
-#view{position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden;cursor:crosshair}#view img{width:100%;display:block}#ov{position:absolute;inset:0;width:100%;height:100%}
-button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:5px 11px;border-radius:7px;cursor:pointer}button:hover{border-color:var(--acc)}
-button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.sm{padding:2px 8px;font-size:12px}button.x{border:none;background:none;color:var(--mute);padding:0 4px}button.x:hover{color:var(--bad)}
-button:disabled{opacity:.45;cursor:default}
-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td,th{padding:4px 6px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--mute);font-weight:500;font-size:12px}
-tr.sub td{color:var(--mute);font-size:12px;border-bottom:1px dashed var(--line)}tr.sub td:first-child{padding-left:22px}
-.tag{font-weight:600}.mute{color:var(--mute)}.okc{color:var(--ok)}.badc{color:var(--bad)}.warnc{color:var(--warn)}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}input,select{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:90px}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px}.kv b{font-weight:500;color:var(--mute)}
-#msgs{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;max-width:460px;z-index:9}
-.msg{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:8px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.15);font-size:13px}
-.msg.bad{border-left-color:var(--bad)}.msg.warn{border-left-color:var(--warn)}.msg.ok{border-left-color:var(--ok)}
-.big{font-size:20px;font-weight:600}.legend span{margin-right:12px;font-size:12px}.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
-</style>
+<link rel="stylesheet" href="/web/app.css">
 </head>
 <body>
-<header>
-  <h1>Table Calibration</h1>
-  <span id="pCam" class="pill">camera</span><span id="pRob" class="pill">robot</span><span id="pCal" class="pill">calibration</span>
-  <span class="mute" style="margin-left:auto">read-only towards the robot · bringup must be OFF while hand-guiding</span>
+<header class="top">
+  <div class="brand"><span class="logo">◎</span><div><h1>Table Calibration</h1><small>camera pixel → base_link x / y</small></div></div>
+  <ol class="steps" id="steps">
+    <li data-k="identify">Identify</li><li data-k="record">Record</li><li data-k="fit">Fit</li><li data-k="verify">Verify</li><li data-k="save">Save</li>
+  </ol>
+  <div class="pills"><span id="pCam" class="pill">camera</span><span id="pRob" class="pill">robot</span><span id="pCal" class="pill">calibration</span>
+    <button id="theme" class="icon" title="light / dark">◐</button></div>
 </header>
+
 <main>
-<section>
-  <div class="card">
-    <div id="view"><img id="img" src="/stream" alt="camera"><canvas id="ov"></canvas></div>
-    <div class="row" style="margin-top:8px;justify-content:space-between">
-      <div class="legend"><span><i class="dot" style="background:var(--ref)"></i>reference</span><span><i class="dot" style="background:var(--mov)"></i>moving</span><span><i class="dot" style="background:var(--un)"></i>not assigned</span><span><i class="dot" style="background:rgba(47,111,223,.25)"></i>calibrated area</span></div>
-      <div id="pix" class="mute">click the image: pixel → table x / y</div>
+  <section class="col">
+    <div class="card pad0">
+      <div id="view"><img id="img" alt="camera"><canvas id="ov"></canvas><div id="noimg" class="noimg">waiting for the camera…</div></div>
+      <div class="viewbar">
+        <div class="legend"><span><i style="background:var(--ref)"></i>reference</span><span><i style="background:var(--mov)"></i>moving</span><span><i style="background:var(--un)"></i>unassigned</span><span><i class="area"></i>calibrated area</span></div>
+        <span id="camdev" class="mute"></span>
+      </div>
     </div>
-  </div>
-  <div class="card"><h2>Robot (port 20004)</h2><div id="robot" class="kv"></div></div>
-</section>
-<section>
-  <div class="card"><h2>Record source</h2>
-    <div class="row"><select id="src" style="width:150px"><option value="robot">robot (FK, live)</option><option value="pendant">pendant / web app (mm)</option><option value="manual">manual base_link (m)</option></select>
-    <span id="xyIn" style="display:none"><input id="ix" placeholder="x"> <input id="iy" placeholder="y"></span></div>
-  </div>
-  <div class="card" id="c1"><h2><span class="step">1</span>Reference tags<span style="margin-left:auto" class="row"><button class="pri" id="bId">Identify reference tags</button></span></h2>
-    <div class="mute" id="refHint">Place the 8 tags only (no moving tag), wait until all are stable, then identify.</div>
-    <table id="refs"></table>
-  </div>
-  <div class="card" id="c2"><h2><span class="step">2</span>Fit<span style="margin-left:auto"><button class="pri" id="bFit">Fit</button></span></h2><div id="fit" class="mute">Record every tag 2-3x (other orientation / approach), then fit.</div></div>
-  <div class="card" id="c3"><h2><span class="step">3</span>Verify<span style="margin-left:auto" class="row"><select id="mov" style="width:120px"></select><button class="pri" id="bVer">Record spot</button></span></h2>
-    <div class="mute">Put a NEW tag (not a reference) at a spot, wait until it is seen, hand-guide the cup onto it, record. 5-6 spots spread over the area.</div>
-    <div id="vsum" style="margin:8px 0"></div><table id="spots"></table>
-  </div>
-  <div class="card" id="c4"><h2><span class="step">4</span>Save<span style="margin-left:auto"><button class="pri" id="bSave">Save calibration</button></span></h2><div id="saved" class="kv"></div></div>
-</section>
+    <div class="grid2">
+      <div class="card"><h3>Robot <span class="mute">port 20004 · read-only</span></h3><div id="robot"></div></div>
+      <div class="card"><h3>Test a point <span class="mute">click the image</span></h3><div id="clicks" class="mute">Click anywhere on the image to see its table x / y with the active calibration.</div></div>
+    </div>
+  </section>
+
+  <section class="col">
+    <div class="card dock" id="dock">
+      <div class="dock-main">
+        <div><div class="label">cup on</div><div id="cupOn" class="cup">–</div></div>
+        <div><div class="label">tcp x / y / z (mm)</div><div id="tcp" class="tcp">–</div><div id="tcpSub" class="mute small"></div></div>
+      </div>
+      <div class="dock-ctl">
+        <div class="seg" id="src">
+          <button data-v="robot" class="on" title="FK from the live robot joints">Robot</button><button data-v="pendant" title="pendant / web app values in mm (x / y negated)">Pendant</button><button data-v="manual" title="base_link metres">Manual</button>
+        </div>
+        <div id="xyIn" class="xy hidden"><input id="ix" inputmode="decimal" placeholder="x"><input id="iy" inputmode="decimal" placeholder="y"></div>
+        <button id="bRec" class="btn pri big" title="record the tag under the cup">Record</button>
+      </div>
+    </div>
+
+    <div class="card" id="c1">
+      <h2><span class="num">1</span>Reference tags<span class="grow"></span><button id="bId" class="btn">Identify reference tags</button></h2>
+      <p id="refHint" class="hint"></p>
+      <div id="refs"></div>
+    </div>
+
+    <div class="card" id="c2">
+      <h2><span class="num">2</span>Fit<span class="grow"></span><button id="bFit" class="btn pri">Fit</button></h2>
+      <div id="fit"><p class="hint">Record every reference tag 2–3× (another orientation / approach each time), then fit.</p></div>
+    </div>
+
+    <div class="card" id="c3">
+      <h2><span class="num">3</span>Verify<span class="grow"></span><select id="mov" title="moving tag"></select><button id="bVer" class="btn pri">Record spot</button></h2>
+      <p class="hint">Place a <b>new</b> tag (any id, not a reference), let the camera see it, hand-guide the cup onto it, record. 5–6 spots spread over the area.</p>
+      <div id="vsum"></div><div id="spots"></div>
+    </div>
+
+    <div class="card" id="c4">
+      <h2><span class="num">4</span>Save<span class="grow"></span><button id="bSave" class="btn pri">Save calibration</button></h2>
+      <div id="saved"></div>
+      <div class="foot"><button id="bReset" class="link danger">Start over (clears reference tags, records, spots)</button></div>
+    </div>
+  </section>
 </main>
-<div id="msgs"></div>
-<script>
-const $=id=>document.getElementById(id);let S=null,click=null;
-const f1=v=>v==null?'–':(+v).toFixed(1),mm=v=>v==null?'–':(v*1000).toFixed(1);
-function msg(t,k='ok',ms=6000){const d=document.createElement('div');d.className='msg '+k;d.textContent=t;$('msgs').appendChild(d);setTimeout(()=>d.remove(),ms)}
-async function post(url,body={}){try{const r=await(await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
-  if(!r.ok)msg(r.message||'error','bad',9000);else(r.warnings||[]).forEach(w=>msg(w,'warn',10000));refresh();return r}catch(e){msg('app not reachable: '+e,'bad')}}
-function srcBody(){const s=$('src').value,b={source:s};if(s!=='robot'){b.x=parseFloat($('ix').value);b.y=parseFloat($('iy').value);if(!isFinite(b.x)||!isFinite(b.y)){msg('enter x and y','bad');return null}}return b}
-$('src').onchange=()=>{$('xyIn').style.display=$('src').value==='robot'?'none':'';$('ix').placeholder=$('src').value==='pendant'?'x mm':'x m';$('iy').placeholder=$('src').value==='pendant'?'y mm':'y m'};
-$('bId').onclick=async()=>{if(S&&S.refs.length&&!confirm('Identify again? Records of tags that leave the set are dropped.'))return;const r=await post('/api/refs/identify');if(r&&r.ok)msg(`${r.refs.length} reference tags: ${r.refs.join(', ')}`)};
-$('bFit').onclick=async()=>{const r=await post('/api/fit');if(r&&r.ok)msg(`fit: rms ${r.calib.rms_mm} mm (without lens term ${r.calib.rms_homography_only_mm} mm)`)};
-$('bVer').onclick=async()=>{const b=srcBody();if(!b)return;const m=$('mov').value;if(m)b.id=+m;const r=await post('/api/verify/record',b);if(r&&r.ok)msg(`spot ${r.summary.n}: error ${r.spot.err_mm} mm`)};
-$('bSave').onclick=async()=>{const sm=S&&S.verify.summary;if(!(sm&&sm.passed)&&!confirm('Verification not passed. Save anyway?'))return;const r=await post('/api/save');if(r&&r.ok)msg('saved '+r.path+' — commit it after a good calibration')};
-async function rec(id){const b=srcBody();if(!b)return;b.id=id;const r=await post('/api/record',b);if(r&&r.ok)msg(`tag ${id}: record ${r.n}`+(r.spread_mm!=null?`, spread ${r.spread_mm} mm`:''))}
-async function delRec(id,i){await post('/api/record/delete',{id,index:i})}
-async function rmRef(id){if(confirm(`Remove tag ${id} from the reference set (and its records)?`))await post('/api/refs/remove',{id})}
-async function delSpot(i){await post('/api/verify/delete',{index:i})}
-$('view').onclick=async e=>{if(!S||!S.camera.size)return;const r=$('img').getBoundingClientRect(),[W,H]=S.camera.size;const u=(e.clientX-r.left)*W/r.width,v=(e.clientY-r.top)*H/r.height;
-  const d=await(await fetch(`/api/pixel?u=${u}&v=${v}`)).json();click={u,v,d};$('pix').innerHTML=d.ok?`pixel (${u.toFixed(0)}, ${v.toFixed(0)}) → <b>x ${mm(d.x)} y ${mm(d.y)} mm</b> ${d.inside?'':'<span class="warnc">outside the tag area</span>'} <span class="mute">(${d.using})</span>`:`<span class="badc">${d.message}</span>`;draw()};
-
-function draw(){const c=$('ov'),img=$('img');if(!S||!S.camera.size)return;const r=img.getBoundingClientRect();c.width=r.width*devicePixelRatio;c.height=r.height*devicePixelRatio;
-  const g=c.getContext('2d'),[W,H]=S.camera.size,k=c.width/W;g.clearRect(0,0,c.width,c.height);const css=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
-  const at=S.active_tags;if(at.length>2){const h=hull(at);g.beginPath();h.forEach(([u,v],i)=>i?g.lineTo(u*k,v*k):g.moveTo(u*k,v*k));g.closePath();g.fillStyle='rgba(47,111,223,.16)';g.fill();g.strokeStyle='rgba(47,111,223,.7)';g.setLineDash([8,6]);g.lineWidth=2*devicePixelRatio;g.stroke();g.setLineDash([])}
-  for(const[id,t]of Object.entries(S.tags)){if(t.u==null)continue;const col=css(t.role==='ref'?'--ref':t.role==='moving'?'--mov':'--un');g.strokeStyle=col;g.fillStyle=col;g.lineWidth=3*devicePixelRatio;
-    if(t.visible&&t.corners){g.beginPath();t.corners.forEach(([u,v],i)=>i?g.lineTo(u*k,v*k):g.moveTo(u*k,v*k));g.closePath();g.stroke()}else{g.setLineDash([5,5]);g.beginPath();g.arc(t.u*k,t.v*k,22*devicePixelRatio,0,7);g.stroke();g.setLineDash([])}
-    const sus=S.draft&&S.draft.suspect==+id;g.font=`${600} ${15*devicePixelRatio}px system-ui`;const lab=id+(t.records&&t.records.length?` ·${t.records.length}`:'')+(sus?' ⚠':'')+(t.visible?'':' (hidden)');
-    g.lineWidth=4*devicePixelRatio;g.strokeStyle='rgba(0,0,0,.7)';g.strokeText(lab,t.u*k+26*devicePixelRatio,t.v*k-14*devicePixelRatio);g.fillStyle=sus?css('--bad'):'#fff';g.fillText(lab,t.u*k+26*devicePixelRatio,t.v*k-14*devicePixelRatio)}
-  if(click){g.strokeStyle='#ff3df5';g.lineWidth=2*devicePixelRatio;const x=click.u*k,y=click.v*k,s=12*devicePixelRatio;g.beginPath();g.moveTo(x-s,y);g.lineTo(x+s,y);g.moveTo(x,y-s);g.lineTo(x,y+s);g.stroke()}}
-function hull(p){p=p.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
-  for(const q of p){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}for(const q of p.reverse()){while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}return lo.slice(0,-1).concat(up.slice(0,-1))}
-
-function render(){const s=S;
-  const cam=$('pCam');cam.textContent=`camera ${s.camera.status==='ok'?(s.camera.size||[]).join('×')+' · '+s.camera.fps+' fps':s.camera.status}`;cam.className='pill '+(s.camera.status==='ok'?'ok':'bad');
-  const rb=s.robot,p=rb&&rb.pose,pr=$('pRob');
-  if(!rb){pr.textContent='robot off (--no-robot)';pr.className='pill warn'}else{pr.textContent=rb.fresh?`robot ${rb.rate_hz} Hz · ${p&&p.manual_mode?'manual':'AUTO'}`:'robot: no data';pr.className='pill '+(rb.fresh?(p&&p.manual_mode?'ok':'warn'):'bad')}
-  $('robot').innerHTML=!rb?'<span class="mute">reader off</span>':rb.fresh&&p?`<b>tcp x / y / z</b><span class="big">${mm(p.x)} / ${mm(p.y)} / ${mm(p.z)} mm</span>
-    <b>tilt</b><span class="${p.tilt_ok?'':'warnc'}">${f1(p.tilt_deg)} deg</span><b>mode</b><span class="${p.manual_mode?'okc':'warnc'}">${p.manual_mode?'manual':'auto'} · state ${p.robot_state}${p.estop?' · <span class="badc">E-STOP</span>':''}</span>
-    <b>flange check</b><span class="${p.flange_check_mm<5?'okc':'warnc'}">${f1(p.flange_check_mm)} mm (our FK vs controller)</span><b>joints</b><span class="mute">${p.joints_deg.map(a=>a.toFixed(1)).join('  ')}</span>
-    <b>packets</b><span class="mute">${rb.packets} · checksum ok ${rb.checksum_ok} / framing-only ${rb.checksum_bad_framing_ok} · rejected ${rb.rejected}</span>`:`<span class="badc">${rb.last_error||'no fresh data'}</span><span></span>`;
-  const cl=$('pCal');cl.textContent=s.active==='draft'?'draft fit (not saved)':s.saved?`saved ${s.saved.date}${s.saved.verification?(s.saved.verification.passed?' · verified':' · NOT verified'):' · not verified'}`:'not calibrated';
-  cl.className='pill '+(s.active==='draft'?'warn':s.saved&&s.saved.verification&&s.saved.verification.passed?'ok':s.saved?'warn':'bad');
-  // 1 reference tags
-  const draftTag=id=>s.draft&&s.draft.tags.find(t=>t.id==id);let h='';
-  if(!s.refs.length){const n=Object.values(s.tags).filter(t=>t.visible&&t.stable).length;$('refHint').textContent=`${n} stable tag(s) in view. Place the 8 tags only (no moving tag), then identify.`}
-  else $('refHint').textContent=`${s.refs.length} reference tags · ${s.refs.filter(i=>(s.tags[i]&&s.tags[i].records||[]).length>=2).length} with 2+ records`;
-  if(s.refs.length){h='<tr><th>tag</th><th>camera</th><th>records</th><th>spread</th><th>fit err</th><th></th></tr>';
-    for(const id of s.refs){const t=s.tags[id]||{records:[]},rs=t.records||[],dt=draftTag(id),sus=s.draft&&s.draft.suspect==id;
-      const cam=t.missing?'<span class="badc">not seen</span>':t.visible?(t.stable?'<span class="okc">stable</span>':'<span class="warnc">unstable</span>'):'<span class="mute">hidden</span>';
-      h+=`<tr><td class="tag">${id}${sus?' <span class="badc">⚠ suspect</span>':''}</td><td>${cam}</td><td>${rs.length}/${s.config.max_per_tag}</td><td class="${t.spread_mm>s.config.spread_warn_mm?'warnc':''}">${t.spread_mm==null?'–':t.spread_mm+' mm'}</td>
-        <td>${dt?dt.err_mm+' mm':'–'}</td><td style="text-align:right;white-space:nowrap"><button class="sm pri" onclick="rec(${id})" ${rs.length>=s.config.max_per_tag?'disabled':''}>Record</button> <button class="x" title="remove from the set" onclick="rmRef(${id})">✕</button></td></tr>`;
-      rs.forEach((r,i)=>{h+=`<tr class="sub"><td>#${i+1}</td><td colspan="4">x ${mm(r.x)} y ${mm(r.y)} mm${r.z!=null?` · z ${mm(r.z)}`:''}${r.tilt_deg!=null?` · tilt ${r.tilt_deg}°`:''}${r.flange_check_mm!=null?` · flange ${r.flange_check_mm} mm`:''} · ${r.source} · ${new Date(r.time*1000).toLocaleTimeString()}${r.moved?' <span class="badc">tag moved</span>':''}</td><td style="text-align:right"><button class="x" onclick="delRec(${id},${i})">✕</button></td></tr>`})}}
-  $('refs').innerHTML=h;
-  // 2 fit
-  const d=s.draft;$('fit').innerHTML=d?`<div class="kv"><b>rms</b><span class="big">${d.rms_mm} mm</span><b>without lens term</b><span>${d.rms_homography_only_mm} mm</span>
-    <b>lens k</b><span>${(+d.lens_k).toFixed(3)} · lens effect ${d.lens_effect_mm} mm ${d.lens_effect_mm<1?'<span class="mute">(lens barely distorted)</span>':''}</span>
-    <b>tags</b><span>${d.tags.length}${d.suspect!=null?` · <span class="badc">suspect tag ${d.suspect}: re-record it</span>`:''}</span></div>`:(s.saved?`<span class="mute">using the saved calibration (${s.saved.date}, rms ${s.saved.rms_mm} mm). Fit again to replace it.</span>`:'Record every tag 2-3x (other orientation / approach), then fit.');
-  $('c2').classList.toggle('off',!s.refs.length);
-  // 3 verify
-  const cands=Object.entries(s.tags).filter(([i,t])=>t.role==='moving'&&t.n>=10).map(([i])=>i),sel=$('mov'),cur=sel.value;
-  sel.innerHTML='<option value="">auto (the one non-reference tag)</option>'+cands.map(i=>`<option ${i==cur?'selected':''}>${i}</option>`).join('');
-  const sm=s.verify.summary;$('vsum').innerHTML=sm.n?`<span class="big ${sm.passed?'okc':'badc'}">${sm.passed?'PASSED':'not passed'}</span> &nbsp; ${sm.n} spots · mean ${sm.mean_mm} mm (≤ ${sm.limits.mean_mm}) · max ${sm.max_mm} mm (≤ ${sm.limits.max_mm})${sm.hint?`<div class="warnc">${sm.hint}</div>`:''}`:`<span class="mute">${sm.hint}</span>`;
-  $('spots').innerHTML=s.verify.spots.length?'<tr><th>#</th><th>tag</th><th>predicted</th><th>recorded</th><th>error</th><th></th></tr>'+s.verify.spots.map((p,i)=>`<tr><td>${i+1}</td><td>${p.tag??'–'}</td><td>${mm(p.px)} / ${mm(p.py)}</td><td>${mm(p.x)} / ${mm(p.y)}</td><td class="${p.err_mm>s.config.verify.max_mm?'badc':''}">${p.err_mm} mm${p.inside?'':' <span class="warnc">outside</span>'}</td><td><button class="x" onclick="delSpot(${i})">✕</button></td></tr>`).join(''):'';
-  $('c3').classList.toggle('off',!s.active);$('bVer').disabled=!s.active;
-  // 4 save
-  $('bSave').disabled=!s.active;const sv=s.saved;$('saved').innerHTML=sv?`<b>saved</b><span>${sv.date} · ${sv.tags} tags · rms ${sv.rms_mm} mm · k ${(+sv.lens_k).toFixed(3)}</span><b>verification</b><span class="${sv.verification&&sv.verification.passed?'okc':'warnc'}">${sv.verification?`${sv.verification.passed?'passed':'NOT passed'} · ${sv.verification.spots} spots · mean ${sv.verification.mean_mm} / max ${sv.verification.max_mm} mm`:'none'}</span>`:`<span class="mute">${s.saved_error||'nothing saved yet'}</span>`;
-  draw()}
-async function refresh(){try{S=await(await fetch('/api/state')).json();render()}catch(e){$('pCam').textContent='app not reachable';$('pCam').className='pill bad'}}
-setInterval(refresh,400);refresh();addEventListener('resize',draw);$('img').onload=draw;
-if(location.search.includes('snap')){const im=$('img');im.src='/snapshot?'+Date.now();setInterval(()=>im.src='/snapshot?'+Date.now(),1000)}  // ?snap: no MJPEG stream
-</script>
+<div id="toasts"></div>
+<script src="/web/app.js"></script>
 </body>
 </html>

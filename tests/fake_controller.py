@@ -31,6 +31,8 @@ class FakeController(threading.Thread):
         super().__init__(daemon=True)
         self.srv = socket.create_server(("127.0.0.1", port)); self.port = self.srv.getsockname()[1]
         self.rate, self.running, self.received, self.clients = rate, True, b"", 0
+        from ament_index_python.packages import get_package_share_directory
+        self.cfg = rp.load_config(os.path.join(get_package_share_directory("hk_fr5_vision"), "config", "robot.yaml"))
     def run(self):
         self.srv.settimeout(0.2)
         while self.running:
@@ -42,7 +44,10 @@ class FakeController(threading.Thread):
             try:
                 while self.running:
                     j1 = (cnt % 360) * 0.1
-                    c.sendall(packet(joints=(j1, -90, 90, -90, -90, 0), cnt=cnt)); cnt += 1
+                    q = (j1, -90, 90, -90, -90, 0)
+                    T_fl, _ = rp.fk([math.radians(a) for a in q], self.cfg)   # flange like a real controller (pendant frame)
+                    c.sendall(packet(joints=q, flange=(-T_fl[0, 3] * 1000, -T_fl[1, 3] * 1000, T_fl[2, 3] * 1000, 0, 0, 0),
+                                     cnt=cnt)); cnt += 1
                     try:
                         self.received += c.recv(100)   # the reader must never send anything
                     except (BlockingIOError, OSError):

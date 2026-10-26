@@ -7,6 +7,9 @@ version = "0.1.0"
 
 [tasks]
 build = 'colcon build --symlink-install --paths src/hk_fr5_vision_interfaces src/hk_fr5_vision'
+vision = "ros2 launch hk_fr5_vision vision.launch.py"              # /vision/pixel_to_table
+calib = "ros2 run hk_fr5_vision calib_app"                         # calibration web app http://127.0.0.1:8080
+probe = "ros2 run hk_fr5_vision robot_pose_probe"                  # read-only port 20004 check (lab VT1)
 
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"
