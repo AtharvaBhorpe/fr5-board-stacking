@@ -1,16 +1,33 @@
 schema_version: 1
-status: unmeasured
+status: partial_geometry_camera_extrinsics_pending
 execution_allowed: false
 units:
   length: metres
   angle: radians
 workcell:
-  frame_id: workcell
-  definition_status: proposed_not_published
-  origin_description: null
-  x_axis_description: null
-  z_axis_description: Up; horizontal planes have constant z
-  T_base_link_workcell: null
+  frame_id: base_link
+  definition_status: existing_robot_urdf_frame
+  origin_description: Robot base mounting face centre; measured 0.060 m above tabletop
+  x_axis_description: Use the existing Fairino URDF base_link +X axis; physical axis
+    correspondence remains to be verified
+  z_axis_description: Up, as defined by the robot URDF
+  T_base_link_workcell:
+  - - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
 camera:
   optical_frame_id: overhead_camera_optical_frame
   optical_axes: x right, y down, z forward
@@ -25,8 +42,8 @@ camera:
   T_workcell_camera: null
 transform_convention: T_A_B maps homogeneous coordinates from frame B into frame A
 surfaces:
-  source_support_z_m: null
-  profile_support_z_m: null
+  source_support_z_m: -0.06
+  profile_support_z_m: -0.02
   destination_support_z_m:
     VARa: null
     VARb: null
