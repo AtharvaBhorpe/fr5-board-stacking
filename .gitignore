@@ -1,0 +1,16 @@
+# pixi
+.pixi/
+# colcon
+build/
+install/
+log/
+# python
+__pycache__/
+*.pyc
+# editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+# calibration backups (calib.yaml.bak)
+*.bak
