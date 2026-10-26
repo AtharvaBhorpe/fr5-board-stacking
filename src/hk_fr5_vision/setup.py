@@ -12,6 +12,7 @@ setup(
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
         ("share/" + package_name + "/config", glob("config/*.yaml")),
+        ("share/" + package_name + "/web", glob("web/*")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -20,5 +21,6 @@ setup(
     description="hk_fr5 vision: camera pixel -> table x / y in base_link (homography calibration, vision_transform node).",
     license="Apache-2.0",
     entry_points={"console_scripts": ["vision_transform = hk_fr5_vision.vision_transform:main",
-                                    "robot_pose_probe = hk_fr5_vision.robot_pose:main"]},
+                                    "robot_pose_probe = hk_fr5_vision.robot_pose:main",
+                                    "calib_app = hk_fr5_vision.calib_app:main"]},
 )

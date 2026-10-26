@@ -1,0 +1,41 @@
+# Calibration app (decision-log V-11, V-15, V-19). Units: metres unless noted. Read-only towards the robot.
+host: 127.0.0.1                 # this laptop only
+port: 8080
+calib_file: ""                  # "" -> <hk_fr5_vision share>/config/calib.yaml (symlink to the committed source file)
+robot_config: ""                # "" -> <hk_fr5_vision share>/config/robot.yaml (port 20004 reader + FK)
+session_file: ""                # "" -> ~/.local/state/hk_fr5_vision/calib_session.json (records survive an app restart)
+
+camera:
+  device: 0                     # /dev/videoN index or a path, e.g. /dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920_...-video-index0
+  width: 1920
+  height: 1080
+  name: C920                    # stored in calib.yaml
+  jpeg_quality: 75              # live stream
+  stream_fps: 10
+
+tags:
+  dictionary: DICT_5X5_50
+  allowed_ids: []               # [] = every id of the dictionary (default, user). Ghost filter: list the printed ids
+                                #   here only if ghost detections show up
+  # reference tags = the tags visible + stable when "identify reference tags" is pressed (8 recommended, V-16);
+  # any OTHER tag is the moving verification tag (V-23, no fixed id)
+  verify_seen_s: 60.0           # a hidden moving tag (cup on it) still counts this long after it was last seen
+  min_samples: 10               # a tag needs this many detections before it can be recorded (ghosts never get there)
+  window: 60                    # frames in the running average of a tag's pixel centre
+  stable_px: 0.5                # std of the centre below this (and >= 10 samples) -> stable
+  seen_s: 1.0                   # seen within this -> visible
+  moved_px: 3.0                 # new detections this far from the average ...
+  moved_frames: 5               # ... this many frames in a row -> the tag moved: average restarts
+
+record:
+  max_per_tag: 3                # V-15: 2-3 records per tag
+  spread_warn_mm: 2.0           # records of one tag further apart than this -> redo
+  table_z: -0.060               # tcp z with the cup on the table (motion branch H-10)
+  table_z_tol: 0.015            # tcp further from table_z than this -> warning (cup not on the table?)
+  max_age_s: 0.5                # robot pose older than this -> record refused
+
+verify:
+  mean_mm: 2.0                  # pass limits (V-19)
+  max_mm: 4.0
+  min_spots: 5
+  same_spot_mm: 20.0            # a new spot this close to an earlier one -> warning

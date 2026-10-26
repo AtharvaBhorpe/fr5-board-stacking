@@ -23,6 +23,7 @@ MIN_TAGS = 4
 SPREAD_MIN = 0.1   # smallest / largest spread of the tag positions (0 = all in a line), pixels and world
 LENS_MIN_TAGS = 6     # fit the lens term k only with this many tags (4 tags fit any k exactly -> meaningless)
 K_RANGE = 1.5         # k search range +-K_RANGE (C920-like lenses: |k| ~ 0.1-0.3 in this normalisation)
+INSIDE_TOL_PX = 2.0   # a point this close outside the tag outline still counts as inside (corner tags lie ON it)
 SUSPECT_RMS_MM = 2.0   # fit rms above this -> look for one badly recorded tag (needs 6+ tags)
 SUSPECT_RATIO = 0.5    # suspect = leaving it out at least halves the rms of the other tags ...
 SUSPECT_CLEAR = 3.0    # ... and leaving out any other tag helps 3x less (else ambiguous -> None)
@@ -148,7 +149,7 @@ def fit(points, image_size, camera=""):
 
 
 def apply(calib, u, v):
-    """Pixels -> (x list, y list, inside list), metres. inside = within the convex outline of the tags."""
+    """Pixels -> (x list, y list, inside list), metres. inside = within the convex outline of the tags (+ INSIDE_TOL_PX)."""
     if len(u) != len(v):
         raise ValueError(f"u and v lengths differ ({len(u)} vs {len(v)})")
     if not len(u):
@@ -156,7 +157,7 @@ def apply(calib, u, v):
     up = _undistort(np.column_stack([np.asarray(u, float), np.asarray(v, float)]), calib["lens_k"], calib["image_size"])
     x, y, _ = _map(calib["homography"], up[:, 0], up[:, 1])
     hull = cv2.convexHull(np.array([[t["u"], t["v"]] for t in calib["tags"]], np.float32))
-    inside = [cv2.pointPolygonTest(hull, (float(a), float(b)), False) >= 0 for a, b in zip(u, v)]
+    inside = [cv2.pointPolygonTest(hull, (float(a), float(b)), True) >= -INSIDE_TOL_PX for a, b in zip(u, v)]
     return x.tolist(), y.tolist(), inside
 
 
