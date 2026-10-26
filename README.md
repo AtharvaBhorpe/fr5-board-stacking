@@ -43,7 +43,7 @@ A `0` in `velocity_scaling`, `timeout`, `blow_off_time` or `contact_margin` = co
 
 | Name | Type | Does |
 |---|---|---|
-| `/motion/move_to` | action `MoveTo` | absolute tcp pose (x, y, z, yaw [, roll, pitch]) or `named_target` `ready` / `zero` |
+| `/motion/move_to` | action `MoveTo` | absolute tcp pose (x, y, z, yaw [, roll, pitch]) or `named_target` `ready` |
 | `/motion/move_delta` | action `MoveDelta` | relative move dx..dyaw, always a straight tcp line (Pilz LIN) |
 | `/motion/get_state` | service `GetState` | joints + tcp pose (xyz, quaternion, roll / pitch / yaw) |
 | `/joint_states` | topic `sensor_msgs/JointState` | 50 Hz, from ros2_control |

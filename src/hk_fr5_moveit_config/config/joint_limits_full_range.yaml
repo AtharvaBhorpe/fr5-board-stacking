@@ -1,0 +1,18 @@
+# REFERENCE ONLY, NOT LOADED (MoveItConfigsBuilder loads joint_limits.yaml). Limits before the elbow-flip fix
+# (2026-10-27, decision-log H-11): full vendor position ranges (j1 / j2 / j4 / j5 / j6 +-175 deg from the URDF,
+# j3 +-160 deg). To go back: copy this file over joint_limits.yaml and rebuild.
+# Overrides/additions to the URDF limits. Pilz needs acceleration limits on every joint.
+# Acceleration 2.0 rad/s^2 (T-11, tested 19/19 incl. cancel suite) used for the first real-robot session.
+# VENDOR-REF values (P-6, online search 2026-10-25), NOT yet applied for acc (6.283 failed 4/19 checks;
+# retest later): max joint speed 180 deg/s = 3.1416 rad/s; acc 360 deg/s^2 = 6.283 rad/s^2; J3 +-160 deg.
+default_velocity_scaling_factor: 0.2      # F14
+default_acceleration_scaling_factor: 0.2
+
+joint_limits:
+  j1: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j2: {has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j3: {has_position_limits: true, min_position: -2.7925, max_position: 2.7925,
+       has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j4: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
+  j5: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
+  j6: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}

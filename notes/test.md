@@ -22,6 +22,8 @@ Log each result in decision-log (new entry per item) and close the T-row.
 | 9 | T19 / T9 | vendor acceleration 6.283 rad/s^2 in `joint_limits.yaml` (now 2.0), re-test Pilz LIN at rising `v` | no `-4` / planning failures at high scaling; then revisit V-7 stop values, L-7 Pilz limits, M-11 tolerances | M |
 | 10 | T26 | at the end: Ctrl+C in terminal 1 | terminal 1 shows the driver's `Stopping ...please wait...` and `System successfully stopped!` (on_deactivate = StopMotion / CloseRPC); gripper log: both pumps off | - |
 
+| 11 | T27 | elbow-flip fix (H-11): robot in `ready` first (hand / pendant if still flipped, MoveIt refuses a start outside the new limits); `to` / pix2table go-to across the table at v 0.1, plan only first | elbow stays up ("inverted V"), j1 turns the short way, moves ~1.5-2 s at v 1 in sim | M |
+
 Parked (optional, only if time): T13 blended motion (Pilz sequence), T8 IK benchmark (only if KDL fails noticeably).
 
 ## A. Real robot preparation

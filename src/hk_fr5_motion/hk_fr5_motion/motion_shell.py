@@ -34,7 +34,7 @@ units: mm and deg (sent as m / rad). '.' = keep the current value of that field.
   status                          servers available, state ok / age
   to X Y Z [YAW]                  move_to, tool pointing down (no YAW: keep current yaw)
   to X Y Z ROLL PITCH YAW         move_to, full orientation
-  home | named NAME               move_to an SRDF state (ready = home, zero)
+  home | named NAME               move_to an SRDF state (ready = home; zero is outside the joint limits)
   d DX DY DZ [DROLL DPITCH DYAW] [tcp|base]   move_delta (frame default: `frame` setting)
   jog +z [MM] | jog -yaw [DEG]    move_delta along / about one axis (step / rstep, frame setting)
   v 0.1 | planner ompl|ptp|lin | plan on|off | frame tcp|base | step MM | rstep DEG | set

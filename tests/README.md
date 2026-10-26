@@ -26,6 +26,7 @@ Logs go to `$HK_TEST_LOG_DIR` (default `/tmp/hk_fr5_tests`). Scripts that start 
 | `scene_motion_check.py` | bringup | scene vs planning: pick + lift with margin, default detach, blocking, place + stack_0 / stack_1, wall, T25 (OMPL from contact fails), motion regression | 28/28 |
 | `scene_launch_check.py` | bringup | static boxes identical to the obstacle_loader reference, use_obstacles:=false, no obstacle_loader; Ctrl+C line is INFO (T26) | 6/6 + INFO |
 | `shell_scene_check.py` | bringup | motion_shell attach / detach / box, without and with scene_manager (*printed*) | OK |
+| `joint_config_check.py` | bringup | arm configuration (H-11): lab replay x3, table grid, left <-> right rows incl. pickup z -0.055; elbow up / wrist down / \|j1\| <= 175 / j2 -165..+10, j1 detour <= 30 deg, elbow above the shoulder-wrist line; unreachable points listed | 83/83 |
 | `ctrl_c_probe.py` | bringup | informative (T26): nodes "finished cleanly" vs "died" after a terminal-style Ctrl+C | 3 clean / 5 died (known) |
 
 Helpers: `testenv.py` (installed paths via the ament index, log dir), `scene_lib.py` (headless bringup, planning
