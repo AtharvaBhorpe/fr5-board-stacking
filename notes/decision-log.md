@@ -1010,13 +1010,13 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | T23 | ~~Commit gripper test scripts + mock XML-RPC server (X-1 / D1)~~ | DONE 2026-10-26: `tests/` (11 scripts + mock_fairino.py, testenv.py, scene_lib.py, README.md); no hard-coded paths (ament index), logs in /tmp/hk_fr5_tests; all re-run from the repo: 27, 20, 27, 17, 28, 6 (+ T26 INFO) checks + printed scripts OK; scene_smoke rewritten with asserts (17) for the T20d bringup; obstacle_loader comparison dropped (its reference values live in scene_launch_check.py) |
 | T25 | ~~Remove OMPL request adapter "Fix Start State In Collision"~~ | DONE 2026-10-26 (user: remove): OMPL from a colliding start now fails with -26 START_STATE_INVALID (T20c re-run 28/28, Pilz unaffected); motion_controller hint for -26 added |
 | T26 | Ctrl+C of the bringup: several nodes end "process has died, exit code -2" instead of "finished cleanly" (pre-existing, same with the pre-T20d launch: SIGINT reaches the process group AND ros2 launch forwards a 2nd SIGINT). Risk on the real robot: ros2_control_node may die before the driver's on_deactivate (StopMotion / CloseRPC). Check at the lab (T18) whether the driver logs its stop. Python nodes (motion_controller, scene_manager) show a `KeyboardInterrupt` traceback inside `destroy_node` from the same 2nd SIGINT (harmless, no hardware); gripper_controller ignores signals during its switch-off (Q20-4) | open |
-| T27 | Elbow flip fix (H-11) on the real robot: start in `ready`, pix2table go-to-tag / grid at v 0.1 (plan only first): no flip, no j1 swing round the back | open (lab) |
+| T27 | Elbow flip fix (H-11) on the real robot: start in `ready`, pix2table go-to-tag / grid at v 0.1 (plan only first): no flip, no j1 swing round the back | open (lab), **parked** (user, 2026-10-27) |
 | T24 | ~~Team README: run, ROS names, interfaces, result codes (X-8)~~ | DONE 2026-10-26: `README.md` (quick start, bringup args, ROS API, conventions, result codes, pick / place sequence + rules S-11 / S-12, rclpy example, packages / config, known limitations); the rclpy example was extracted from the README and run against the sim bringup (pick -> grip -> attach -> lift -> place -> release -> detach keep -> stack_0, exit 0) |
 | T8 | OPTIONAL IK benchmark KDL vs pick_ik (`/compute_ik`, same random tcp poses: success rate, time, joint distance to seed; throwaway `pixi add`). **Only if KDL fails noticeably** (IK failures in move_to/move_delta/RViz drag). Not in the step plan. | open, optional |
 
 ---------------------------------------------------------------------------
 
-## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `1f18c83` on 2026-10-27)
+## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `bff9db4` on 2026-10-27)
 
 | Commit | Content |
 |---|---|
@@ -1053,3 +1053,5 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | `57e742c` | notes: lab checklist 2026-10-27 in test.md section 0 |
 | `f984b66` | gripper: GetToolDO removed, start reset both pumps off, pump interlock (5o H-1..H-8, T15) |
 | `1f18c83` | table top -0.060 measured (H-10, T4 closed), compact team README, shell gstate wait (H-9), scene tests follow the table |
+| `34d0ea8` | notes: commit table up to `1f18c83` |
+| `bff9db4` | joint position limits against elbow flips (H-11): j1 +-175, j2 -165..+10, j3 +10..+160, j5 -170..-10; old file kept as `joint_limits_full_range.yaml`; tests/joint_config_check.py 83/83 (sim); T27 open |
