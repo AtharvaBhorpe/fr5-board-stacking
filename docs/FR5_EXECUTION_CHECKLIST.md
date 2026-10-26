@@ -103,6 +103,12 @@ The profile visual spans -0.060 to -0.020 m. Its collision box has a deliberate 
 
 ### Next execution sequence
 
+Calibration capture procedure: identify the printed ChArUco corner ID 0 and board +X/+Y directions with a camera overlay, then measure that corner in base_link and record printed-face height and signed axis alignment. The measured corner is not the board model origin; retain its model coordinates when composing board placement. An uncalibrated camera overlay cannot establish alignment with base_link, and diagnostic pose axes must not be published as an approved robot TF. Live GUI procedure is prepared for user execution; camera testing remains pending.
+
+Immediate milestone: one separated source sheet to one destination, omitting the profile/processing stage. Prepare live raw-image capture, an operator-selected source ROI and pixel-centre overlays before workspace access. Existing perceive_scene_ros.py is replay-only; live capture must not be mislabeled as replay. Physical prerequisites are a measured camera-to-base transform, independent XY checks, verified suction TCP/contact heights and a supervised real-motion adapter test. The existing fake ROS job is not a real pick-and-place runner. Live acquisition and physical execution remain untested.
+
+Spacer follow-up evidence: user screenshots a0ab5720-Image_1.png and db42a540-Image_2.png show a mock-hardware plan-only check to pos2 succeeded with 109 trajectory points and an RViz preview. No execution was requested; this establishes one successful plan with the updated scene, not general collision clearance or physical validation.
+
 1. Offline: finish testing metric source-variant classification through pixel-to-plane conversion and scene-level ambiguity handling (T04). The standalone classifier's synthetic checks have passed.
 2. On site: secure webcam, verify camera settings/intrinsics, and verify base_link physical axes (T06/T07).
 3. Capture the ChArUco board at a measured pose; explicitly identify model origin/axes and account for backing thickness. Compose a candidate camera-to-base transform.
