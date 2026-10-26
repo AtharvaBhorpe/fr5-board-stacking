@@ -11,6 +11,8 @@ import math
 
 import numpy as np
 
+from hk_fr5_task.skill_math import in_shadow
+
 NAN = float("nan")
 
 
@@ -104,9 +106,13 @@ class World:
         return best
 
     # ---------- Vision 1 frame ----------
-    def update(self, t, dets):
+    def update(self, t, dets, shadow=None):
+        """shadow (CL-20 B): None, or {"x", "y", "radius"} = tcp position + half-width of the arm's shadow on the table
+        (band robot base -> tcp). Under it: board detections ignored (arm / held board), boards not dropped as lost,
+        processing-zone timers frozen (a covered zone must not look empty)."""
         c = self.c
         self.last_frame_t = t
+        self.shadow = shadow
         dets = [d for d in dets if d.get("score", 1.0) >= c["min_score"]]
         # zones (detected) + fixed fallbacks
         seen_zones = set()
@@ -140,6 +146,8 @@ class World:
         matched = set()
         for d in bdets:
             x, y, yaw, l, wd = rect_from_corners(d["corners"])
+            if self._shadowed(x, y):
+                continue                                     # arm / held board seen by the camera (CL-20)
             label = d["cls"].split("/", 1)[1]
             best, bd = None, None
             for i, b in free.items():
@@ -148,7 +156,8 @@ class World:
                 dist = math.hypot(b["x"] - x, b["y"] - y)
                 same_track = d.get("id") and d.get("id") == b.get("track")
                 if dist <= c["match_dist"] or (same_track and dist <= 3 * c["match_dist"]):
-                    key = (round(dist / 0.01), -b.get("seen", 0.0))   # within 1 cm: the most recently placed / seen wins
+                    key = (round(dist / 0.01), -max(b.get("seen", 0.0), b.get("placed", -1.0)))   # within 1 cm:
+                    #   the most recently placed / seen wins (top of a stack, not the hidden board under it)
                     if bd is None or key < bd:                          # (top board of a stack, not the hidden one)
                         best, bd = i, key
             if best is None:
@@ -169,13 +178,20 @@ class World:
         # boards not seen: drop input boards after lost_after (zone boards may be hidden under a stack / away)
         for i in [i for i, b in self.boards.items() if i not in matched]:
             b = self.boards[i]
-            if b["location"] == "input" and t - b["seen"] > c["lost_after"]:
+            if self._shadowed(b.get("x", 0.0), b.get("y", 0.0)):
+                b["lost_ref"] = t                            # hidden by the arm: the loss timer restarts after it
+                continue
+            if b["location"] == "input" and t - max(b["seen"], b.get("lost_ref", 0.0)) > c["lost_after"]:
                 self._note(t, f"board {i} lost (not seen {t - b['seen']:.1f} s)")
                 del self.boards[i]
         self._processing(t, matched)
         for z in self.zones.values():
             if z["kind"] != "processing":
                 self._set_state(z, "FULL" if z["stack_count"] >= c["max_stack"] else "OK", t)
+
+    def _shadowed(self, x, y, grow=0.0):
+        s = getattr(self, "shadow", None)
+        return bool(s) and in_shadow(x, y, s["x"], s["y"], s["radius"] + grow)
 
     def _new_board_id(self, t, x, y):
         """New board, unless it is the board coming back into a PROCESSING zone (keeps its identity)."""
@@ -193,6 +209,9 @@ class World:
         c = self.c
         for z in self.zones.values():
             if z["kind"] != "processing":
+                continue
+            if self._shadowed(z["x"], z["y"], grow=math.hypot(z["length"], z["width"]) / 2):
+                z["occ_since"] = z["empty_since"] = None     # covered by the arm: freeze, debounce restarts after
                 continue
             present = [i for i in matched if self.boards[i]["location"] == "zone" and self.boards[i]["zone"] == z["name"]]
             if present:
@@ -244,7 +263,7 @@ class World:
             if b is None:
                 raise ValueError(f"placed: unknown board '{i}'")
             zn = ev.get("zone", "")
-            b.update(location="zone" if zn else "input", zone=zn, seen=t)
+            b.update(location="zone" if zn else "input", zone=zn, placed=t)   # 'seen' only from the camera
             for k in ("x", "y", "yaw"):
                 if k in ev:
                     b[k] = float(ev[k])

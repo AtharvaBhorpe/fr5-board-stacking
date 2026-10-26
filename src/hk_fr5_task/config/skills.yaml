@@ -1,0 +1,28 @@
+# Skills (T4, control-loop.md section 4; decision-log TM-10). base_link, metres / radians / seconds.
+# Defaults (CL-14): change as needed. First real-robot runs: speeds <= 0.2 (safety rule).
+table_z: -0.060                # table top (motion branch H-10)
+hover_z: 0.090                 # tcp z for all moves over the table (150 mm above it: above the tallest stack + a held board)
+max_input_stack_height: 0.040  # contact search starts above this (CL-16)
+search_clear: 0.010            #   + this
+search_speed: 0.01             # contact search LIN velocity scaling (~10 mm/s: the fake / real vacuum needs ~0.1-0.6 s)
+press: 0.003                   # go this far below the expected surface (cup is soft)
+place_gap: 0.001               # release the board this far above the surface
+unstick_lift: 0.015            # straight lift after the seal, before the board is attached in the scene (S-12)
+max_stack: 10                  # drop-off / fault stacks (same as world.yaml)
+default_thickness: 0.006       # board thickness when the variant is unknown
+speed: 0.2                     # velocity scaling of the normal moves (0 -> motion default 0.2)
+approach_speed: 0.1            # LIN down / up near the board
+ref_yaw: 1.5708                # tcp yaw reference (home 'ready'), see skill_math.tcp_yaw_for
+grip_timeout: 3.0              # grip at a known height
+search_timeout: 12.0           # contact search (grip goal running while descending)
+recheck_tol: 0.015             # board must still be within this of where the world saw it (at hover)
+fresh: 1.0                     # world data older than this is stale (VISION_STALE)
+verify_timeout: 3.0            # settle check after a place (CL-20): board must appear within this
+verify_tol: 0.020              #   within this of the place point
+retries: 1                     # GRIP_FAILED / PLAN_FAILED: retries inside the skill
+clear_time: 1.0                # wait_clear: no obstacle for this long
+clear_timeout: 30.0            # wait_clear default timeout
+motion_timeout: 60.0           # cap for any single motion goal
+move_timeout: 25.0             # OMPL move_to / home (plan + execute); a hung move_group is reported after this
+lin_max_speed: 0.3             # m/s at velocity_scaling 1 (Pilz LIN, conservative): LIN timeout = 3 x expected + 8 s
+shadow_radius: 0.12            # CL-20: arm shadow half-width on the table

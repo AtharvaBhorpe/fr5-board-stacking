@@ -14,6 +14,7 @@ import math
 import os
 
 import rclpy
+import tf2_ros
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from rclpy.executors import ExternalShutdownException
@@ -52,6 +53,11 @@ class WorldModel(Node):
             self.cam = Camera(calib.load(p))
         else:
             self.cli = self.create_client(PixelToTable, "/vision/pixel_to_table")
+        self.declare_parameter("shadow_radius", 0.12)          # CL-20 B: arm shadow half-width (0 = off)
+        self.declare_parameter("tcp_frame", "tcp")
+        self.shadow_radius = float(self.get_parameter("shadow_radius").value)
+        self.tf = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf, self)
         self.gripper_state, self.dropped_frames = "", 0
         self.pub = self.create_publisher(WorldMsg, "world", LATCHED)
         self.create_subscription(Detection2DArray, "/vision1/detections", self._detections, 5)
@@ -105,8 +111,18 @@ class WorldModel(Node):
         for k, (cls, tid, score, _, _) in enumerate(items):
             dets.append({"cls": cls, "id": tid, "score": score, "corners": [list(p) for p in xy[5 * k:5 * k + 4]],
                          "inside": bool(inside[5 * k + 4])})
-        self.core.update(self.now(), dets)
+        self.core.update(self.now(), dets, self._shadow())
         self._publish()
+
+    def _shadow(self):
+        """tcp position from TF (motion stack running), else None = no mask (fake world / no robot)."""
+        if self.shadow_radius <= 0:
+            return None
+        try:
+            tr = self.tf.lookup_transform("base_link", self.get_parameter("tcp_frame").value, rclpy.time.Time())
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            return None
+        return {"x": tr.transform.translation.x, "y": tr.transform.translation.y, "radius": self.shadow_radius}
 
     def _event(self, msg):
         try:

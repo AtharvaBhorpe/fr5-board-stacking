@@ -27,15 +27,25 @@ def check(name, cond, extra=""):
 
 def exe(pkg, name):
     return os.path.join(get_package_prefix(pkg), "lib", pkg, name)
+import tempfile
+LOGS = tempfile.mkdtemp(prefix="world_ros_check_")
 def start(cmd):
-    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True)
+    """Output into a temp file, never an unread PIPE (a full 64 KB pipe blocks the node's logging, TM-13)."""
+    log = open(os.path.join(LOGS, os.path.basename(cmd[0]) + ".log"), "w")
+    p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+    p.log_path = log.name
+    log.close()
+    return p
 def stop(p):
     if p.poll() is None:
         os.killpg(p.pid, signal.SIGINT)
+    rc = None
     try:
-        return p.communicate(timeout=5)[0], p.returncode
+        rc = p.wait(timeout=5)
     except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL); return p.communicate()[0] + " [KILLED]", "killed"
+        os.killpg(p.pid, signal.SIGKILL); p.wait(); rc = "killed"
+    with open(p.log_path) as f:
+        return f.read() + (" [KILLED]" if rc == "killed" else ""), rc
 
 procs = {"vision": start([exe("hk_fr5_vision", "vision_transform")]),
          "fake": start([exe("hk_fr5_task", "fake_world"), "--ros-args", "-p", "seed:=1"]),
@@ -60,13 +70,13 @@ def send(d):
     ev.publish(String(data=json.dumps(d)))
 outs = {}
 try:
-    got = until(lambda m: m.vision_ok and len(m.boards) == 3 and len(m.zones) == 4, 15)
+    got = until(lambda m: m.vision_ok and len(m.boards) == 3 and len(m.zones) == 5, 15)
     m = W["m"]
-    check("world: vision ok, 3 boards, 4 zones (fake_world -> pixel_to_table service -> world_model)", got,
+    check("world: vision ok, 3 boards, 5 zones (fake_world -> pixel_to_table service -> world_model)", got,
           m and f"{len(m.boards)} boards, {len(m.zones)} zones, vision_ok {m.vision_ok}")
     red = next(b for b in m.boards if b.variant == "red")
-    check("red board through the real service: (-0.35, 0.10) within 1 mm, inside the calibrated area, size ok",
-          math.dist((red.x, red.y), (-0.35, 0.10)) < 0.001 and red.inside and red.size_ok and red.location == "input",
+    check("red board through the real service: (-0.45, 0.22) within 1 mm, inside the calibrated area, size ok",
+          math.dist((red.x, red.y), (-0.45, 0.22)) < 0.001 and red.inside and red.size_ok and red.location == "input",
           f"({red.x:.4f}, {red.y:.4f})")
     check("input stack board: top_z unknown (NaN, CL-16)", math.isnan(next(b for b in m.boards if b.variant == "white_small").top_z))
 
@@ -100,7 +110,7 @@ check("world_model log: bad event reported, no traceback, no dropped-frame warni
       "unknown event type" in wl and "Traceback" not in wl and "not available" not in wl, wl[-300:])
 check("all nodes stopped cleanly on Ctrl+C", all(o[1] == 0 for o in outs.values()), str({k: o[1] for k, o in outs.items()}))
 p = start([exe("hk_fr5_task", "world_model"), "--ros-args", "-p", "pixel_source:=camera"])
-out = p.communicate(timeout=15)[0]; rc = p.returncode
+rc = p.wait(timeout=15); out = open(p.log_path).read()
 check("pixel_source:=camera -> exit 1 with a clear error", rc == 1 and "pixel_source must be" in out, out[-150:])
 
 print(f"{ok} passed, {bad} failed")

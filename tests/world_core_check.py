@@ -208,5 +208,31 @@ for ev, text in [({"type": "picked", "board": "b99"}, "unknown board"), ({"type"
     except ValueError as e:
         check(f"event {ev['type']} rejected: {text}", text in str(e), str(e))
 
+# 7 arm shadow (CL-20 B): tcp at (-0.45, 0.45) above processing_1, band from the base, radius 0.12
+SH = {"x": -0.45, "y": 0.45, "radius": 0.12}
+w = World(CFG); t = 0.0
+run([det("board/red", -0.6, -0.3)], 0.3)
+w.update(t + 0.1, ZONES + [det("board/red", -0.6, -0.3), det("board/white_small", -0.40, 0.40)], SH); t += 0.1
+check("shadow: a board seen under the arm (held board / arm) is ignored, the other is tracked",
+      sorted(boards(w, t)) == ["b1"], str(sorted(boards(w, t))))
+w.event(t, {"type": "picked", "board": "b1"}); w.event(t, {"type": "placed", "board": "b1", "zone": "processing_1", "x": -0.45, "y": 0.45})
+for k in range(30):                                      # arm stays over the zone 3 s, zone looks empty
+    t = round(t + 0.1, 6); w.update(t, ZONES, SH)
+check("zone covered by the arm 3 s (looks empty): stays LOADED (timers frozen)", zone(w, "processing_1")["state"] == "LOADED")
+for k in range(5):
+    t = round(t + 0.1, 6); w.update(t, ZONES)
+check("arm gone, zone empty < gone_after again (debounce restarted) -> still LOADED", zone(w, "processing_1")["state"] == "LOADED")
+for k in range(10):
+    t = round(t + 0.1, 6); w.update(t, ZONES)
+check("arm gone, zone empty >= gone_after -> PROCESSING", zone(w, "processing_1")["state"] == "PROCESSING")
+w = World(CFG); t = 0.0
+run([det("board/red", -0.30, 0.10)], 0.3)
+for k in range(30):                                      # arm over the input board 3 s
+    t = round(t + 0.1, 6); w.update(t, ZONES, {"x": -0.30, "y": 0.10, "radius": 0.12})
+check("input board hidden under the arm 3 s: not lost; its age shows it was not seen", "b1" in boards(w, t)
+      and boards(w, t)["b1"]["age"] > 2.5)
+t = round(t + 0.5, 6); w.update(t, ZONES)
+check("arm gone, board not visible yet: grace period (lost_after from the shadow end)", "b1" in boards(w, t))
+
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

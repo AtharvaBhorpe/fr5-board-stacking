@@ -56,10 +56,10 @@ w = World(CFG)
 w.update(0.1, to_world_dets(fw.detections(0.1)))
 snap = w.snapshot(0.1)
 bs = {b["variant"]: b for b in snap["boards"]}
-check("demo scenario: 4 zones, 3 boards (input), all variants size_ok", len(snap["zones"]) == 4 and len(bs) == 3
+check("demo scenario: 5 zones (incl. fault), 3 boards (input), all variants size_ok", len(snap["zones"]) == 5 and len(bs) == 3
       and all(b["location"] == "input" and b["size_ok"] for b in bs.values()), str({k: (b["location"], b["size_ok"]) for k, b in bs.items()}))
-check("board pose through pixels: red at (-0.35, 0.10), yaw 0.2, < 1 mm / 0.01 rad (perspective of a 15 cm board)",
-      math.dist((bs["red"]["x"], bs["red"]["y"]), (-0.35, 0.10)) < 0.001 and abs(bs["red"]["yaw"] - 0.2) < 0.01,
+check("board pose through pixels: red at (-0.45, 0.22), yaw 0.2, < 1 mm / 0.01 rad (perspective of a 15 cm board)",
+      math.dist((bs["red"]["x"], bs["red"]["y"]), (-0.45, 0.22)) < 0.001 and abs(bs["red"]["yaw"] - 0.2) < 0.01,
       f"({bs['red']['x']:.4f}, {bs['red']['y']:.4f}) yaw {bs['red']['yaw']:.4f}")
 check("white_large yaw 1.57 -> long side, yaw wrapped to (-pi/2, pi/2]", abs(abs(bs["white_large"]["yaw"]) - 1.57) < 0.01,
       f"{bs['white_large']['yaw']:.4f}")

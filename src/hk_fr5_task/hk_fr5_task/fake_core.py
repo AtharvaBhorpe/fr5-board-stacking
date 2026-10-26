@@ -88,6 +88,16 @@ class FakeWorld:
                 return z
         return None
 
+    def surface_at(self, x, y, table_z):
+        """Top surface z under the point: top of the board / stack whose footprint contains it, else the table."""
+        for b in self.boards:
+            l, w = self._size(b["variant"])
+            c, s = math.cos(b["yaw"]), math.sin(b["yaw"])
+            u, v = c * (x - b["x"]) + s * (y - b["y"]), -s * (x - b["x"]) + c * (y - b["y"])
+            if abs(u) <= l / 2 and abs(v) <= w / 2:
+                return table_z + b["count"] * self.variants.get(b["variant"], {}).get("thickness", 0.006)
+        return table_z
+
     def event(self, t, ev):
         typ = ev.get("type")
         if typ == "picked":
