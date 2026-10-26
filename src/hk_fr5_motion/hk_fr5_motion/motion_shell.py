@@ -294,9 +294,12 @@ class Shell:
         if not self.gripper_up():
             print(f"✘ {self.GRIPPER_MISSING}")
             return
-        g = self.gripper_state
+        g, end = self.gripper_state, time.monotonic() + 1.0
+        while g is None and time.monotonic() < end:  # right after shell start the latched state can lag
+            time.sleep(0.05)
+            g = self.gripper_state
         if g is None:
-            print("✘ gripper node is up but no /gripper/state received yet, try again")
+            print("✘ gripper node is up but no /gripper/state received within 1 s, try again")
             return
         onoff = lambda b: "on " if b else "off"
         print(f"  gripper {g.state}  ({time.time() - self.gripper_stamp:.1f} s ago)  {g.message}")

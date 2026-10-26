@@ -918,7 +918,7 @@ box's bottom is 2 mm above stack_<n> top.
 | # | Item | Effect | Sign of trouble |
 |---|---|---|---|
 | E-1 | Cup compression under vacuum (unknown, est. a few mm): the real board top sits above tcp z = 0 | modelled board lower than the real one by the compression -> conservative toward the table; real board closer to the gripper body (30 mm gap, OK) | real board hits something MoveIt thinks is clear above the board: unlikely |
-| E-2 | Table top -0.045 is an estimate (T4) | board-on-table contact depends on it; margin covers <= 2 mm error | START_STATE_IN_COLLISION right after attach on the table -> measure the table (T4) or pass a larger margin |
+| E-2 | Table top ~~-0.045 estimate~~ **-0.060 measured** (2026-10-27, H-10) | board-on-table contact depends on it; margin covers <= 2 mm error | START_STATE_IN_COLLISION right after attach on the table -> check the table height (H-10) or pass a larger margin |
 | E-3 | A pick-zone board added as a dynamic box (add_box) still exists at attach time | attached box overlaps it -> START_STATE_IN_COLLISION | remove_box(that name) **before** attach_board (control loop, rule S-11) |
 | E-4 | Descent onto a board / the stack | cup collision ends 5 mm short of tcp -> tcp can reach a box top without collision | GOAL_STATE_INVALID at the pick height -> the box top is above the commanded tcp z |
 | E-5 | MoveIt padding assumed 0 (world + robot links, defaults) | margins above are exact | to verify in T20c |
@@ -941,12 +941,14 @@ Details + raw replies: implementation-ref 10o.
 |---|---|---|
 | H-1 | `GetToolDI(id, block)` -> `[0, 0]`: Python `list` of 2 `int` = `[error, value]` (error 0 = OK, value 0/1). Same for `(0, 0)`, `(0, 1)`, `(1, 0)`: `block` 0 / 1 makes no visible difference for a read. DI0 = 0 with pump off, and stayed 0 for 1.5 s with pump on and no part (expected) | `parse_reply` format assumption confirmed, no change |
 | H-2 | `GetToolDO()` -> `xmlrpc.client.Fault -506: "Method 'GetToolDO' not defined"`. The C++ SDK reads tool DOs from the realtime state packet (`tl_dgt_output_l`, bit0-1), not via XML-RPC | gripper_controller start / recover read-back (`gripper_io.get_do`) always fails on the real robot -> stuck in COMM_ERROR. **User 2026-10-27: remove GetToolDO everywhere; assume every SetToolDO is applied by the controller** (DO state = last commanded) |
-| H-3 | `SetToolDO(id, status, 0, 0)` -> `0` (`int`, OK). DO0 = 1: vacuum pump ran (user confirmed); DO0 = 0 off. DO1 = 1 / 0: blow-off on / off (switched off on user request) | DO mapping (5l) confirmed for the vacuum pump; SetToolDO call as implemented |
+| H-3 | `SetToolDO(id, status, 0, 0)` -> `0` (`int`, OK). DO0 = 1: vacuum pump ran (user confirmed); DO0 = 0 off. DO1 = 1 / 0: blow-off on / off (user confirmed: it blew off) | DO mapping (5l) confirmed for both pumps; SetToolDO call as implemented |
 | H-4 | XML-RPC port 20003 refused connections for a few minutes (`ConnectionRefusedError`, ping OK), starting right after the `GetToolDO` fault (the next call, `system.listMethods`, was already refused); later calls worked again. **User: the GetToolDO call crashed the complete controller** | Never call GetToolDO (or any unknown RPC method) on the controller; node already treats a lost controller as COMM_ERROR + retry (W-13) |
 | H-5 | Sequence test (user confirmed): DO0 on 5 s -> off, DO1 on 2 s -> off, DI0 read every 100 ms (83 reads, all `[0, x]`, read latency 1.5 / 1.9 / 4.4 ms min / avg / max). DI0: 0 until 1.1 s after pump on, then 1 until pump off, 0 within 100 ms of pump off, 0 during blow-off and after. User held a substrate board near the cup, the cup sucked it in | DI0 = vacuum achieved confirmed with a board. **1.1 s is not a property of the gripper**: time to vacuum varies greatly per pick (debug log value only, no tuning from it). grip_timeout 3 s stays. 50 ms polling is cheap (~2 ms per read) |
 | H-6 | User rule: **vacuum pump and blow-off pump must never be on at the same time** | Checked in gripper_controller (see implementation-ref 10o): grip = DO1 off before DO0 on, release = DO0 off before DO1 on, a failed first switch stops the second, preempted goals switch nothing, blocking calls on a single-threaded executor (no interleaving) |
 | H-7 | Node start (user 2026-10-27, replaces W-9): **switch vacuum pump and blow-off pump off, then IDLE** = known state, published; DO states afterwards = last commanded (no read-back, H-2). Start reset failed (unreachable / error code) -> retried every `comm_retry_period` (also for CONTROLLER_ERROR, which W-13 would not clear); **grip / release refused with COMM_FAILURE until the reset has run**, so a late reset can never cut a running goal (added by me: race found while implementing) | A board held when the node starts is dropped (accepted by the user: known state first). Recovery after COMM_ERROR keeps the last commanded DO states; a controller restart that resets its outputs is caught by DI0 (HOLDING -> PART_LOST) |
 | H-8 | Interlock (user approved): inside `switch()`, switching a pump **on** first switches the other pump off; if that call fails, the exception stops before the pump is switched on. Callers no longer switch the other pump themselves | Rule H-6 holds by construction for all code paths. Same SetToolDO sequence on the wire as before (grip (1,0), (0,1); release (0,0), (1,1), (1,0)), no extra call |
+| H-9 | motion_shell `gstate` right after shell start said "no /gripper/state received yet" (latched state not delivered yet). User: "you decide" -> **wait up to 1 s** for the first state, then the error ("... within 1 s") | First `gstate` in shell_gripper_check now shows IDLE; user: code ok, no full test run needed |
+| H-10 | Table height (teammate measurement 2026-10-27, updated `fr5_bringup/config/workcell.yaml`): table top -> robot base = **40 mm aluminium profile + 20 mm spacer (within the profile) = 60 mm** -> table_top_z -0.045 -> **-0.060**. Camera post replaced by a tripod at about the same height, a few cm beside the table. Teammate's board variants / zones: not for us (user). Options for the spacer: A one box profile + spacer, B two boxes (needs spacer x/y) -> **user: A**, camera post z per formula | `obstacles.yaml` (header formulas): table z -0.060 -> -0.075 (top -0.060); profile 0.043 -> **0.058** high, z -0.0225 -> -0.030 (spans -0.059 .. -0.001, box rendered under the robot, no gap); camera_post size / x / y kept (user: OK for demo), z 0.806 -> 0.791; floor_guard z -0.056 -> -0.071 (arm limit -0.046 -> -0.061). Effect: picks from the table become plannable (with -0.045 a board top at -0.054 lay inside the modelled table); pick / place heights 15 mm lower; the old hidden 15 mm margin is gone. No code change (scene_manager reads the yaml). scene_motion_check TOP and README example -> -0.060 |
 
 ---------------------------------------------------------------------------
 
@@ -986,7 +988,7 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | T1 | ~~Before step 20 ask: Schmalz model, tool DO suction, DO blow-off, DI vacuum-achieved, lift/blow-off control~~ | DONE: 5l (DO0 vacuum, DO1 blow-off, DI0 vacuum achieved) |
 | T2 | ~~Pilz available in RoboStack Humble~~ | DONE (E4) |
 | T3 | D405 mount yaw on the real robot | open |
-| T4 | Measure workcell (table, profile, camera post) via `/motion/get_state` | open |
+| T4 | ~~Measure workcell (table, profile, camera post) via `/motion/get_state`~~ | CLOSED 2026-10-27 (user: doesn't really matter for the demo): table height measured -0.060 (H-10); table x/y + camera post kept as estimates |
 | T5 | ~~Commanded vs. real distance (`move_delta dz=0.10` -> 100 mm)~~ | CLOSED 2026-10-26 (user): assumed correct for the demo |
 | T6 | ~~TCP ruler check (112.9 mm flange -> cup tip)~~ | CLOSED 2026-10-26 (user): assumed correct for the demo |
 | T7 | ~~D-h launch file name~~ | DONE: `view_robot.launch.py` |
@@ -997,7 +999,7 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | T13 | Optional after step 18: blended / continuous motion (Pilz MoveGroupSequence: approach -> descend -> retreat without stops), e.g. a `move_sequence` action, if stop-and-go still matters. | open, optional |
 | T14 | ~~collision-check stop end state / stop harder at high speed~~ | DONE: V-7 (speed-dependent deceleration); revisit points listed in V-7 |
 | T15 | ~~20f-1 lab: XML-RPC reply format of GetToolDI / GetToolDO (read-only first) + meaning of `block`~~ | DONE 2026-10-27: 5o H-1..H-4. GetToolDI = `[err, value]` ints; **GetToolDO not defined, crashed the controller** -> removed everywhere (H-2, H-4); H-5 DI0 with a board, H-6 pumps never both on, H-7 start reset, H-8 interlock |
-| T16 | 20f-2 lab: real grip / release with a board (confirmation); time_to_vacuum, debounce, vacuum decay after release | open (lab) |
+| T16 | 20f-2 lab: real grip / release with a board (confirmation); time_to_vacuum, debounce, vacuum decay after release | open (lab); raw SetToolDO / GetToolDI sequence with a board DONE (H-5): vacuum gone within 100 ms of pump off; left: `grip` / `release` actions via the node |
 | T17 | 20f-3 lab: `notes/lag_probe.py` while the gripper polls; motion lag must stay ~0.1 s (X-10) | open (lab) |
 | T18 | 20f-4 lab: first `pixi run robot` with the gripper node (real launch never run) | open (lab) |
 | T19 | Vendor-ref acceleration 6.283 rad/s^2 re-test (P-6/P-7); then revisit V-7 stop values, L-7 Pilz limits, M-11 execution tolerances | open (lab) |
@@ -1012,7 +1014,7 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 
 ---------------------------------------------------------------------------
 
-## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `3f7d178` on 2026-10-26)
+## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `f984b66` on 2026-10-27)
 
 | Commit | Content |
 |---|---|
@@ -1045,3 +1047,6 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | `5bcfa93` | bringup rejects unknown launch arguments (T22), T21 closed |
 | `dab07e2` | tests/: gripper + scene checks, mock Fairino XML-RPC server (T23) |
 | `3f7d178` | README.md: team API documentation (T24) |
+| `bb90ed2` | notes: commit table up to `3f7d178` |
+| `57e742c` | notes: lab checklist 2026-10-27 in test.md section 0 |
+| `f984b66` | gripper: GetToolDO removed, start reset both pumps off, pump interlock (5o H-1..H-8, T15) |

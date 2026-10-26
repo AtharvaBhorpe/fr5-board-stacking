@@ -360,7 +360,7 @@ Open choices: decided, see decision-log 5b (M-*).
 
 Teammate workcell (`fr5_bringup/urdf/workcell_scene.xacro` + `config/workcell.yaml`, estimates):
 - Robot base on a 16 cm aluminium profile; table top `top_z = -0.045` below base_link (TODO measure,
-  T4); table 1.00 (x) x 2.00 (y) x 0.03 m slab, centre (-0.42, 0.03); profile 1.00 x 0.16 m at
+  T4) [2026-10-27: measured -0.060 = 40 mm profile + 20 mm spacer, decision-log H-10]; table 1.00 (x) x 2.00 (y) x 0.03 m slab, centre (-0.42, 0.03); profile 1.00 x 0.16 m at
   (-0.42, 0), height = gap between table and base; camera post 0.10 x 0.07 x 1.70 m at (-0.87, 0.116)
   standing on the table. Teammate modelled them as URDF links with **1 mm gaps** ("so MoveIt never
   sees permanent contacts"). Also zone frames + overhead camera frame (perception, not obstacles).
@@ -743,10 +743,20 @@ interlock in `switch()`. Tests (mock + sim), all re-run:
   gripper_actions_check 28/28 (sequences unchanged after the 2 start-reset calls; SetToolDO(1,0) error ->
   vacuum pump not switched on), gripper_launch_check.sh / shell_gripper_check / shell_no_gripper_check OK
   (no leftovers). shell_gripper_check: the very first `gstate`, sent milliseconds after the shell started, said
-  "no /gripper/state received yet" (subscription not matched yet; most likely not caused by this change, not verified).
+  "no /gripper/state received yet" (latched state not delivered yet) -> fixed: `gstate` waits up to 1 s (H-9),
+  re-run: first `gstate` shows IDLE.
 - Build note: `colcon build` without `--symlink-install` once by mistake; `build/` + `install/` of hk_fr5_gripper and
   hk_fr5_interfaces deleted and rebuilt with `pixi run build`. Here `pixi run build` copies the Python files into
   `build/<pkg>/` anyway, so run it after every Python change before testing.
+
+Table height -0.060 (decision-log H-10), full suite re-run 2026-10-27 (sim / mock, no leftovers):
+gripper_io 26/26, gripper_node 27/27, gripper_actions 28/28, gripper_launch / shell_gripper / shell_no_gripper OK,
+scene_smoke 17/17, scene_launch 6/6 (+ known T26 INFO; reference z values updated to H-10), shell_scene OK,
+ctrl_c_probe 3 clean / 5 died (known T26). scene_motion first 10/11: section 3 used a hard-coded `dz(-0.143)`
+(tcp -0.043 = 2 mm above the OLD table) -> with the table at -0.060 that goal is free, so "refused" failed (test bug,
+not a model bug). Fixed: target `TOP + 0.002` from `TOP`, check names computed from `TOP` -> 28/28 (pick / place at
+tcp -0.054, stack_0 centre -0.056, place on stack_0 at -0.048). README rclpy example (compact helpers) extracted
+from README.md and run against a headless sim: "placed, obstacle stack_0", last result SUCCESS.
 
 ---------------------------------------------------------------------------
 

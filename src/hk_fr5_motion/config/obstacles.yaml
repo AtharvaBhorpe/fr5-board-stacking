@@ -1,8 +1,9 @@
 # Static collision boxes for MoveIt, all in base_link, metres / radians.
-# position = box centre. Values = teammate's workcell estimates (fr5_bringup/config/workcell.yaml),
-# TODO measure (decision-log T4). Boxes keep 1 mm gaps so MoveIt never sees permanent contacts.
+# position = box centre. Values = teammate's workcell.yaml; table height MEASURED 2026-10-27 (decision-log H-10):
+# table top -> robot base = 40 mm aluminium profile + 20 mm spacer = 60 mm. Table x/y and camera_post = estimates
+# (T4). Boxes keep 1 mm gaps to the robot so MoveIt never sees permanent contacts.
 #
-# table_top_z = -0.045 (estimate): table surface relative to base_link. If it changes, update:
+# table_top_z = -0.060 (measured): table surface relative to base_link. If it changes, update:
 #   table.position.z       = table_top_z - table.size.z / 2
 #   profile.size.z         = -table_top_z - 0.002
 #   profile.position.z     = -0.001 - profile.size.z / 2
@@ -11,20 +12,20 @@
 boxes:
   - name: table                 # table top slab, 1.00 (depth) x 2.00 (width) m
     size: [1.00, 2.00, 0.03]
-    position: [-0.42, 0.03, -0.060]
+    position: [-0.42, 0.03, -0.075]
     yaw: 0.0
 
-  - name: profile               # 16 cm aluminium profile the robot stands on
-    size: [1.00, 0.16, 0.043]
-    position: [-0.42, 0.0, -0.0225]
+  - name: profile               # 16 cm aluminium profile (40 mm) + spacer (20 mm, within the profile) under the robot
+    size: [1.00, 0.16, 0.058]
+    position: [-0.42, 0.0, -0.030]
     yaw: 0.0
 
-  - name: camera_post           # wooden post with the overhead webcam (generous box)
+  - name: camera_post           # overhead webcam; now a tripod a few cm beside the table, box kept (OK for demo)
     size: [0.10, 0.07, 1.70]
-    position: [-0.87, 0.116, 0.806]
+    position: [-0.87, 0.116, 0.791]
     yaw: 0.0
 
   - name: floor_guard           # virtual: keeps the arm above table level past the table edges
     size: [3.0, 3.0, 0.02]
-    position: [0.0, 0.0, -0.056]
+    position: [0.0, 0.0, -0.071]
     yaw: 0.0

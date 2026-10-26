@@ -4,11 +4,11 @@ import os, signal, subprocess, time, rclpy
 from moveit_msgs.srv import GetPlanningScene
 from hk_fr5_interfaces.srv import AddBox
 from scene_lib import *  # noqa: F401,F403 (also sets up testenv)
-REF = {  # T20b reference (obstacle_loader result)
- 'camera_post': ((0.1, 0.07, 1.7), 'base_link', (-0.87, 0.116, 0.806), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)),
- 'floor_guard': ((3.0, 3.0, 0.02), 'base_link', (0.0, 0.0, -0.056), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)),
- 'profile': ((1.0, 0.16, 0.043), 'base_link', (-0.42, 0.0, -0.0225), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)),
- 'table': ((1.0, 2.0, 0.03), 'base_link', (-0.42, 0.03, -0.06), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0))}
+REF = {  # T20b reference (obstacle_loader result), z values updated to the measured table -0.060 (H-10)
+ 'camera_post': ((0.1, 0.07, 1.7), 'base_link', (-0.87, 0.116, 0.791), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)),
+ 'floor_guard': ((3.0, 3.0, 0.02), 'base_link', (0.0, 0.0, -0.071), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)),
+ 'profile': ((1.0, 0.16, 0.058), 'base_link', (-0.42, 0.0, -0.03), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)),
+ 'table': ((1.0, 2.0, 0.03), 'base_link', (-0.42, 0.03, -0.075), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0))}
 rclpy.init(); n = rclpy.create_node("t20d"); gps = n.create_client(GetPlanningScene, "/get_planning_scene")
 add = n.create_client(AddBox, "/scene/add_box")
 def nodes(): return subprocess.run(["ros2", "node", "list"], capture_output=True, text=True, timeout=20).stdout.split()
