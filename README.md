@@ -47,3 +47,9 @@ In separate terminals run `pixi run -e camera-ros view-cameras` for both RGB
 feeds and aligned depth, and `pixi run -e camera-ros calibrate-scene` for the
 large ChArUco print. The [setup guide](docs/perception_setup.md) lists topics,
 device permissions, transport checks and robot-feedback commands.
+
+For continuous pretrained B image coordinates, run `pixi run --frozen live-b-pixels`
+alongside the existing camera launch. `pixi run --frozen read-b-pixels` requests a
+fresh snapshot for a motion-side consumer. See the [live pixel-coordinate
+handover](docs/live_b_pixels.md) for topics, launch integration and coordinate
+semantics. These outputs are image pixels; they do not authorize robot motion.

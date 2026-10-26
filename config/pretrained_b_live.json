@@ -1,0 +1,12 @@
+{
+  "scene_config": "config/perception_review_roi_v3.toml",
+  "detector_model": "IDEA-Research/grounding-dino-tiny",
+  "segmenter_model": "facebook/sam2.1-hiera-tiny",
+  "cache_dir": ".local/models/huggingface",
+  "prompt": "a white rectangular board. a red rectangular board. a sheet of paper. a cardboard sheet.",
+  "box_threshold": 0.25,
+  "text_threshold": 0.25,
+  "box_nms_iou": 0.7,
+  "duplicate_mask_iou": 0.9,
+  "max_detections": 8
+}
