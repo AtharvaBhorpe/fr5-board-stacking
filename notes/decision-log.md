@@ -1014,7 +1014,7 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 
 ---------------------------------------------------------------------------
 
-## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `f984b66` on 2026-10-27)
+## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `1f18c83` on 2026-10-27)
 
 | Commit | Content |
 |---|---|
@@ -1050,3 +1050,4 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | `bb90ed2` | notes: commit table up to `3f7d178` |
 | `57e742c` | notes: lab checklist 2026-10-27 in test.md section 0 |
 | `f984b66` | gripper: GetToolDO removed, start reset both pumps off, pump interlock (5o H-1..H-8, T15) |
+| `1f18c83` | table top -0.060 measured (H-10, T4 closed), compact team README, shell gstate wait (H-9), scene tests follow the table |
