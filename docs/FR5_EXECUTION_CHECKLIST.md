@@ -12,8 +12,8 @@ Owners below are suggested.
 
 
 ## Doing
+- [ ] T05 — Person A: Prepare calibration and target-generation tools offline. Acceptance: explicit coordinate frames and height handling; unknown physical values remain unset. Partial evidence: user-run plane_geometry.py synthetic checks passed for optical axes, table-plane intersection, raised-plane XY changes, camera translation, and rejection of missing transform/height or a plane behind the camera. perception_geometry.yaml records corrected board/tag dimensions with unmeasured geometry left null. User-run load_perception_geometry.py check loaded 1920x1080 intrinsics and five distortion coefficients; source/profile/destination conversions correctly rejected missing workspace intrinsic validation, camera transform and support heights. Pending: calibration estimation and independent validation tools, measured transforms, placement offsets and physical point validation.
 
-- [ ] T03 — Person B: Show perception in the browser. Requires T02. Acceptance: observed tags/candidates are clearly separate from simulated job state. Partial evidence: scene_bridge.py serves historical replay at http://127.0.0.1:8082/api/scene; user screenshots verified waiting, receiving with IDs 1/2/16, and stale after publisher shutdown (183.719 seconds since receipt), retaining the last scene with execution_allowed=false. Pending: integrate the panel into the demo UI and verify disconnected/error display.
 
 ## Waiting for hardware
 
@@ -28,13 +28,14 @@ Owners below are suggested.
 ## Queued / dependencies
 
 - [ ] T04 — Person B: Resolve source variant identification and ambiguous detections. Acceptance: distinguish VARa/VARb by validated geometry and VARc by colour; ambiguous scenes do not create execution targets.
-- [ ] T05 — Person A: Prepare calibration and target-generation tools offline. Acceptance: explicit coordinate frames and height handling; unknown physical values remain unset.
 - [ ] T13 — Both: Freeze and rehearse the demonstration; prepare slides and backup recording. Requires a clearly documented tested capability.
 - [ ] OPTIONAL — AI text interpretation and voice through validated task commands.
 - [ ] OPTIONAL — Browser 3D digital twin.
 - [ ] OPTIONAL — Wrist D405 integration.
 
 ## Done — evidence scope matters
+
+- [x] T03 — Person B: Show perception in the browser. Requires T02. Acceptance: observed tags/candidates are clearly separate from simulated job state. Evidence: scene_bridge.py serves historical replay at http://127.0.0.1:8082/api/scene; user screenshots verified waiting, receiving with IDs 1/2/16, and stale after publisher shutdown (183.719 seconds since receipt), retaining the last scene with execution_allowed=false. UI integration: demo_web.py polls the scene API once per second in a separate Historical replay panel. The UI session reports browser fixture checks passed for receiving, null, stale, error, HTTP/network failure, malformed JSON, timeout, recovery, and independent job controls; no execution requests issued. Integrated ROS replay verification: user screenshots showed stale at 485.3 seconds with detection lists cleared, then receiving at 6.5 seconds with destination IDs 1/16/2 and two white plus one red source candidate; source variants remained unverified. Physical/live-camera perception remains pending.
 
 - [x] T02 — Person A: Connect perception to ROS image input with recorded-image replay. Acceptance: incoming images produce timestamped scene observations, including missing detections. Evidence: artifacts/replay-check/verified-scenes.json — all seven historical images passed expected tag/candidate counts and replay metadata checks in the user-run validation. Robot execution remains disabled; live-camera reliability and physical accuracy remain pending.
 - [x] Shared branch, Pixi build and fake bringup verified.

@@ -1,0 +1,78 @@
+schema_version: 1
+status: unmeasured
+execution_allowed: false
+units:
+  length: metres
+  angle: radians
+workcell:
+  frame_id: workcell
+  definition_status: proposed_not_published
+  origin_description: null
+  x_axis_description: null
+  z_axis_description: Up; horizontal planes have constant z
+  T_base_link_workcell: null
+camera:
+  optical_frame_id: overhead_camera_optical_frame
+  optical_axes: x right, y down, z forward
+  intrinsics_file: config/cameras/c920_overhead.yaml
+  intrinsics_path_relative_to: repository_root
+  image_size_px:
+  - 1920
+  - 1080
+  focus: 15
+  autofocus: false
+  intrinsics_workspace_validated: false
+  T_workcell_camera: null
+transform_convention: T_A_B maps homogeneous coordinates from frame B into frame A
+surfaces:
+  source_support_z_m: null
+  profile_support_z_m: null
+  destination_support_z_m:
+    VARa: null
+    VARb: null
+    VARc: null
+  destination_marker_plane_z_m:
+    '1': null
+    '2': null
+    '16': null
+variants:
+  VARa:
+    colour: white
+    size_m:
+    - 0.295
+    - 0.21
+    - 0.006
+    destination_tag_id: 1
+  VARb:
+    colour: white
+    size_m:
+    - 0.135
+    - 0.21
+    - 0.006
+    destination_tag_id: 2
+  VARc:
+    colour: red
+    size_m:
+    - 0.135
+    - 0.21
+    - 0.006
+    destination_tag_id: 16
+destination_markers:
+  dictionary: DICT_5X5_100
+  black_square_side_m: 0.039
+  placement_offset_convention: null
+  placement_offsets:
+    '1': null
+    '2': null
+    '16': null
+calibration_board:
+  dictionary: DICT_5X5_100
+  squares:
+  - 5
+  - 7
+  square_side_m: 0.052
+  marker_side_m: 0.042
+validation:
+  independent_point_checks: []
+  max_point_error_m: null
+  physical_validation_passed: false
