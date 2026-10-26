@@ -98,7 +98,8 @@ Motion results carry `moveit_msgs/MoveItErrorCodes` (`error_code.val`) plus a re
 Gripper results carry `hk_fr5_interfaces/msg/GripperErrorCode`: 1 SUCCESS, 2 NO_VACUUM (timeout, pump switched
 off), 3 CANCELLED, 4 PREEMPTED, 5 COMM_FAILURE, 6 CONTROLLER_ERROR, 7 INVALID_GOAL. `GripperState.state`: IDLE,
 GRIPPING, HOLDING, RELEASING, PART_LOST (vacuum lost while holding, pump left on), COMM_ERROR (clears by itself
-when the controller answers again), CONTROLLER_ERROR.
+when the controller answers again), CONTROLLER_ERROR. Goals before the node's start reset (both pumps off) has
+worked are refused with COMM_FAILURE.
 
 Scene services return `success` + `message`. After an attach / add the scene node checks the robot state and
 appends `WARNING: robot state now in collision: <a> <-> <b>` to the message if something touches.
@@ -197,8 +198,10 @@ files above, not in code. `obstacles.yaml` holds **estimated** workcell boxes (t
 
 ## Known limitations
 
-- Real robot not yet tested for: the gripper (XML-RPC reply format of `GetToolDI` / `GetToolDO` is assumed,
-  vacuum timing), the gripper polling next to the motion driver, the scene services with the real table height,
+- Gripper on the real robot: raw `SetToolDO` / `GetToolDI` calls tested (decision-log 5o); the gripper node itself
+  not yet. DO states in `/gripper/state` are the last commanded ones: the controller has no DO read-back over
+  XML-RPC (`GetToolDO` crashed it). The node switches **both pumps off at start**, and never has both pumps on.
+- Real robot not yet tested for: the gripper node, the gripper polling next to the motion driver, the scene services with the real table height,
   the roll / pitch / yaw convention of `get_state` vs the pendant (expected: roll = rx, pitch = ry,
   yaw = rz +- 180 deg).
 - The workcell boxes and the table height are estimates; a wrong table height shows up as a collision warning

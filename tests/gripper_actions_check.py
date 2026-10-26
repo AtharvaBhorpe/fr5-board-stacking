@@ -115,11 +115,12 @@ def mock_up():
     m = subprocess.Popen([sys.executable, "-I", MOCK, str(PORT), "0", "0"], stdout=subprocess.PIPE, text=True); m.stdout.readline(); return m
 mock = mock_up(); rpc = xmlrpc.client.ServerProxy(f"http://127.0.0.1:{PORT}/RPC2"); rpc._auto_vac(True)
 msgs.clear(); p = start(*REAL); wait_servers(); spin(0.3)
-def sets(): return [tuple(c[1:]) for c in rpc._log() if c[0] == "SetToolDO"]
+def sets(): return [tuple(c[1:]) for c in rpc._log() if c[0] == "SetToolDO"][2:]  # [:2] = start reset (H-7)
+check("real start reset: SetToolDO(0,0), (1,0) (H-7)", [tuple(c[1:]) for c in rpc._log() if c[0] == "SetToolDO"][:2] == [(0, 0), (1, 0)])
 st, r, dt = run(grip_c, Grip.Goal())
-check("real grip: SetToolDO(1,0) then (0,1), SUCCESS", sets() == [(1, 0), (0, 1)] and r.success, f"{sets()}; {r.message}")
+check("real grip: interlock SetToolDO(1,0) then (0,1) (H-8), SUCCESS", sets() == [(1, 0), (0, 1)] and r.success, f"{sets()}; {r.message}")
 st, r, dt = run(rel_c, Release.Goal())
-check("real release: SetToolDO(0,0), (1,1), (1,0), SUCCESS", sets()[2:] == [(0, 0), (1, 1), (1, 0)] and r.success, f"{sets()[2:]}")
+check("real release: interlock SetToolDO(0,0), then (1,1), (1,0) (H-8), SUCCESS", sets()[2:] == [(0, 0), (1, 1), (1, 0)] and r.success, f"{sets()[2:]}")
 rpc._auto_vac(False)
 st, r, dt = run(grip_c, Grip.Goal(timeout=0.5))
 check("real grip no vacuum: (1,0), (0,1), then (0,0), NO_VACUUM", sets()[5:] == [(1, 0), (0, 1), (0, 0)] and r.error_code.val == C.NO_VACUUM, f"{sets()[5:]}")

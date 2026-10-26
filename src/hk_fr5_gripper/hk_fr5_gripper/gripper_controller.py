@@ -11,8 +11,12 @@
 - I/O error inside a goal -> both pumps off (best effort), COMM_FAILURE / CONTROLLER_ERROR.
 - /gripper/state (GripperState, latched): DO / DI values + state, at state_rate and on every change.
 - I/O: vacuum pump = vacuum_do, blow-off pump = blow_off_do, vacuum achieved = vacuum_di.
-  Real robot via XML-RPC (SetToolDO / GetToolDI / GetToolDO), fake mode in memory.
-- Start: reads the I/O and publishes it, switches nothing (W-9).
+  Real robot via XML-RPC (SetToolDO / GetToolDI), fake mode in memory. No DO read-back (GetToolDO crashed
+  the controller, decision-log H-2 / H-4): published DO states = last commanded by this node.
+- Pumps never both on (H-6 / H-8): switching one pump on first switches the other off, inside switch().
+- Start: vacuum pump and blow-off pump off = known state, then IDLE (H-7, replaces W-9). If that fails
+  (unreachable / error code), it is retried every comm_retry_period; grip / release goals are refused
+  (COMM_FAILURE) until it has run, so a late reset can never cut a running goal.
 - Shutdown: vacuum pump and blow-off pump off (W-10).
 - DI read every poll_period, debounced (W-8). HOLDING and vacuum lost -> PART_LOST, pump stays on (W-4).
 - I/O errors -> COMM_ERROR / CONTROLLER_ERROR (W-12). COMM_ERROR clears by itself on the next good read
@@ -116,16 +120,16 @@ class GripperController(Node):
                                    f"(vacuum DO{self.vacuum_do}, blow-off DO{self.blow_off_do}, "
                                    f"vacuum achieved DI{self.vacuum_di})")
 
-        self.outputs = {self.vacuum_do: False, self.blow_off_do: False}  # last known DO states
+        self.outputs = {self.vacuum_do: False, self.blow_off_do: False}  # last commanded DO states
         self.vacuum = Debounce(c["debounce_reads"])                    # debounced vacuum achieved
         self.state, self.message = S.IDLE, ""
         self._poll_after = 0.0  # monotonic time; > now while backing off after a comm failure
-        self._started = False   # start read done (W-9); until then a recovery repeats it
+        self._started = False   # start reset done (H-7); until then _poll retries it, goals are refused
         self._before_comm_error = S.IDLE  # state to return to when communication works again (W-13)
 
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.state_pub = self.create_publisher(GripperState, "state", latched)
-        self._read_start()
+        self._start_reset()
         self.create_timer(c["poll_period"], self._poll)
         self.create_timer(1.0 / c["state_rate"], self.publish_state)
 
@@ -168,33 +172,22 @@ class GripperController(Node):
             self.set_state(state, str(e))
 
     # ---- I/O ---------------------------------------------------------------------------------
-    def _read_start(self):
-        """Read the outputs and the vacuum input once; switch nothing (W-9)."""
+    def _start_reset(self):
+        """Both pumps off = known state, then IDLE (H-7). A board held at start is dropped."""
         try:
-            for index in self.outputs:
-                self.outputs[index] = self.io.get_do(index)
-            self.vacuum.update(self.io.get_di(self.vacuum_di))
+            self.switch(self.vacuum_do, False)
+            self.switch(self.blow_off_do, False)
         except (CommError, ControllerError) as e:
             self.io_error(e)
             return
-        vac, blow, held = self.outputs[self.vacuum_do], self.outputs[self.blow_off_do], self.vacuum.value
-        detail = (f"start: vacuum pump {'on' if vac else 'off'}, blow-off {'on' if blow else 'off'}, "
-                  f"vacuum {'achieved' if held else 'not achieved'} (no output switched)")
+        self.vacuum.reset()  # first DI read after the reset is taken as is
         self._started = True
-        self.set_state(S.HOLDING if vac and held else S.IDLE, detail)
+        self.set_state(S.IDLE, f"start: vacuum pump (DO{self.vacuum_do}) and blow-off pump "
+                               f"(DO{self.blow_off_do}) switched off (known state)")
 
     def _recover(self):
-        """First good read after COMM_ERROR (W-13): re-read the outputs (controller may have restarted),
-        go back to the state before the error; HOLDING without vacuum -> PART_LOST."""
-        if not self._started:
-            self._read_start()
-            return
-        try:
-            for index in self.outputs:
-                self.outputs[index] = self.io.get_do(index)
-        except (CommError, ControllerError) as e:
-            self.io_error(e)
-            return
+        """First good read after COMM_ERROR (W-13): back to the state before the error; HOLDING without
+        vacuum -> PART_LOST. DO states = last commanded (no read-back, H-2)."""
         state, held = self._before_comm_error, self.vacuum.value
         vac = self.outputs[self.vacuum_do]
         detail = (f"communication restored: vacuum pump {'on' if vac else 'off'}, "
@@ -209,6 +202,10 @@ class GripperController(Node):
         """Read the vacuum DI, debounce it, detect a lost part while HOLDING (W-4)."""
         if time.monotonic() < self._poll_after:
             return  # backing off after a comm failure
+        if not self._started:  # start reset failed (comm or controller error): retry it (H-7)
+            self._poll_after = time.monotonic() + self.cfg["comm_retry_period"]
+            self._start_reset()
+            return
         try:
             changed = self.vacuum.update(self.io.get_di(self.vacuum_di))
         except (CommError, ControllerError) as e:
@@ -226,7 +223,13 @@ class GripperController(Node):
             self.publish_state()
 
     def switch(self, index, on):
-        """Switch one tool DO and remember it. Raises CommError / ControllerError."""
+        """Switch one tool DO and remember it. Raises CommError / ControllerError.
+        Interlock (H-8): a pump is switched on only after the other pump was switched off; if that fails,
+        the exception stops here and the pump is not switched on."""
+        if on:
+            other = self.blow_off_do if index == self.vacuum_do else self.vacuum_do
+            self.io.set_do(other, False)
+            self.outputs[other] = False
         self.io.set_do(index, on)
         self.outputs[index] = on
 
@@ -256,6 +259,13 @@ class GripperController(Node):
 
     def _goal_running(self):
         return self._active is not None and self._active.is_active
+
+    def _not_started(self, goal_handle, result_type, **fields):
+        """Refuse a goal before the start reset has run (H-7), else None."""
+        if self._started:
+            return None
+        return self._finish(goal_handle, result_type, C.COMM_FAILURE,
+                            f"start reset (both pumps off) not done yet: {self.message}", **fields)
 
     def _finish(self, goal_handle, result_type, code, detail, **fields):
         message = f"{CODE_NAMES.get(code, str(code))}: {detail}"
@@ -302,13 +312,14 @@ class GripperController(Node):
         if error:
             return self._finish(goal_handle, r, C.INVALID_GOAL, error, **fail)
         timeout = goal_handle.request.timeout or self.cfg["grip_timeout"]
+        if (refused := self._not_started(goal_handle, r, **fail)) is not None:
+            return refused
         if self.state == S.HOLDING and self.vacuum.value:  # W-5
             return self._finish(goal_handle, r, C.SUCCESS, "already holding (vacuum achieved), nothing switched",
                                 time_to_vacuum=0.0)
         self.set_state(S.GRIPPING, f"vacuum pump on, waiting up to {timeout:.1f} s for vacuum")
         try:
-            self.switch(self.blow_off_do, False)
-            self.switch(self.vacuum_do, True)
+            self.switch(self.vacuum_do, True)  # interlock: blow-off off first
         except (CommError, ControllerError) as e:
             return self._io_abort(goal_handle, r, e, **fail)
         self.vacuum.reset(False)  # only fresh reads after pump on count (debounced)
@@ -346,10 +357,11 @@ class GripperController(Node):
         if error:
             return self._finish(goal_handle, r, C.INVALID_GOAL, error)
         blow_time = goal_handle.request.blow_off_time or self.cfg["blow_off_time"]
+        if (refused := self._not_started(goal_handle, r)) is not None:
+            return refused
         self.set_state(S.RELEASING, f"vacuum pump off, blow-off on for {blow_time:.1f} s")
         try:
-            self.switch(self.vacuum_do, False)
-            self.switch(self.blow_off_do, True)
+            self.switch(self.blow_off_do, True)  # interlock: vacuum pump off first
         except (CommError, ControllerError) as e:
             return self._io_abort(goal_handle, r, e)
         goal_handle.publish_feedback(Release.Feedback(phase="BLOW_OFF"))

@@ -1,5 +1,7 @@
-"""Mock Fairino XML-RPC server (tool DO/DI only) for tests. Reply format = our assumption [err, value].
-Run: python3 mock_fairino.py PORT [do_mask] [di0]. Extra RPCs for tests: _set_di(i, v), _log(), _set_delay(s), _set_err(code)."""
+"""Mock Fairino XML-RPC server (tool DO/DI only) for tests. GetToolDI reply [err, value] as on the real controller
+(decision-log H-1). No GetToolDO: not an RPC method on the controller (H-2); here an unregistered call also returns an XML-RPC Fault.
+Run: python3 mock_fairino.py PORT [do_mask] [di0]. Extra RPCs for tests: _set_di(i, v), _log(), _do() (DO mask), _set_delay(s),
+_set_err(code), _auto_vac(b)."""
 import sys, threading, time
 from xmlrpc.server import SimpleXMLRPCServer
 port = int(sys.argv[1]); do = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -15,12 +17,11 @@ def SetToolDO(i, s, smooth, block):
 def GetToolDI(i, block):
     time.sleep(cfg["delay"])
     return [cfg["err"], di[i] if not cfg["err"] else 0]
-def GetToolDO():
-    time.sleep(cfg["delay"]); return [cfg["err"], do]
 srv = SimpleXMLRPCServer(("127.0.0.1", port), logRequests=False, allow_none=True)
-for f in (SetToolDO, GetToolDI, GetToolDO): srv.register_function(f)
+for f in (SetToolDO, GetToolDI): srv.register_function(f)
 srv.register_function(lambda i, v: di.__setitem__(i, v) or 0, "_set_di")
 srv.register_function(lambda: log, "_log")
+srv.register_function(lambda: do, "_do")
 srv.register_function(lambda s: cfg.__setitem__("delay", s) or 0, "_set_delay")
 srv.register_function(lambda c: cfg.__setitem__("err", c) or 0, "_set_err")
 srv.register_function(lambda b: cfg.__setitem__("auto_vac", b) or 0, "_auto_vac")

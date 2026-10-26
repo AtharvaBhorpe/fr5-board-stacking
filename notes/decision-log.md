@@ -781,6 +781,7 @@ T1 answers (user, 2026-10-25):
   smooth, block)`, **`GetToolDI(id, block)`** (tool inputs; `GetDI` = control-box inputs, user + SDK header
   `robot.h` agree), `GetToolDO`. All three exist as XML-RPC method names in libfairino.so.2.3.0; the
   XML-RPC return format of GetToolDI / GetToolDO is **unverified** (check read-only at the lab, 20f).
+  [Superseded 2026-10-27, 5o: GetToolDI = `[0, x]`; GetToolDO is not an XML-RPC method and crashed the controller (H-2 / H-4).]
 
 | # | Topic | Decision |
 |---|---|---|
@@ -792,11 +793,11 @@ T1 answers (user, 2026-10-25):
 | W-6 | Release with nothing held | always the full sequence (harmless) |
 | W-7 | Release during GRIPPING | aborts the grip (PREEMPTED), then releases |
 | W-8 | DI0 debounce | 2 equal reads in a row (poll 50 ms -> 100 ms) |
-| W-9 | Node start | read + publish the I/O state, switch nothing (safety rule 3) |
+| W-9 | Node start | ~~read + publish the I/O state, switch nothing (safety rule 3)~~ **replaced by H-7** (2026-10-27): both pumps off at start |
 | W-10 | Node shutdown | **DO0 and DO1 both off** (user; proposal was DO1 off only) |
 | W-11 | F12 attach board box to tcp | later, in the control loop (knows the board size) |
 | W-12 | Distinct error states (user: no shared ERROR tag) | state: IDLE, GRIPPING, HOLDING, RELEASING, PART_LOST, COMM_ERROR (XML-RPC unreachable / timeout), CONTROLLER_ERROR (controller error code); result error_code: SUCCESS, NO_VACUUM (timeout, pump off), CANCELLED, PREEMPTED, COMM_FAILURE, CONTROLLER_ERROR, INVALID_GOAL. A new grip / release clears the error states (no reset command). No PART_LOST result code (user: the grip timeout covers vacuum lost before success) |
-| W-13 | COMM_ERROR recovery (user, 2026-10-26; amends W-12) | **COMM_ERROR clears by itself** on the first good read: outputs re-read (controller may have restarted), back to the state before the error; HOLDING without vacuum -> PART_LOST; unreachable at start -> the start read (W-9) runs when the robot appears. Debounced DI is reset during the outage (first read after it counts at once). PART_LOST / CONTROLLER_ERROR still cleared only by a new grip / release |
+| W-13 | COMM_ERROR recovery (user, 2026-10-26; amends W-12) | **COMM_ERROR clears by itself** on the first good read: ~~outputs re-read (controller may have restarted)~~ (no DO read-back since H-2), back to the state before the error; HOLDING without vacuum -> PART_LOST; unreachable at start -> the start reset (H-7) runs when the robot appears. Debounced DI is reset during the outage (first read after it counts at once). PART_LOST / CONTROLLER_ERROR still cleared only by a new grip / release |
 | W-14 | Goal concurrency (20c, Claude; user confirmed 2026-10-26) | any new goal preempts the running one (grip / release, both actions; same rule as motion_controller): the old goal ends PREEMPTED and switches nothing, the new goal takes over the outputs. Extends W-7 to grip-during-grip, grip-during-release, release-during-release |
 | W-15 | Cancel during release (20c, Claude; user confirmed 2026-10-26) | blow-off off at once, state IDLE, CANCELLED (vacuum pump is already off) |
 | W-16 | I/O failure inside a goal (20c, Claude; user confirmed 2026-10-26) | try both pumps off, result COMM_FAILURE / CONTROLLER_ERROR (message says which DOs are confirmed off). DI unreadable for the whole grip -> COMM_FAILURE at the timeout (not NO_VACUUM). Grip start resets the debounced DI to False: success needs `debounce_reads` fresh reads after pump on |
@@ -931,6 +932,22 @@ look for E-2 / E-3. Reentrant callback group (implementation-ref Q20-5: default 
 Validation (T20b): length, width, height > 0 and finite; yaw, dx, dy finite; contact_margin >= 0, finite, < height;
 add_box sizes > 0, finite values, non-empty name, not a static name, not "board".
 
+## 5o. Lab 2026-10-27: tool I/O over XML-RPC (T15 / 20f, part of T16) (H)
+
+Real controller (FR5 V6.0, v3.9.2, 192.168.58.2), plain `xmlrpc.client` from the laptop, no driver running.
+Details + raw replies: implementation-ref 10o.
+
+| # | Finding | Consequence |
+|---|---|---|
+| H-1 | `GetToolDI(id, block)` -> `[0, 0]`: Python `list` of 2 `int` = `[error, value]` (error 0 = OK, value 0/1). Same for `(0, 0)`, `(0, 1)`, `(1, 0)`: `block` 0 / 1 makes no visible difference for a read. DI0 = 0 with pump off, and stayed 0 for 1.5 s with pump on and no part (expected) | `parse_reply` format assumption confirmed, no change |
+| H-2 | `GetToolDO()` -> `xmlrpc.client.Fault -506: "Method 'GetToolDO' not defined"`. The C++ SDK reads tool DOs from the realtime state packet (`tl_dgt_output_l`, bit0-1), not via XML-RPC | gripper_controller start / recover read-back (`gripper_io.get_do`) always fails on the real robot -> stuck in COMM_ERROR. **User 2026-10-27: remove GetToolDO everywhere; assume every SetToolDO is applied by the controller** (DO state = last commanded) |
+| H-3 | `SetToolDO(id, status, 0, 0)` -> `0` (`int`, OK). DO0 = 1: vacuum pump ran (user confirmed); DO0 = 0 off. DO1 = 1 / 0: blow-off on / off (switched off on user request) | DO mapping (5l) confirmed for the vacuum pump; SetToolDO call as implemented |
+| H-4 | XML-RPC port 20003 refused connections for a few minutes (`ConnectionRefusedError`, ping OK), starting right after the `GetToolDO` fault (the next call, `system.listMethods`, was already refused); later calls worked again. **User: the GetToolDO call crashed the complete controller** | Never call GetToolDO (or any unknown RPC method) on the controller; node already treats a lost controller as COMM_ERROR + retry (W-13) |
+| H-5 | Sequence test (user confirmed): DO0 on 5 s -> off, DO1 on 2 s -> off, DI0 read every 100 ms (83 reads, all `[0, x]`, read latency 1.5 / 1.9 / 4.4 ms min / avg / max). DI0: 0 until 1.1 s after pump on, then 1 until pump off, 0 within 100 ms of pump off, 0 during blow-off and after. User held a substrate board near the cup, the cup sucked it in | DI0 = vacuum achieved confirmed with a board. **1.1 s is not a property of the gripper**: time to vacuum varies greatly per pick (debug log value only, no tuning from it). grip_timeout 3 s stays. 50 ms polling is cheap (~2 ms per read) |
+| H-6 | User rule: **vacuum pump and blow-off pump must never be on at the same time** | Checked in gripper_controller (see implementation-ref 10o): grip = DO1 off before DO0 on, release = DO0 off before DO1 on, a failed first switch stops the second, preempted goals switch nothing, blocking calls on a single-threaded executor (no interleaving) |
+| H-7 | Node start (user 2026-10-27, replaces W-9): **switch vacuum pump and blow-off pump off, then IDLE** = known state, published; DO states afterwards = last commanded (no read-back, H-2). Start reset failed (unreachable / error code) -> retried every `comm_retry_period` (also for CONTROLLER_ERROR, which W-13 would not clear); **grip / release refused with COMM_FAILURE until the reset has run**, so a late reset can never cut a running goal (added by me: race found while implementing) | A board held when the node starts is dropped (accepted by the user: known state first). Recovery after COMM_ERROR keeps the last commanded DO states; a controller restart that resets its outputs is caught by DI0 (HOLDING -> PART_LOST) |
+| H-8 | Interlock (user approved): inside `switch()`, switching a pump **on** first switches the other pump off; if that call fails, the exception stops before the pump is switched on. Callers no longer switch the other pump themselves | Rule H-6 holds by construction for all code paths. Same SetToolDO sequence on the wire as before (grip (1,0), (0,1); release (0,0), (1,1), (1,0)), no extra call |
+
 ---------------------------------------------------------------------------
 
 ## 6. Control design / algorithms (C)
@@ -979,7 +996,7 @@ Lab checklist (only the open items, in order, with checks + expected results): `
 | T12 | (expected result: 5m) Step 19: check GetState RPY on the real robot: same pose on pendant vs `/motion/get_state` (pendant base is rotated 180 deg about z, G6; Fairino may use another RPY convention). Change the extraction / interface comment if it does not match expectations. | open |
 | T13 | Optional after step 18: blended / continuous motion (Pilz MoveGroupSequence: approach -> descend -> retreat without stops), e.g. a `move_sequence` action, if stop-and-go still matters. | open, optional |
 | T14 | ~~collision-check stop end state / stop harder at high speed~~ | DONE: V-7 (speed-dependent deceleration); revisit points listed in V-7 |
-| T15 | 20f-1 lab: XML-RPC reply format of GetToolDI / GetToolDO (read-only first) + meaning of `block` | open (lab) |
+| T15 | ~~20f-1 lab: XML-RPC reply format of GetToolDI / GetToolDO (read-only first) + meaning of `block`~~ | DONE 2026-10-27: 5o H-1..H-4. GetToolDI = `[err, value]` ints; **GetToolDO not defined, crashed the controller** -> removed everywhere (H-2, H-4); H-5 DI0 with a board, H-6 pumps never both on, H-7 start reset, H-8 interlock |
 | T16 | 20f-2 lab: real grip / release with a board (confirmation); time_to_vacuum, debounce, vacuum decay after release | open (lab) |
 | T17 | 20f-3 lab: `notes/lag_probe.py` while the gripper polls; motion lag must stay ~0.1 s (X-10) | open (lab) |
 | T18 | 20f-4 lab: first `pixi run robot` with the gripper node (real launch never run) | open (lab) |

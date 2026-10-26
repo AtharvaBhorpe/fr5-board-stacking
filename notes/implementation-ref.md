@@ -559,7 +559,8 @@ Fairino tool I/O (SDK header `fairino_hardware_v3_9_0_1/libfairino/include/robot
   tool I/O ids 0..1 only (`robot_types.h`: "only bit0-bit1 valid"). `GetDI` / `SetDO` = control box I/O.
   `block` doc: 0 = blocking, 1 = non-blocking. We call GetToolDI(id, 0).
 - All three names exist as plain strings in `libfairino.so.2.3.0` (= XML-RPC method names, like ServoJ).
-  **Unverified:** XML-RPC reply of GetToolDI / GetToolDO. Assumed `[error, value]` (Fairino Python SDK style);
+  [2026-10-27, 10o: GetToolDI reply = `[0, x]` verified; GetToolDO is NOT an RPC method and crashed the controller.]
+  **Unverified (then):** XML-RPC reply of GetToolDI / GetToolDO. Assumed `[error, value]` (Fairino Python SDK style);
   `gripper_io.parse_reply` also accepts a bare int, anything else -> CommError with the raw reply (20f).
 - xmlrpc.client's default Transport has no timeout -> own Transport sets `conn.timeout` (rpc_timeout).
 
@@ -693,6 +694,60 @@ exit 1, no process started; `--show-args` lists the 6 args; `update_rate:=50 use
 "update_rate: 50 Hz", all nodes incl. /scene/scene_manager). Caveat: a check inside the launch file only sees args of
 this launch; included vendor launch files are not affected.
 
+## 10o. Lab 2026-10-27: tool I/O over XML-RPC, raw replies (decision-log 5o)
+
+Laptop 192.168.58.10 on `enp4s0`, `xmlrpc.client.ServerProxy('http://192.168.58.2:20003/RPC2')`, socket timeout 2 s.
+```
+GetToolDI(0, 0) -> [0, 0]  type=list elems=['int', 'int']
+GetToolDI(0, 1) -> [0, 0]  type=list elems=['int', 'int']
+GetToolDI(1, 0) -> [0, 0]  type=list elems=['int', 'int']
+GetToolDO()     -> Fault -506: "Method 'GetToolDO' not defined"
+SetToolDO(0, 1, 0, 0) -> 0  type=int        # vacuum pump on (user: pump ran)
+  GetToolDI(0, 0) at +0.5 / 1.0 / 1.5 s -> [0, 0]   # no part under the cup
+SetToolDO(0, 0, 0, 0) -> 0                  # vacuum off
+SetToolDO(1, 1, 0, 0) -> 0                  # blow-off on
+SetToolDO(1, 0, 0, 0) -> 0                  # blow-off off
+```
+- Getters return `[error, value]`, setters a bare `int` error code (0 = OK).
+- Not every SDK getter exists on XML-RPC: the SDK takes tool DO states from the realtime state packet
+  (`robot_types.h`: `tl_dgt_output_l`, "bit0-bit1 valid"; port 20004), not from an RPC.
+- Right after the `GetToolDO` fault, port 20003 refused connections for a few minutes (`ConnectionRefusedError`,
+  ping OK; `system.listMethods` was never answered). Cause unknown; later calls worked again.
+- **GetToolDO crashed the complete controller** (user): never call it, nor any RPC method not known to exist.
+- Sequence test 2026-10-27 (user confirmed; board held near the cup, sucked in), DI0 every 100 ms
+  (full CSV kept only locally, not in the repo):
+```
+ 0.302 s  SetToolDO(0,1,0,0) -> 0     vacuum on
+ 0.4-1.3  DI0 [0, 0]
+ 1.400 s  DI0 [0, 1]                  vacuum achieved, 1.1 s after pump on (varies per pick: debug value only)
+ 5.302 s  SetToolDO(0,0,0,0) -> 0     vacuum off
+ 5.304 s  SetToolDO(1,1,0,0) -> 0     blow-off on
+ 5.400 s  DI0 [0, 0]                  vacuum gone within 100 ms of pump off
+ 7.302 s  SetToolDO(1,0,0,0) -> 0     blow-off off;  DI0 0 until the end (8.3 s)
+ 83 reads, latency min / avg / max 1.5 / 1.9 / 4.4 ms
+```
+- Pumps never both on (H-6), gripper_controller.py: grip `switch(blow_off, False)` then `switch(vacuum, True)`;
+  release `switch(vacuum, False)` then `switch(blow_off, True)`; `set_do` raises on error -> the 2nd switch is
+  skipped; a preempted goal returns without switching, the new goal does its own "other pump off" first;
+  `set_do` is a blocking call in a single-threaded executor, so no other callback runs between the two switches.
+- Still open (T16): vacuum decay after release with a real pick / place; real `grip` / `release` actions.
+
+Code change 2026-10-27 (decision-log H-2, H-7, H-8): GetToolDO / `get_do` removed (gripper_io, controller, mock,
+tests, test.md one-liner, README); start = `_start_reset()` (DO0 off, DO1 off, IDLE), retried from `_poll` every
+comm_retry_period while it fails (unreachable or error code), goals refused with COMM_FAILURE until it worked;
+interlock in `switch()`. Tests (mock + sim), all re-run:
+- gripper_io_check 26/26 (no `get_do` on FakeIo / XmlRpcIo), gripper_node_check 27/27 (start reset
+  SetToolDO (0,0), (1,0), mask 0; grip = (1,0), (0,1); recovery without read-back; SetToolDO error 14 at start ->
+  CONTROLLER_ERROR, grip refused "start reset ... not done yet", error gone -> reset retried -> IDLE, logged once;
+  unreachable at start -> grip refused -> robot appears -> reset; node never called GetToolDO),
+  gripper_actions_check 28/28 (sequences unchanged after the 2 start-reset calls; SetToolDO(1,0) error ->
+  vacuum pump not switched on), gripper_launch_check.sh / shell_gripper_check / shell_no_gripper_check OK
+  (no leftovers). shell_gripper_check: the very first `gstate`, sent milliseconds after the shell started, said
+  "no /gripper/state received yet" (subscription not matched yet; most likely not caused by this change, not verified).
+- Build note: `colcon build` without `--symlink-install` once by mistake; `build/` + `install/` of hk_fr5_gripper and
+  hk_fr5_interfaces deleted and rebuilt with `pixi run build`. Here `pixi run build` copies the Python files into
+  `build/<pkg>/` anyway, so run it after every Python change before testing.
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders
@@ -707,4 +762,5 @@ this launch; included vendor launch files are not affected.
 - Step 19: build `fairino_msgs` + driver (Q3-5 submodule side effect, Q3-6 LD_LIBRARY_PATH);
   IP is hard-coded in driver; consider 125 Hz update_rate if motion stutters; accel limits tuning.
 - ~~Step 20: T1 gripper questions (Schmalz model, DOs, DI).~~ DONE (decision-log 5l).
-- Step 20f (lab): read-only GetToolDI / GetToolDO via XML-RPC first, check the reply format (10n).
+- ~~Step 20f (lab): read-only GetToolDI / GetToolDO via XML-RPC first, check the reply format (10n).~~ DONE 2026-10-27
+  (10o): GetToolDI only. **Never call GetToolDO** (crashed the controller, decision-log H-2 / H-4).

@@ -16,9 +16,9 @@ Logs go to `$HK_TEST_LOG_DIR` (default `/tmp/hk_fr5_tests`). Scripts that start 
 
 | Script | Needs | Checks | Last result |
 |---|---|---|---|
-| `gripper_io_check.py` | nothing (offline) | Debounce, reply parsing, FakeIo, XmlRpcIo vs `mock_fairino.py` (errors, 0.5 s timeout, refused) | 27/27 |
-| `gripper_node_check.py` | ROS | gripper_controller: bad config, fake state 10 Hz, real path vs mock: start read, PART_LOST, CONTROLLER_ERROR, COMM_ERROR + auto recovery (W-13), shutdown both pumps off | 20/20 |
-| `gripper_actions_check.py` | ROS | grip / release: success, timeouts, invalid goals, cancel, preempt (W-14), PART_LOST, exact SetToolDO sequences vs mock, comm / controller errors | 27/27 |
+| `gripper_io_check.py` | nothing (offline) | Debounce, reply parsing, FakeIo, XmlRpcIo vs `mock_fairino.py` (errors, 0.5 s timeout, refused), no `get_do` (H-2) | 26/26 |
+| `gripper_node_check.py` | ROS | gripper_controller: bad config, fake state 10 Hz, real path vs mock: start reset both pumps off (H-7), interlock order (H-8), PART_LOST, CONTROLLER_ERROR, COMM_ERROR + auto recovery (W-13), goals refused + reset retried until it works, shutdown both pumps off | 27/27 |
+| `gripper_actions_check.py` | ROS | grip / release: success, timeouts, invalid goals, cancel, preempt (W-14), PART_LOST, exact SetToolDO sequences vs mock (start reset, interlock), comm / controller errors | 28/28 |
 | `gripper_launch_check.sh` | bringup | gripper in the bringup, CLI grip / release, use_gripper:=bad, SIGTERM -> pumps off (*printed*) | OK |
 | `shell_gripper_check.py` | bringup | motion_shell grip / release / gstate, errors, Ctrl+C cancel (*printed*) | OK |
 | `shell_no_gripper_check.py` | bringup | motion_shell with use_gripper:=false, gripper started / stopped / killed mid-goal (W-17) (*printed*) | OK |
@@ -29,8 +29,8 @@ Logs go to `$HK_TEST_LOG_DIR` (default `/tmp/hk_fr5_tests`). Scripts that start 
 | `ctrl_c_probe.py` | bringup | informative (T26): nodes "finished cleanly" vs "died" after a terminal-style Ctrl+C | 3 clean / 5 died (known) |
 
 Helpers: `testenv.py` (installed paths via the ament index, log dir), `scene_lib.py` (headless bringup, planning
-scene reader), `mock_fairino.py` (XML-RPC server with SetToolDO / GetToolDI / GetToolDO + test hooks; reply format
-`[error, value]` = our **unverified** assumption, T15).
+scene reader), `mock_fairino.py` (XML-RPC server with SetToolDO / GetToolDI + test hooks; GetToolDI reply `[error, value]` as
+on the real controller, decision-log H-1; no GetToolDO, H-2).
 
 Not covered here (lost with earlier session scratchpads, documented instead, decision-log X-1): the motion tests of
 steps 15-18 (implementation-ref 10i-10l). `scene_motion_check.py` re-checks the main motion paths (move_to,

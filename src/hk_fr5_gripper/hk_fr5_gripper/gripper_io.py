@@ -3,7 +3,8 @@
 Both classes have the same methods:
     set_do(index, on)   switch a tool digital output
     get_di(index)       -> bool, read a tool digital input
-    get_do(index)       -> bool, read back a tool digital output
+There is no DO read-back: GetToolDO is not an XML-RPC method on the controller and calling it crashed
+the controller (decision-log 5o, H-2 / H-4). A SetToolDO that returns 0 is taken as applied.
 Errors: CommError (controller unreachable / timeout / unexpected reply), ControllerError (error code).
 """
 import http.client
@@ -39,10 +40,8 @@ class _TimeoutTransport(xmlrpc.client.Transport):
 
 
 def parse_reply(call, reply):
-    """Value of a Fairino getter reply. Expected [error, value]; a bare int is taken as the value.
-
-    NOTE: the XML-RPC reply format of GetToolDI / GetToolDO is not verified on the real
-    controller yet (step 20f); anything else raises CommError with the raw reply.
+    """Value of a Fairino getter reply: [error, value] (GetToolDI on the real controller: [0, 0] / [0, 1],
+    decision-log H-1); a bare int is taken as the value. Anything else raises CommError with the raw reply.
     """
     if isinstance(reply, (list, tuple)) and len(reply) >= 2:
         if reply[0] != 0:
@@ -77,10 +76,6 @@ class XmlRpcIo:
         # GetToolDI(id, block 0 = blocking): tool inputs (GetDI would read the control box inputs)
         return parse_reply("GetToolDI", self._call("GetToolDI", index, 0)) == 1
 
-    def get_do(self, index):
-        # GetToolDO() -> bit mask of the tool outputs (bit 0 = DO0)
-        return bool(parse_reply("GetToolDO", self._call("GetToolDO")) >> index & 1)
-
 
 class FakeIo:
     """In-memory tool I/O. The vacuum DI goes to 1 `delay` s after the vacuum DO is switched on,
@@ -104,9 +99,6 @@ class FakeIo:
         if index != self._vacuum_di or self._vacuum_on_since is None:
             return False
         return self._vacuum_ok() and time.monotonic() - self._vacuum_on_since >= self._delay
-
-    def get_do(self, index):
-        return self._do.get(index, False)
 
 
 class Debounce:

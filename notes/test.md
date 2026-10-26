@@ -12,8 +12,8 @@ Log each result in decision-log (new entry per item) and close the T-row.
 | # | Item | Check | Expected / pass | M/G |
 |---|---|---|---|---|
 | 1 | A + B | network, web UI auto mode + enabled, e-stop person (section A) | `ping` OK, no alarms | - |
-| 2 | T15 | read-only, BEFORE the bringup: the C1 one-liner, then once more with `block` = 1: `GetToolDI(0, 1)` | reply format (`[err, value]`? bare int?) + whether `block` changes anything; if not `[0, x]`: fix `parse_reply` in `gripper_io.py` | - |
-| 3 | T18 | `pixi run robot` (first real launch with the gripper node) | section B messages; gripper log: real I/O, start state read, **nothing switched**; G1: `/gripper/state` DO/DI = web UI | - |
+| 2 | ~~T15~~ | DONE 2026-10-27 (decision-log 5o): GetToolDI = `[0, x]`, `block` no difference; GetToolDO crashed the controller -> removed | - |
+| 3 | T18 | `pixi run robot` (first real launch with the gripper node) | section B messages; gripper log: real I/O, `start: vacuum pump (DO0) and blow-off pump (DO1) switched off` (H-7: **switches both pumps off**, nothing held under the cup); G1 IDLE, web UI DO0 = DO1 = 0 | G |
 | 4 | T12 | C0 `state` vs web UI TCP pose (no motion) | x, y negated (base rotated 180 deg, G6); roll = rx, pitch = ry, yaw = rz +- 180 deg (5m); else fix the RPY extraction / interface comment | - |
 | 5 | T17 | terminal 3: `pixi run python3 notes/lag_probe.py 15`; during it `d 0 0 30 base`, `d 0 0 -30 base` (gripper node running = polling) | lag stays ~0.1 s (X-10); 2 s = queueing again (check 50 Hz, P-9) | M |
 | 6 | T16 | board under the cup: `grip`, lift `d 0 0 30 base`, put down, `release`; also `grip` with no board | `SUCCESS ... in x s` (note x = time_to_vacuum); no board: NO_VACUUM after 3 s, pump off; after release: how long DI0 stays 1 (vacuum decay) in `gstate` / G1; no DI0 flicker (else raise `debounce_reads` 2) | M + G |
@@ -75,11 +75,13 @@ More commands:
 - Rotate tool in place: `MoveDelta "{dyaw: 0.3}"`
 
 ## C1. Gripper (terminal 2)  (decision-log 5l; DO0 vacuum pump, DO1 blow-off, DI0 vacuum achieved)
-Real robot: **ask before switching** (safety rule 3). First check = read only (step 20f):
-`pixi run python3 -c "import xmlrpc.client as x; r=x.ServerProxy('http://192.168.58.2:20003/RPC2'); print(r.GetToolDI(0, 0), r.GetToolDO())"`
+Real robot: **ask before switching** (safety rule 3). Read-only check of DI0 (reply `[0, 0]` / `[0, 1]`, H-1):
+`pixi run python3 -c "import xmlrpc.client as x; r=x.ServerProxy('http://192.168.58.2:20003/RPC2'); print(r.GetToolDI(0, 0))"`
+**Never call `GetToolDO`** (not an RPC method; it crashed the controller, decision-log H-2 / H-4).
+**The gripper node switches both pumps OFF at start** (H-7): a board held when the bringup starts is dropped.
 | # | Command | Expected |
 |---|---|---|
-| G1 | `pixi run ros2 topic echo /gripper/state` | state IDLE (or HOLDING if a board is held), DO/DI = web UI |
+| G1 | `pixi run ros2 topic echo /gripper/state` | state IDLE, `start: ... switched off (known state)`; DO = last commanded by the node (no read-back), DI0 = web UI |
 | G2 | `pixi run ros2 action send_goal --feedback /gripper/grip hk_fr5_interfaces/action/Grip "{}"` | board held: `SUCCESS: vacuum achieved in x s`; no board: `NO_VACUUM` after 3 s, pump off |
 | G3 | `pixi run ros2 action send_goal /gripper/grip hk_fr5_interfaces/action/Grip "{timeout: 5.0}"` | own timeout |
 | G4 | `pixi run ros2 action send_goal /gripper/release hk_fr5_interfaces/action/Release "{}"` | pump off, blow-off 1 s, `SUCCESS: released` |
