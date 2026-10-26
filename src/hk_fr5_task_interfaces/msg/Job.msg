@@ -12,7 +12,9 @@ string from_zone            # "" = input area
 string zone                 # processing zone for "process"
 string to                   # target zone
 int32 count                 # boards to handle; 0 = all that match
+int32 priority              # higher runs first (ties: queue order); changeable at runtime (Control set_priority, CL-22)
 string source               # "dashboard" | "llm" | "cli"
 string state                # QUEUED | RUNNING | WAITING | PAUSED | DONE | FAILED | CANCELLED
 int32 done_count
+int32 failed_count          # boards skipped (problem) or sent to the fault zone
 string message              # last result / reason

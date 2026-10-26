@@ -1,8 +1,16 @@
-# Main controller commands (dashboard buttons / LLM tools).
-# command: "pause" | "resume" | "stop" (cancel the running skill, keep the queue) | "cancel_job" (job_id) |
-#          "clear_queue" | "home"
+# Main controller commands (dashboard buttons / LLM tools). Scope: job_id "" = whole controller, else that job.
+#   "pause"        [job_id optional] whole controller: finish the current skill, then hold. One job: it stops getting
+#                  actions (a held board of it is placed first), the other jobs continue
+#   "resume"       [job_id optional] whole controller / that job (e.g. after STACK_FULL was cleared)
+#   "stop"         whole controller: cancel the running skill NOW (smooth stop), then paused; a held board goes to the
+#                  fault zone on resume (CL-25)
+#   "cancel_job"   job_id required; a held board of it is placed at its target first (CL-25)
+#   "set_priority" job_id + priority (CL-22), effective at the next skill boundary
+#   "clear_queue"  cancel all jobs (a held board is placed first)
+#   "home"         move home (accepted only while paused / idle)
 string command
 string job_id
+int32 priority              # set_priority only
 ---
 bool success
 string message
