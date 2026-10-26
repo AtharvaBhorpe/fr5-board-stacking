@@ -907,6 +907,10 @@ box's bottom is 2 mm above stack_<n> top.
 | E-6 | Place height: tcp target z = stack top (or table) + height | if the target is lower than that, the goal collides | GOAL_STATE_INVALID at place -> check the stack top z |
 | E-7 | yaw / dx / dy wrong (vision) | box sticks out on one side | collisions only on one side of the board |
 
+T20b implementation notes: kept board pose = TF base -> tcp composed with the attached box pose (S-9); stack index
+monotonic (names never reused, also after remove_box ""); after attach / add_box the current state is checked with
+`/check_state_validity` and contacts are appended to the message as a WARNING (success stays true) -> first place to
+look for E-2 / E-3. Reentrant callback group (implementation-ref Q20-5: default group deadlocked).
 Validation (T20b): length, width, height > 0 and finite; yaw, dx, dy finite; contact_margin >= 0, finite, < height;
 add_box sizes > 0, finite values, non-empty name, not a static name, not "board".
 

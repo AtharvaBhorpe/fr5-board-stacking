@@ -576,6 +576,13 @@ rclpy quirks found (step 20b):
   bit 2 set). SIGTERM was not handled either (pumps would stay on). Fix: own `signal.signal(SIGINT / SIGTERM,
   raise KeyboardInterrupt)`; during the switch-off both are ignored (bounded by rpc_timeout per call).
   Verified: launch Ctrl+C -> both pumps off, all nodes "finished cleanly"; SIGTERM -> both off, exits.
+- Q20-5 **rclpy callback groups (found in T20b):** by default all callbacks of a node are in ONE mutually exclusive
+  group. An `async` **service or timer** callback holds that group for its whole duration, including while it
+  awaits -> its own `_sleep` timer and the client response (ApplyPlanningScene) can never run = deadlock (the request
+  still reached MoveIt, so the boxes appeared, but nothing after the await ran and later service calls timed out).
+  Action execute callbacks are NOT affected (rclpy runs them as separate tasks outside the group) -> motion_controller
+  / gripper_controller were fine. Fix in scene_manager: one `ReentrantCallbackGroup` for its services, timers
+  (incl. the `_sleep` timers) and clients; mutual exclusion of scene changes via its own `_busy` flag.
 - Q20-3 Test gotcha: SIGINT to the `ros2 run` wrapper PID is not forwarded to the node; a terminal Ctrl+C
   hits the whole process group -> tests start nodes with `start_new_session=True` and `os.killpg(pid, SIGINT)`.
 
@@ -626,6 +633,18 @@ Step 20e results (motion_shell gripper commands, 2026-10-26, headless sim, shell
 - W-17 (use_gripper:=false): status "gripper not running", grip / release / gstate -> clear message after ~1 s, motion
   works; gripper started later -> works; stopped -> gstate says not running (no stale state); stopped mid-goal
   (SIGINT and SIGKILL) -> "action server disappeared" (no hang). `server_is_ready()` noticed the SIGKILLed node too.
+
+T20b results (scene_manager, 2026-10-26, headless sim, scratchpad `test_scene_static.py`, `test_scene_smoke.py`):
+- Static boxes vs obstacle_loader: bringup with obstacle_loader vs `use_obstacles:=false` + scene_manager, compared
+  `/get_planning_scene` world objects (ids, dims, frame, pose, primitive pose): **IDENTICAL** (table, profile,
+  camera_post, floor_guard). obstacle_loader + motion_controller unchanged in this step (removal = T20d).
+- Services: attach 270 x 200 x 6 mm -> MoveIt attached 'board' on tcp, touch_links [gripper_link, tcp], dims
+  0.27 x 0.20 x **0.004**, centre tcp z 0.002 (margin 2 mm); 2nd attach rejected; detach keep -> stack_0 at
+  (-0.4970, -0.1021, 0.3621) = home tcp z 0.364 - 0.002 (tcp z points down), quat (0.707, 0.707, 0, 0) = tool down
+  yaw 90 deg, no 'board' left in the world, nothing attached (one diff: attached REMOVE + world REMOVE board + ADD
+  stack_0 works); add_box OK; static name rejected; box into the gripper -> success + "WARNING: robot state now in
+  collision: gripper_link <-> probe"; remove static rejected; remove "" -> 3 boxes removed, only static left;
+  detach with nothing attached rejected; clean exit 0.
 
 ---------------------------------------------------------------------------
 
