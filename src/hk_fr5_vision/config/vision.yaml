@@ -1,0 +1,5 @@
+# vision_transform parameters (ROS parameter file), decision-log V-8.
+/**/vision_transform:
+  ros__parameters:
+    calib_file: ""          # "" -> <hk_fr5_vision share>/config/calib.yaml (symlink to the committed source file)
+    reload_period: 1.0      # s between checks of the calibration file (reloaded when it changes)
