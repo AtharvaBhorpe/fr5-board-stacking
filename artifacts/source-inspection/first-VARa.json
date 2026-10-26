@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "purpose": "offline_source_inspection",
+  "input_scene": "/home/ub26/Projects/fr5-board-stacking/artifacts/scenes/01-Photo from 2026-10-25 18-14-31.509659.json",
+  "geometry_config": "/home/ub26/Projects/fr5-board-stacking/config/perception_geometry.yaml",
+  "selection": {
+    "requested_variant": "VARa",
+    "status": "blocked",
+    "reason": "uncalibrated_candidates",
+    "candidate_id": null,
+    "matching_candidate_ids": [],
+    "execution_allowed": false
+  },
+  "classified_scene": {
+    "schema_version": 1,
+    "mode": "offline_image",
+    "image_size": [
+      1920,
+      1080
+    ],
+    "coordinate_space": "original_distorted_image_pixels",
+    "source_roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "destination_tags": [
+      {
+        "tag_id": 1,
+        "variant": "VARa",
+        "identity_valid": true,
+        "corners_px": [
+          [
+            591.4553833007812,
+            753.9051513671875
+          ],
+          [
+            587.5458374023438,
+            787.0601196289062
+          ],
+          [
+            554.4440307617188,
+            785.916748046875
+          ],
+          [
+            557.9139404296875,
+            753.779052734375
+          ]
+        ],
+        "placement_pose_robot": null
+      },
+      {
+        "tag_id": 16,
+        "variant": "VARc",
+        "identity_valid": true,
+        "corners_px": [
+          [
+            498.2771911621094,
+            522.0768432617188
+          ],
+          [
+            501.5,
+            492.5
+          ],
+          [
+            532.3228149414062,
+            492.3616638183594
+          ],
+          [
+            530.1427001953125,
+            521.6168823242188
+          ]
+        ],
+        "placement_pose_robot": null
+      },
+      {
+        "tag_id": 2,
+        "variant": "VARb",
+        "identity_valid": true,
+        "corners_px": [
+          [
+            691.9874267578125,
+            494.1956787109375
+          ],
+          [
+            690.1320190429688,
+            523.4915771484375
+          ],
+          [
+            659.3385009765625,
+            524.1774291992188
+          ],
+          [
+            660.428466796875,
+            494.88214111328125
+          ]
+        ],
+        "placement_pose_robot": null
+      }
+    ],
+    "source_candidates": [
+      {
+        "colour": "white",
+        "outline_px": [
+          [
+            1519,
+            747
+          ],
+          [
+            1535,
+            935
+          ],
+          [
+            1804,
+            938
+          ],
+          [
+            1777,
+            751
+          ]
+        ],
+        "area_px2": 49702.0,
+        "rectangularity": 0.9100936465218364,
+        "reasons": [],
+        "candidate_id": "candidate-1",
+        "variant": null,
+        "single_sheet_verified": false,
+        "grasp_pose_robot": null,
+        "metric_outline_m": null,
+        "metric_classification": {
+          "status": "uncalibrated",
+          "variant": null,
+          "reason": "Missing: workspace validation of camera intrinsics/settings; T_workcell_camera",
+          "execution_allowed": false
+        }
+      },
+      {
+        "colour": "white",
+        "outline_px": [
+          [
+            1689,
+            433
+          ],
+          [
+            1519,
+            439
+          ],
+          [
+            1536,
+            554
+          ],
+          [
+            1713,
+            550
+          ]
+        ],
+        "area_px2": 20751.0,
+        "rectangularity": 0.90746104535623,
+        "reasons": [],
+        "candidate_id": "candidate-2",
+        "variant": null,
+        "single_sheet_verified": false,
+        "grasp_pose_robot": null,
+        "metric_outline_m": null,
+        "metric_classification": {
+          "status": "uncalibrated",
+          "variant": null,
+          "reason": "Missing: workspace validation of camera intrinsics/settings; T_workcell_camera",
+          "execution_allowed": false
+        }
+      },
+      {
+        "colour": "red",
+        "outline_px": [
+          [
+            1534,
+            588
+          ],
+          [
+            1551,
+            700
+          ],
+          [
+            1732,
+            702
+          ],
+          [
+            1713,
+            582
+          ]
+        ],
+        "area_px2": 22096.5,
+        "rectangularity": 0.8983345463794317,
+        "reasons": [],
+        "candidate_id": "candidate-3",
+        "variant": null,
+        "single_sheet_verified": false,
+        "grasp_pose_robot": null,
+        "metric_outline_m": null,
+        "metric_classification": {
+          "status": "uncalibrated",
+          "variant": null,
+          "reason": "Missing: workspace validation of camera intrinsics/settings; T_workcell_camera",
+          "execution_allowed": false
+        }
+      }
+    ],
+    "rejected_source_regions": [
+      {
+        "colour": "white",
+        "outline_px": [
+          [
+            1428,
+            396
+          ],
+          [
+            1408,
+            416
+          ],
+          [
+            1412,
+            447
+          ],
+          [
+            1438,
+            467
+          ],
+          [
+            1466,
+            463
+          ],
+          [
+            1481,
+            447
+          ],
+          [
+            1474,
+            412
+          ],
+          [
+            1453,
+            396
+          ]
+        ],
+        "area_px2": 4260.0,
+        "rectangularity": 0.7903526869850155,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "outline_px": [
+          [
+            1173,
+            330
+          ],
+          [
+            1228,
+            428
+          ],
+          [
+            1352,
+            382
+          ],
+          [
+            1352,
+            488
+          ],
+          [
+            1440,
+            382
+          ],
+          [
+            1413,
+            330
+          ]
+        ],
+        "area_px2": 19854.0,
+        "rectangularity": 0.47063006684682124,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "outline_px": [
+          [
+            1422,
+            387
+          ],
+          [
+            1396,
+            421
+          ],
+          [
+            1400,
+            450
+          ],
+          [
+            1429,
+            477
+          ],
+          [
+            1472,
+            475
+          ],
+          [
+            1493,
+            441
+          ],
+          [
+            1485,
+            409
+          ],
+          [
+            1450,
+            384
+          ]
+        ],
+        "area_px2": 7313.5,
+        "rectangularity": 0.7763087591437109,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "diagnostics": {
+      "missing_destination_ids": [],
+      "unexpected_tag_ids": [],
+      "duplicate_tag_ids": []
+    },
+    "metric_calibrated": false,
+    "execution_allowed": false,
+    "robot_targets": [],
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-14-31.509659.jpeg",
+    "metric_classification_summary": {
+      "frame_id": "base_link",
+      "common_board_thickness_m": 0.006,
+      "matched_candidate_ids": {},
+      "multiple_candidates_for_variant": [],
+      "purpose": "diagnostic_only",
+      "physical_accuracy_validated": false,
+      "execution_allowed": false
+    }
+  },
+  "execution_allowed": false
+}

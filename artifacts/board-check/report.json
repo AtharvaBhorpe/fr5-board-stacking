@@ -1,0 +1,1015 @@
+[
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-14-31.509659.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 49702.0,
+        "rectangularity": 0.9100936465218364,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1519,
+            747
+          ],
+          [
+            1535,
+            935
+          ],
+          [
+            1804,
+            938
+          ],
+          [
+            1777,
+            751
+          ]
+        ],
+        "centre_px": [
+          1658.75,
+          842.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 20751.0,
+        "rectangularity": 0.90746104535623,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1689,
+            433
+          ],
+          [
+            1519,
+            439
+          ],
+          [
+            1536,
+            554
+          ],
+          [
+            1713,
+            550
+          ]
+        ],
+        "centre_px": [
+          1614.25,
+          494.0
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "red",
+        "area_px2": 22096.5,
+        "rectangularity": 0.8983345463794317,
+        "reasons": [],
+        "candidate_id": "red-3",
+        "corners_px": [
+          [
+            1534,
+            588
+          ],
+          [
+            1551,
+            700
+          ],
+          [
+            1732,
+            702
+          ],
+          [
+            1713,
+            582
+          ]
+        ],
+        "centre_px": [
+          1632.5,
+          643.0
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 4260.0,
+        "rectangularity": 0.7903526869850155,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 19854.0,
+        "rectangularity": 0.47063006684682124,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "area_px2": 7313.5,
+        "rectangularity": 0.7763087591437109,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  },
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-14-49.150824.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 49731.5,
+        "rectangularity": 0.9078144159873839,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1519,
+            747
+          ],
+          [
+            1537,
+            936
+          ],
+          [
+            1804,
+            938
+          ],
+          [
+            1777,
+            751
+          ]
+        ],
+        "centre_px": [
+          1659.25,
+          843.0
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 20750.0,
+        "rectangularity": 0.9072202711033465,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1689,
+            433
+          ],
+          [
+            1519,
+            439
+          ],
+          [
+            1536,
+            554
+          ],
+          [
+            1713,
+            550
+          ]
+        ],
+        "centre_px": [
+          1614.25,
+          494.0
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "red",
+        "area_px2": 22037.5,
+        "rectangularity": 0.9006630812958885,
+        "reasons": [],
+        "candidate_id": "red-3",
+        "corners_px": [
+          [
+            1534,
+            588
+          ],
+          [
+            1558,
+            704
+          ],
+          [
+            1732,
+            701
+          ],
+          [
+            1713,
+            582
+          ]
+        ],
+        "centre_px": [
+          1634.25,
+          643.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 4267.5,
+        "rectangularity": 0.7837465654160971,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 20054.0,
+        "rectangularity": 0.4535052012663953,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "area_px2": 7278.0,
+        "rectangularity": 0.773514719948985,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  },
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-14-57.085558.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 49695.5,
+        "rectangularity": 0.9099750048740296,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1519,
+            747
+          ],
+          [
+            1536,
+            935
+          ],
+          [
+            1804,
+            938
+          ],
+          [
+            1777,
+            751
+          ]
+        ],
+        "centre_px": [
+          1659.0,
+          842.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 20738.0,
+        "rectangularity": 0.9072985765890358,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1688,
+            432
+          ],
+          [
+            1519,
+            439
+          ],
+          [
+            1536,
+            554
+          ],
+          [
+            1713,
+            550
+          ]
+        ],
+        "centre_px": [
+          1614.0,
+          493.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "red",
+        "area_px2": 22098.0,
+        "rectangularity": 0.8983291249657399,
+        "reasons": [],
+        "candidate_id": "red-3",
+        "corners_px": [
+          [
+            1534,
+            588
+          ],
+          [
+            1554,
+            702
+          ],
+          [
+            1732,
+            701
+          ],
+          [
+            1713,
+            582
+          ]
+        ],
+        "centre_px": [
+          1633.25,
+          643.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 4195.5,
+        "rectangularity": 0.7874436936936937,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 19744.5,
+        "rectangularity": 0.46045942164179104,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "area_px2": 7356.0,
+        "rectangularity": 0.7748606120028279,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  },
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-15-23.984036.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 49655.5,
+        "rectangularity": 0.9019303164779549,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1765,
+            758
+          ],
+          [
+            1503,
+            755
+          ],
+          [
+            1525,
+            941
+          ],
+          [
+            1789,
+            944
+          ]
+        ],
+        "centre_px": [
+          1645.5,
+          849.5
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 48509.5,
+        "rectangularity": 0.9230696315785193,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1318,
+            680
+          ],
+          [
+            1310,
+            940
+          ],
+          [
+            1499,
+            960
+          ],
+          [
+            1499,
+            699
+          ]
+        ],
+        "centre_px": [
+          1406.5,
+          819.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 4191.5,
+        "rectangularity": 0.7866929429429429,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 24034.5,
+        "rectangularity": 0.7632241177839373,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 19766.5,
+        "rectangularity": 0.45810929822935015,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "area_px2": 32447.5,
+        "rectangularity": 0.8040316185945089,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "area_px2": 7384.5,
+        "rectangularity": 0.7776039100005853,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  },
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-15-46.355952.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 49574.5,
+        "rectangularity": 0.9057326930909981,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1765,
+            758
+          ],
+          [
+            1504,
+            754
+          ],
+          [
+            1526,
+            941
+          ],
+          [
+            1790,
+            943
+          ]
+        ],
+        "centre_px": [
+          1646.25,
+          849.0
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 48383.5,
+        "rectangularity": 0.9282424919083452,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1318,
+            680
+          ],
+          [
+            1310,
+            939
+          ],
+          [
+            1499,
+            959
+          ],
+          [
+            1498,
+            698
+          ]
+        ],
+        "centre_px": [
+          1406.25,
+          819.0
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 19725.0,
+        "rectangularity": 0.9042640570015376,
+        "reasons": [],
+        "candidate_id": "white-3",
+        "corners_px": [
+          [
+            1520,
+            402
+          ],
+          [
+            1526,
+            516
+          ],
+          [
+            1699,
+            526
+          ],
+          [
+            1688,
+            411
+          ]
+        ],
+        "centre_px": [
+          1608.25,
+          463.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 18277.5,
+        "rectangularity": 0.8881790688179292,
+        "reasons": [],
+        "candidate_id": "white-4",
+        "corners_px": [
+          [
+            1269,
+            355
+          ],
+          [
+            1276,
+            466
+          ],
+          [
+            1445,
+            470
+          ],
+          [
+            1436,
+            370
+          ]
+        ],
+        "centre_px": [
+          1356.5,
+          415.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "red",
+        "area_px2": 20940.5,
+        "rectangularity": 0.9117647058823529,
+        "reasons": [],
+        "candidate_id": "red-5",
+        "corners_px": [
+          [
+            1544,
+            587
+          ],
+          [
+            1559,
+            702
+          ],
+          [
+            1737,
+            702
+          ],
+          [
+            1719,
+            586
+          ]
+        ],
+        "centre_px": [
+          1639.75,
+          644.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 3530.0,
+        "rectangularity": 0.6762820061165289,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 5057.5,
+        "rectangularity": 0.6824432868884422,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 5500.5,
+        "rectangularity": 0.7322876835879853,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 4531.0,
+        "rectangularity": 0.8312236286919831,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 6809.5,
+        "rectangularity": 0.8459009177482214,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "area_px2": 26920.5,
+        "rectangularity": 0.8362433999601264,
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  },
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-16-17.901466.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 48458.0,
+        "rectangularity": 0.9283142667903594,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1318,
+            680
+          ],
+          [
+            1310,
+            940
+          ],
+          [
+            1499,
+            959
+          ],
+          [
+            1498,
+            698
+          ]
+        ],
+        "centre_px": [
+          1406.25,
+          819.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 19751.0,
+        "rectangularity": 0.9043632284762362,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1520,
+            402
+          ],
+          [
+            1526,
+            516
+          ],
+          [
+            1699,
+            526
+          ],
+          [
+            1688,
+            411
+          ]
+        ],
+        "centre_px": [
+          1608.25,
+          463.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "red",
+        "area_px2": 21061.0,
+        "rectangularity": 0.905274711500782,
+        "reasons": [],
+        "candidate_id": "red-3",
+        "corners_px": [
+          [
+            1550,
+            579
+          ],
+          [
+            1556,
+            693
+          ],
+          [
+            1734,
+            710
+          ],
+          [
+            1727,
+            591
+          ]
+        ],
+        "centre_px": [
+          1641.75,
+          643.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 4492.5,
+        "rectangularity": 0.8241607044578977,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 6829.0,
+        "rectangularity": 0.8511778636420292,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  },
+  {
+    "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-16-36.484699.jpeg",
+    "roi_xyxy": [
+      1120,
+      330,
+      1840,
+      980
+    ],
+    "candidates": [
+      {
+        "colour": "white",
+        "area_px2": 48463.0,
+        "rectangularity": 0.9285622006760624,
+        "reasons": [],
+        "candidate_id": "white-1",
+        "corners_px": [
+          [
+            1318,
+            680
+          ],
+          [
+            1310,
+            940
+          ],
+          [
+            1499,
+            959
+          ],
+          [
+            1498,
+            698
+          ]
+        ],
+        "centre_px": [
+          1406.25,
+          819.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "white",
+        "area_px2": 19751.0,
+        "rectangularity": 0.9043632284762362,
+        "reasons": [],
+        "candidate_id": "white-2",
+        "corners_px": [
+          [
+            1520,
+            402
+          ],
+          [
+            1526,
+            516
+          ],
+          [
+            1699,
+            526
+          ],
+          [
+            1688,
+            411
+          ]
+        ],
+        "centre_px": [
+          1608.25,
+          463.75
+        ],
+        "variant": null,
+        "execution_allowed": false
+      },
+      {
+        "colour": "red",
+        "area_px2": 21060.5,
+        "rectangularity": 0.9006292494446335,
+        "reasons": [],
+        "candidate_id": "red-3",
+        "corners_px": [
+          [
+            1550,
+            579
+          ],
+          [
+            1556,
+            693
+          ],
+          [
+            1734,
+            710
+          ],
+          [
+            1727,
+            591
+          ]
+        ],
+        "centre_px": [
+          1641.75,
+          643.25
+        ],
+        "variant": null,
+        "execution_allowed": false
+      }
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "area_px2": 4499.5,
+        "rectangularity": 0.8254448725004586,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "area_px2": 6841.0,
+        "rectangularity": 0.8526735635049233,
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ],
+    "metric_calibrated": false,
+    "execution_allowed": false
+  }
+]

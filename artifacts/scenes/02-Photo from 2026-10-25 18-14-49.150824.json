@@ -1,0 +1,316 @@
+{
+  "schema_version": 1,
+  "mode": "offline_image",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    1120,
+    330,
+    1840,
+    980
+  ],
+  "destination_tags": [
+    {
+      "tag_id": 1,
+      "variant": "VARa",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          592.0,
+          755.5
+        ],
+        [
+          586.7208251953125,
+          788.1941528320312
+        ],
+        [
+          554.5,
+          786.5
+        ],
+        [
+          559.5,
+          752.5
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 2,
+      "variant": "VARb",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          849.2030639648438,
+          445.8147888183594
+        ],
+        [
+          868.3873901367188,
+          468.2862548828125
+        ],
+        [
+          843.5,
+          486.5
+        ],
+        [
+          824.8994140625,
+          463.774658203125
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 16,
+      "variant": "VARc",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          315.3404235839844,
+          342.89508056640625
+        ],
+        [
+          342.6166076660156,
+          348.21917724609375
+        ],
+        [
+          332.5,
+          374.0
+        ],
+        [
+          304.5,
+          369.0
+        ]
+      ],
+      "placement_pose_robot": null
+    }
+  ],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1519,
+          747
+        ],
+        [
+          1537,
+          936
+        ],
+        [
+          1804,
+          938
+        ],
+        [
+          1777,
+          751
+        ]
+      ],
+      "area_px2": 49731.5,
+      "rectangularity": 0.9078144159873839,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1689,
+          433
+        ],
+        [
+          1519,
+          439
+        ],
+        [
+          1536,
+          554
+        ],
+        [
+          1713,
+          550
+        ]
+      ],
+      "area_px2": 20750.0,
+      "rectangularity": 0.9072202711033465,
+      "reasons": [],
+      "candidate_id": "candidate-2",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1534,
+          588
+        ],
+        [
+          1558,
+          704
+        ],
+        [
+          1732,
+          701
+        ],
+        [
+          1713,
+          582
+        ]
+      ],
+      "area_px2": 22037.5,
+      "rectangularity": 0.9006630812958885,
+      "reasons": [],
+      "candidate_id": "candidate-3",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    }
+  ],
+  "rejected_source_regions": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1425,
+          397
+        ],
+        [
+          1407,
+          419
+        ],
+        [
+          1414,
+          450
+        ],
+        [
+          1438,
+          467
+        ],
+        [
+          1466,
+          463
+        ],
+        [
+          1481,
+          446
+        ],
+        [
+          1477,
+          417
+        ],
+        [
+          1453,
+          396
+        ]
+      ],
+      "area_px2": 4267.5,
+      "rectangularity": 0.7837465654160971,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1172,
+          330
+        ],
+        [
+          1228,
+          429
+        ],
+        [
+          1351,
+          382
+        ],
+        [
+          1369,
+          456
+        ],
+        [
+          1343,
+          456
+        ],
+        [
+          1342,
+          495
+        ],
+        [
+          1440,
+          382
+        ],
+        [
+          1413,
+          330
+        ]
+      ],
+      "area_px2": 20054.0,
+      "rectangularity": 0.4535052012663953,
+      "reasons": [
+        "touches_search_boundary",
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1422,
+          387
+        ],
+        [
+          1396,
+          421
+        ],
+        [
+          1406,
+          461
+        ],
+        [
+          1435,
+          479
+        ],
+        [
+          1473,
+          474
+        ],
+        [
+          1491,
+          452
+        ],
+        [
+          1486,
+          411
+        ],
+        [
+          1461,
+          388
+        ]
+      ],
+      "area_px2": 7278.0,
+      "rectangularity": 0.773514719948985,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    }
+  ],
+  "diagnostics": {
+    "missing_destination_ids": [],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-14-49.150824.jpeg"
+}

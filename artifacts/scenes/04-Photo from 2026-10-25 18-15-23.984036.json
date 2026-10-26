@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "mode": "offline_image",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    1120,
+    330,
+    1840,
+    980
+  ],
+  "destination_tags": [
+    {
+      "tag_id": 2,
+      "variant": "VARb",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          819.8518676757812,
+          784.6090087890625
+        ],
+        [
+          816.4653930664062,
+          818.1123046875
+        ],
+        [
+          783.5294799804688,
+          816.003662109375
+        ],
+        [
+          786.0924072265625,
+          783.3966064453125
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 1,
+      "variant": "VARa",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          589.62548828125,
+          756.066650390625
+        ],
+        [
+          585.8626708984375,
+          787.6608276367188
+        ],
+        [
+          552.5,
+          787.5
+        ],
+        [
+          556.8281860351562,
+          754.8827514648438
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 16,
+      "variant": "VARc",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          386.00091552734375,
+          526.9800415039062
+        ],
+        [
+          381.8263244628906,
+          556.6293334960938
+        ],
+        [
+          351.1631164550781,
+          557.2344360351562
+        ],
+        [
+          354.5,
+          527.5
+        ]
+      ],
+      "placement_pose_robot": null
+    }
+  ],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1765,
+          758
+        ],
+        [
+          1503,
+          755
+        ],
+        [
+          1525,
+          941
+        ],
+        [
+          1789,
+          944
+        ]
+      ],
+      "area_px2": 49655.5,
+      "rectangularity": 0.9019303164779549,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1318,
+          680
+        ],
+        [
+          1310,
+          940
+        ],
+        [
+          1499,
+          960
+        ],
+        [
+          1499,
+          699
+        ]
+      ],
+      "area_px2": 48509.5,
+      "rectangularity": 0.9230696315785193,
+      "reasons": [],
+      "candidate_id": "candidate-2",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    }
+  ],
+  "rejected_source_regions": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1424,
+          398
+        ],
+        [
+          1408,
+          416
+        ],
+        [
+          1415,
+          451
+        ],
+        [
+          1440,
+          467
+        ],
+        [
+          1467,
+          462
+        ],
+        [
+          1481,
+          446
+        ],
+        [
+          1473,
+          411
+        ],
+        [
+          1453,
+          396
+        ]
+      ],
+      "area_px2": 4191.5,
+      "rectangularity": 0.7866929429429429,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1653,
+          382
+        ],
+        [
+          1597,
+          408
+        ],
+        [
+          1510,
+          411
+        ],
+        [
+          1515,
+          472
+        ],
+        [
+          1594,
+          572
+        ],
+        [
+          1727,
+          486
+        ]
+      ],
+      "area_px2": 24034.5,
+      "rectangularity": 0.7632241177839373,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1172,
+          330
+        ],
+        [
+          1228,
+          429
+        ],
+        [
+          1352,
+          381
+        ],
+        [
+          1354,
+          491
+        ],
+        [
+          1440,
+          382
+        ],
+        [
+          1413,
+          330
+        ]
+      ],
+      "area_px2": 19766.5,
+      "rectangularity": 0.45810929822935015,
+      "reasons": [
+        "touches_search_boundary",
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1528,
+          584
+        ],
+        [
+          1544,
+          700
+        ],
+        [
+          1629,
+          708
+        ],
+        [
+          1633,
+          731
+        ],
+        [
+          1756,
+          731
+        ],
+        [
+          1733,
+          558
+        ],
+        [
+          1618,
+          556
+        ],
+        [
+          1615,
+          582
+        ]
+      ],
+      "area_px2": 32447.5,
+      "rectangularity": 0.8040316185945089,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1441,
+          382
+        ],
+        [
+          1404,
+          400
+        ],
+        [
+          1395,
+          432
+        ],
+        [
+          1407,
+          463
+        ],
+        [
+          1451,
+          481
+        ],
+        [
+          1485,
+          463
+        ],
+        [
+          1493,
+          431
+        ],
+        [
+          1474,
+          396
+        ]
+      ],
+      "area_px2": 7384.5,
+      "rectangularity": 0.7776039100005853,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    }
+  ],
+  "diagnostics": {
+    "missing_destination_ids": [],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-15-23.984036.jpeg"
+}

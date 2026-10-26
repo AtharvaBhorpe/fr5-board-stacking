@@ -1,0 +1,21 @@
+{
+  "device": "/dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920_E8F8C89F-video-index0",
+  "opencv": "4.13.0",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "focus": 15.0,
+  "autofocus": 0.0,
+  "reported_fps": 15.0,
+  "board": {
+    "squares": [
+      5,
+      7
+    ],
+    "square_length_m": 0.052,
+    "marker_length_m": 0.042,
+    "dictionary": "DICT_5X5_100"
+  },
+  "calibration_accepted": false
+}

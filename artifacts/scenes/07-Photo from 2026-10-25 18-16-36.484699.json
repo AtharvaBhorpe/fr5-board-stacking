@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "mode": "offline_image",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    1120,
+    330,
+    1840,
+    980
+  ],
+  "destination_tags": [
+    {
+      "tag_id": 1,
+      "variant": "VARa",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          514.020263671875,
+          752.7218627929688
+        ],
+        [
+          495.0,
+          781.0
+        ],
+        [
+          468.2087097167969,
+          763.5049438476562
+        ],
+        [
+          487.587890625,
+          735.9314575195312
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 2,
+      "variant": "VARb",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          860.1177368164062,
+          586.317138671875
+        ],
+        [
+          874.38330078125,
+          614.8162841796875
+        ],
+        [
+          843.7003173828125,
+          627.7411499023438
+        ],
+        [
+          831.0,
+          600.5
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 16,
+      "variant": "VARc",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          389.5588684082031,
+          392.9306640625
+        ],
+        [
+          381.85064697265625,
+          418.75592041015625
+        ],
+        [
+          352.5,
+          415.0
+        ],
+        [
+          360.5,
+          388.0
+        ]
+      ],
+      "placement_pose_robot": null
+    }
+  ],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1318,
+          680
+        ],
+        [
+          1310,
+          940
+        ],
+        [
+          1499,
+          959
+        ],
+        [
+          1498,
+          698
+        ]
+      ],
+      "area_px2": 48463.0,
+      "rectangularity": 0.9285622006760624,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1520,
+          402
+        ],
+        [
+          1526,
+          516
+        ],
+        [
+          1699,
+          526
+        ],
+        [
+          1688,
+          411
+        ]
+      ],
+      "area_px2": 19751.0,
+      "rectangularity": 0.9043632284762362,
+      "reasons": [],
+      "candidate_id": "candidate-2",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1550,
+          579
+        ],
+        [
+          1556,
+          693
+        ],
+        [
+          1734,
+          710
+        ],
+        [
+          1727,
+          591
+        ]
+      ],
+      "area_px2": 21060.5,
+      "rectangularity": 0.9006292494446335,
+      "reasons": [],
+      "candidate_id": "candidate-3",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    }
+  ],
+  "rejected_source_regions": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1120,
+          442
+        ],
+        [
+          1120,
+          505
+        ],
+        [
+          1145,
+          515
+        ],
+        [
+          1173,
+          507
+        ],
+        [
+          1189,
+          483
+        ],
+        [
+          1178,
+          452
+        ],
+        [
+          1150,
+          436
+        ]
+      ],
+      "area_px2": 4499.5,
+      "rectangularity": 0.8254448725004586,
+      "reasons": [
+        "touches_search_boundary",
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1120,
+          330
+        ],
+        [
+          1120,
+          429
+        ],
+        [
+          1154,
+          426
+        ],
+        [
+          1187,
+          443
+        ],
+        [
+          1191,
+          330
+        ]
+      ],
+      "area_px2": 6841.0,
+      "rectangularity": 0.8526735635049233,
+      "reasons": [
+        "touches_search_boundary",
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    }
+  ],
+  "diagnostics": {
+    "missing_destination_ids": [],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "image": "/home/ub26/Pictures/Camera/Photo from 2026-10-25 18-16-36.484699.jpeg"
+}
