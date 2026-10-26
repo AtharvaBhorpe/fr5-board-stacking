@@ -10,9 +10,10 @@ Owners below are suggested.
 
 ## Ready next
 
+- [ ] T04 — Person B: Resolve source variant identification and ambiguous detections. Next: implement and synthetically test metric-outline classification offline, then connect it to calibrated surface points. Acceptance: distinguish VARa/VARb by validated geometry and VARc by colour; ambiguous scenes do not create execution targets. Synthetic tests will not establish physical classification accuracy.
 
 ## Doing
-- [ ] T05 — Person A: Prepare calibration and target-generation tools offline. Acceptance: explicit coordinate frames and height handling; unknown physical values remain unset. Partial evidence: user-run plane_geometry.py synthetic checks passed for optical axes, table-plane intersection, raised-plane XY changes, camera translation, and rejection of missing transform/height or a plane behind the camera. perception_geometry.yaml records corrected board/tag dimensions with unmeasured geometry left null. User-run load_perception_geometry.py check loaded 1920x1080 intrinsics and five distortion coefficients; source/profile/destination conversions correctly rejected missing workspace intrinsic validation, camera transform and support heights. User-run estimate_charuco_pose.py found planar pose candidates in 17/17 calibration archive images (16 with 24 corners; one with 9); best-candidate corner RMS ranged from 0.118 to 0.464 px. Evidence: artifacts/charuco-pose/report.json. These are calibration-training-image diagnostics, not independent physical accuracy validation. Visual inspection of uploaded images 001, 006, 008 and 017: corner/axis overlays are plausible in 006/008/017; 001 has visible blur and a horizontal image discontinuity and should not be used as an extrinsic reference. Uploaded report confirms image 008 has close planar candidate errors (0.414 vs 0.686 px); pose ambiguity remains unresolved. Pending: independent validation tools, measured transforms, placement offsets and physical point validation.
+- [ ] T05 — Person A: Prepare calibration and target-generation tools offline. Acceptance: explicit coordinate frames and height handling; unknown physical values remain unset. Partial evidence: user-run plane_geometry.py synthetic checks passed for optical axes, table-plane intersection, raised-plane XY changes, camera translation, and rejection of missing transform/height or a plane behind the camera. perception_geometry.yaml records corrected board/tag dimensions with unmeasured geometry left null. User-run load_perception_geometry.py check loaded 1920x1080 intrinsics and five distortion coefficients; source/profile/destination conversions correctly rejected missing workspace intrinsic validation, camera transform and support heights. User-run estimate_charuco_pose.py found planar pose candidates in 17/17 calibration archive images (16 with 24 corners; one with 9); best-candidate corner RMS ranged from 0.118 to 0.464 px. Evidence: artifacts/charuco-pose/report.json. These are calibration-training-image diagnostics, not independent physical accuracy validation. Visual inspection of uploaded images 001, 006, 008 and 017: corner/axis overlays are plausible in 006/008/017; 001 has visible blur and a horizontal image discontinuity and should not be used as an extrinsic reference. Uploaded report confirms image 008 has close planar candidate errors (0.414 vs 0.686 px); pose ambiguity remains unresolved. Update: independent XY checker and camera-transform composition now have user-run synthetic checks; see Calibration progress below. Pending: metric target generation, measured camera transform, destination heights/offsets, TCP verification and independent physical validation.
 
 
 ## Waiting for hardware
@@ -27,7 +28,6 @@ Owners below are suggested.
 
 ## Queued / dependencies
 
-- [ ] T04 — Person B: Resolve source variant identification and ambiguous detections. Acceptance: distinguish VARa/VARb by validated geometry and VARc by colour; ambiguous scenes do not create execution targets.
 - [ ] T13 — Both: Freeze and rehearse the demonstration; prepare slides and backup recording. Requires a clearly documented tested capability.
 - [ ] OPTIONAL — AI text interpretation and voice through validated task commands.
 - [ ] OPTIONAL — Browser 3D digital twin.
@@ -49,4 +49,41 @@ Owners below are suggested.
 - [x] Full fake ROS coordinator integration passed. Synthetic pos1/pos2 geometry and observations. Commit: f5aa6a5.
 - [x] Browser submission, progress and invalid-command rejection demonstrated. Source commit remains T01.
 - [x] T01 — Person B: Commit the tested scripts/demo_web.py. Acceptance: browser UI is tracked in Git; record commit.
+
+## Calibration progress — 2026-10-26
+
+This evidence supplements T05; physical calibration and target generation remain incomplete. User ran all reported code and checks. No physical motion is established by these results.
+
+- Independent XY checker: check_workspace_points.py committed as 013148a. User-run synthetic checks passed, including a known 5 mm XY error and rejection of a point declared used for transform fitting. The checker uses supplied measured Z and does not independently test Z accuracy.
+- Scene correction: 797770d records measured 40 mm profile thickness and robot mounting face 60 mm above the tabletop. All six packages built successfully; uploaded RViz screenshot showed Global Status: Ok. Rendering/build success does not validate physical contact or the TCP.
+- Spacer: centred beneath robot base; inferred height 20 mm. Approximately 150 x 150 mm footprint is unmeasured. Spacer collision geometry remains pending; the team expects it to be outside the intended motion path, but clearance has not been physically verified.
+- Transform composition: user-run compose_camera_transform.py synthetic test passed for combined rotation/translation, point-coordinate chaining, and invalid-transform rejection. No measured camera-to-base transform exists. Commit not confirmed in this conversation.
+- Perception reference frame: user-run configuration check passed with workcell.frame_id=base_link and identity T_base_link_workcell. Legacy T_workcell_camera consequently denotes camera-to-base_link and remains null. Source/profile conversion correctly rejected missing camera transform and intrinsic workspace validation. Commit not confirmed in this conversation.
+- Board-placement template: config/calibration/board_placement.template.json committed as 19a330c. Pose source, measurement method, board axes and transform intentionally remain unset.
+
+### Current geometry contract
+
+| Quantity | Value / status |
+| --- | --- |
+| Reference frame | Existing URDF base_link; physical axis correspondence still to verify |
+| Table/source support Z | -0.060 m; source assumes boards rest directly on tabletop |
+| Profile thickness | 0.040 m |
+| Profile support Z | -0.020 m |
+| Single-board top Z | Source -0.054 m; profile -0.014 m |
+| Destination support/marker heights | Unmeasured; remain unset |
+| Camera extrinsics | Unmeasured; remain unset |
+| Intrinsics | Provisional; workspace validation pending |
+| TCP and final placement | Physical validation pending |
+
+The profile visual spans -0.060 to -0.020 m. Its collision box has a deliberate 1 mm underside clearance and preserves the top at -0.020 m. Collision clearance is not a measured surface offset. Old contact waypoints are not validated by the geometry correction.
+
+### Next execution sequence
+
+1. Offline: prepare metric source-variant classification and ambiguity rejection; test with synthetic outlines (T04).
+2. On site: secure webcam, verify camera settings/intrinsics, and verify base_link physical axes (T06/T07).
+3. Capture the ChArUco board at a measured pose; explicitly identify model origin/axes and account for backing thickness. Compose a candidate camera-to-base transform.
+4. Check independent measured points across source, profile and destination regions. Do not reuse points for fitting or choosing the transform and then claim them as independent validation.
+5. Measure destination heights and marker-to-placement offsets; verify TCP/contact heights and spacer clearance separately.
+6. Generate and inspect calibrated targets, then progress through supervised physical motion, vacuum checks and the VARa cycle (T08-T10).
+7. Validate perception-driven execution, all variants and final placement before rehearsal (T11-T13).
 
