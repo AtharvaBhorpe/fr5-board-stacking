@@ -13,7 +13,7 @@ Owners below are suggested.
 
 ## Doing
 
-- [ ] T04 — Person B: Resolve source variant identification and ambiguous detections. Partial evidence: user-run classify_board.py synthetic tests passed for VARa/VARb/VARc across rotations, both windings and cyclic corner ordering; rejected outdated dimensions, large red-board dimensions, unsupported colour, crossed corner order, nonhorizontal corners, NaN coordinates and ambiguous size matches. Execution remained disabled. The 5 mm dimension tolerance is provisional and separate from final-placement tolerance. Pending: calibrated pixel-to-metric integration, scene-level ambiguity handling and physical accuracy validation. Synthetic horizontal-plane checks do not prove a real board is flat when its corners were projected onto an assumed plane.
+- [ ] T04 — Person B: Resolve source variant identification and ambiguous detections. Partial evidence: user-run classify_board.py synthetic tests passed for VARa/VARb/VARc across rotations, both windings and cyclic corner ordering; rejected outdated dimensions, large red-board dimensions, unsupported colour, crossed corner order, nonhorizontal corners, NaN coordinates and ambiguous size matches. Execution remained disabled. The 5 mm dimension tolerance is provisional and separate from final-placement tolerance. Adapter evidence: user-run classify_scene.py missing-calibration check returned uncalibrated for all three candidates in the first historical scene; original scene and destination tags stayed unchanged, identities/grasp poses stayed unset, and robot targets stayed empty. Integration evidence: user screenshot confirmed synthetic projection plus classification passed for candidates a/VARa, b/VARb, c/VARc and b2/VARb, including reconstructed metric-coordinate assertions and explicit multiple-VARb reporting. Operational configuration was not changed; original candidate identities/grasp poses remained unset and execution stayed disabled. This is an ideal downward-camera, zero-distortion synthetic consistency check, not physical accuracy evidence. Pending: scene-level selection/rejection policy, integration with current observations and physical accuracy validation. Synthetic horizontal-plane checks do not prove a real board is flat when its corners were projected onto an assumed plane.
 
 
 ## Waiting for hardware
@@ -81,7 +81,7 @@ The profile visual spans -0.060 to -0.020 m. Its collision box has a deliberate 
 
 ### Next execution sequence
 
-1. Offline: prepare metric source-variant classification and ambiguity rejection; test with synthetic outlines (T04).
+1. Offline: finish testing metric source-variant classification through pixel-to-plane conversion and scene-level ambiguity handling (T04). The standalone classifier's synthetic checks have passed.
 2. On site: secure webcam, verify camera settings/intrinsics, and verify base_link physical axes (T06/T07).
 3. Capture the ChArUco board at a measured pose; explicitly identify model origin/axes and account for backing thickness. Compose a candidate camera-to-base transform.
 4. Check independent measured points across source, profile and destination regions. Do not reuse points for fitting or choosing the transform and then claim them as independent validation.
