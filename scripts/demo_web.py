@@ -1,3 +1,5 @@
+from web_style import STYLE
+
 import argparse
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -26,44 +28,26 @@ PAGE = r"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FR5 Processing Demo</title>
-<style>
-body{font:16px system-ui;background:#101820;color:#e9eef2;
-max-width:1000px;margin:40px auto;padding:0 20px}
-h1{margin-bottom:8px}.badge{color:#ffd479}
-section{background:#1b2733;padding:22px;border-radius:12px;margin:20px 0}
-input,button{font:inherit;padding:12px;border-radius:6px;border:1px solid #607080}
-input{width:min(60%,450px)}button{cursor:pointer;background:#a8ddd0}
-button:disabled{opacity:.5;cursor:wait}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:350px;overflow:auto}
-#error{color:#ffaaa0}dt{color:#aebdcc}dd{margin:4px 0 14px}
-</style>
-<h1>FR5 board processing</h1>
-<div class="badge">FAKE HARDWARE · SYNTHETIC POSES AND OBSERVATIONS</div>
-<p>Commands run through MoveIt and the fake gripper. Physical board handling
-and camera observations are not connected.</p>
-
-<section>
-<form id="form">
-<label for="command">Processing command</label><br><br>
-<input id="command" value="process VARa" autocomplete="off">
-<button id="send" type="submit">Run fake job</button>
-</form>
-<p>Accepted: process VARa · process VARb · process VARc</p>
-<p id="error" role="alert"></p>
+<style>__SHARED_STYLE__
+.workspace{padding:0 32px;display:grid;grid-template-columns:minmax(300px, .85fr) minmax(400px,1.4fr);gap:24px;max-width:1500px;margin:auto}.intro{max-width:1500px;margin:auto}.command-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}input{width:100%;min-width:0;flex:1 1 180px}.help{font-size:14px;margin-top:14px}.status-panel{margin-top:24px}dl{margin:0}dt{font-size:14px;color:var(--muted);margin-top:20px}dd{margin:4px 0;overflow-wrap:anywhere}#status{font-size:28px;font-weight:650;letter-spacing:-.8px}#job{font-size:14px}#events{max-height:560px;overflow:auto;min-height:260px}.event{display:grid;grid-template-columns:68px 1fr;gap:16px;padding:14px 0}.event:nth-child(even){background:var(--ground)}.event time{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}.event strong{display:block;font-size:15px}.event span{font-size:14px;color:var(--muted);overflow-wrap:anywhere}.event.fault strong{color:var(--error)}.empty-events{padding:55px 12px;color:var(--muted);text-align:center}.output-panel{grid-column:1/-1}#connection{font-size:14px;color:var(--muted)}@media(max-width:850px){.workspace{grid-template-columns:1fr;padding:0 20px}.output-panel{grid-column:auto}#events{max-height:400px}}.replay-panel{grid-column:1/-1}.replay-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.replay-meta{display:flex;gap:32px;flex-wrap:wrap;margin-bottom:20px}.replay-meta dt{margin-top:8px}.replay-grid h3{font-size:16px;margin:8px 0}.replay-grid ul{padding-left:22px;margin:8px 0;overflow-wrap:anywhere}.replay-grid li{margin:8px 0}#replay-note{font-size:14px}@media(max-width:700px){.replay-grid{grid-template-columns:1fr;gap:12px}}</style>
+<body>
+<nav class="topbar" aria-label="Workspace"><div class="brand">FR5 / Workspace</div><span>Job console</span></nav>
+<header class="intro"><div><h1>Board processing.</h1><p>Run a variant through the coordinator and follow each operation as it completes.</p></div><div class="notice">Fake hardware only<br>Synthetic poses &amp; observations</div></header>
+<main class="workspace"><div><section class="panel"><h2>Start a job</h2>
+<form id="form"><label for="command">Processing command</label><div class="command-row"><input id="command" value="process VARa" autocomplete="off" aria-describedby="command-help"><button id="send" type="submit" disabled>Run fake job</button></div></form>
+<p class="help" id="command-help">Use process VARa, process VARb, or process VARc.</p><p id="error" role="alert"></p></section>
+<section class="panel status-panel"><h2>Simulated job state</h2><dl><dt>Status</dt><dd id="status" role="status">Connecting…</dd><dt>Variant</dt><dd id="variant">—</dd><dt>Current / last step</dt><dd id="step">—</dd><dt>Job ID</dt><dd id="job">—</dd></dl></section></div>
+<section class="panel"><div class="section-head"><h2>Execution timeline</h2><span id="connection">Connecting</span></div><div id="events"></div></section>
+<section class="panel replay-panel" aria-labelledby="replay-title">
+<div class="section-head"><h2 id="replay-title">Historical replay</h2><span id="replay-connection" role="status">Disconnected</span></div>
+<p>Recorded-image observations, separate from simulated job state. Replay never enables execution.</p>
+<dl class="replay-meta"><div><dt>Stream state</dt><dd id="replay-stream">Unknown</dd></div><div><dt>Age since bridge receipt</dt><dd id="replay-age">Unknown</dd></div></dl>
+<p id="replay-note">Historical image capture age is unknown. Waiting for scene data.</p>
+<div class="replay-grid"><div><h3>Destination tags</h3><ul id="replay-tags"><li>Unavailable</li></ul></div><div><h3>Source candidates</h3><ul id="replay-candidates"><li>Unavailable</li></ul></div></div>
 </section>
-
-<section>
-<dl>
-<dt>Job status</dt><dd id="status">Connecting…</dd>
-<dt>Variant</dt><dd id="variant">—</dd>
-<dt>Current / last step</dt><dd id="step">—</dd>
-<dt>Job ID</dt><dd id="job">—</dd>
-</dl>
-</section>
-
-<section><h2>Job events</h2><pre id="events"></pre></section>
-<details><summary>ROS and runner output</summary><pre id="output"></pre></details>
-
+<details class="panel output-panel"><summary>ROS &amp; runner output</summary><pre id="output"></pre></details></main>
+<footer>Physical board handling is not connected. Perception shown here is historical replay only. Closing this page does not cancel a running job.</footer>
+<noscript>JavaScript is required to submit a command and view job state.</noscript>
 <script>
 const byId = id => document.getElementById(id);
 let submitting = false;
@@ -79,13 +63,24 @@ async function refresh() {
     byId('variant').textContent = state.variant || '—';
     byId('step').textContent = state.step || '—';
     byId('job').textContent = state.job_id || '—';
-    byId('events').textContent = state.events.map(e =>
-      `${e.elapsed_s ?? ''}  ${e.event}  ${e.step || ''}` +
-      (e.reason ? ` — ${e.reason}` : '')
-    ).join('\n');
+    byId('connection').textContent = 'Connected';
+    const signature=JSON.stringify(state.events);
+    if(byId('events').dataset.signature!==signature){
+      byId('events').dataset.signature=signature;
+      byId('events').replaceChildren();
+      if(!state.events.length){const empty=document.createElement('p');empty.className='empty-events';empty.textContent='No events yet. Start a fake job to follow its progress.';byId('events').append(empty);}
+      for(const e of state.events){
+        const row=document.createElement('div');row.className='event'+(e.event.includes('FAULT')?' fault':'');
+        const time=document.createElement('time');time.textContent=Number.isFinite(e.elapsed_s)?`${e.elapsed_s.toFixed(2)} s`:'—';
+        const content=document.createElement('div');const title=document.createElement('strong');title.textContent=e.event.toLowerCase().replaceAll('_',' ');
+        const detail=document.createElement('span');detail.textContent=[e.step,e.reason].filter(Boolean).join(' — ');
+        content.append(title,detail);row.append(time,content);byId('events').append(row);
+      }
+    }
     byId('output').textContent = state.output.join('\n');
     byId('send').disabled = active || submitting;
   } catch (error) {
+    byId('connection').textContent = 'Disconnected';
     byId('status').textContent = 'Server unavailable; job state unknown';
     byId('send').disabled = true;
   }
@@ -111,6 +106,78 @@ byId('form').addEventListener('submit', async event => {
     await refresh();
   }
 });
+// Replay is display-only and has no access to the job submission state.
+function replayList(id, values, emptyText) {
+  const list = byId(id);
+  list.replaceChildren();
+  for (const value of values.length ? values : [emptyText]) {
+    const item = document.createElement('li');
+    item.textContent = value;
+    list.append(item);
+  }
+}
+function disconnectReplay(reason, stream = 'Unknown', age = null) {
+  byId('replay-connection').textContent = 'Disconnected';
+  byId('replay-stream').textContent = stream;
+  byId('replay-age').textContent = Number.isFinite(age) && age >= 0 ? `${age.toFixed(1)} s` : 'Unknown';
+  byId('replay-note').textContent = reason;
+  replayList('replay-tags', [], 'Unavailable');
+  replayList('replay-candidates', [], 'Unavailable');
+}
+let replayPending = false;
+async function refreshReplay() {
+  if (replayPending) return;
+  replayPending = true;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 900);
+  try {
+    const response = await fetch('http://127.0.0.1:8082/api/scene', {
+      cache: 'no-store', signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`Scene API returned HTTP ${response.status}`);
+    const data = await response.json();
+    if (!data || typeof data !== 'object') throw new Error('Invalid scene response');
+    const stream = typeof data.stream_state === 'string' ? data.stream_state : 'Unknown';
+    const age = data.age_since_bridge_receive_s;
+    const scene = data.scene;
+    const fresh = Number.isFinite(age) && age >= 0 &&
+      Number.isFinite(data.stale_after_s) && age <= data.stale_after_s;
+    if (stream !== 'receiving' || !scene || scene.status !== 'processed' || data.error || !fresh) {
+      disconnectReplay(typeof data.error === 'string' ? data.error : 'No current replay scene. Historical detections are unavailable.', stream, age);
+      return;
+    }
+    if (data.data_kind !== 'historical_replay' || data.execution_allowed !== false ||
+        scene.historical_image !== true || scene.execution_allowed !== false ||
+        !Array.isArray(scene.robot_targets) || scene.robot_targets.length ||
+        !Array.isArray(scene.destination_tags) || !Array.isArray(scene.source_candidates)) {
+      throw new Error('Invalid historical replay response');
+    }
+    const tags = scene.destination_tags.map(tag => {
+      if (!tag || !Number.isInteger(tag.tag_id)) throw new Error('Invalid destination tag');
+      return `Tag ${tag.tag_id}`;
+    });
+    const candidates = scene.source_candidates.map(candidate => {
+      if (!candidate || typeof candidate.candidate_id !== 'string' || typeof candidate.colour !== 'string') {
+        throw new Error('Invalid source candidate');
+      }
+      return `${candidate.candidate_id} · Colour: ${candidate.colour} · Source variant: unverified`;
+    });
+    byId('replay-connection').textContent = 'Connected';
+    byId('replay-stream').textContent = stream;
+    byId('replay-age').textContent = `${age.toFixed(1)} s`;
+    byId('replay-note').textContent = 'Historical image capture age is unknown. Source variants are not inferred from destination tags.';
+    replayList('replay-tags', tags, 'No destination tags detected');
+    replayList('replay-candidates', candidates, 'No source candidates detected');
+  } catch (error) {
+    disconnectReplay(error.name === 'AbortError' ? 'Scene request timed out.' : `Scene unavailable: ${error.message}`);
+  } finally {
+    clearTimeout(timeout);
+    replayPending = false;
+  }
+}
+refreshReplay();
+setInterval(refreshReplay, 1000);
+
 async function poll() {
   await refresh();
   setTimeout(poll, 500);
@@ -118,7 +185,7 @@ async function poll() {
 poll();
 </script>
 </html>
-"""
+""".replace("__SHARED_STYLE__", STYLE)
 
 
 def collect_output(process):
