@@ -592,8 +592,11 @@ def main():
     ap.add_argument("--image", help="use this image file instead of the camera (re-read when it changes)")
     ap.add_argument("--no-robot", action="store_true", help="no port 20004 reader (pendant / manual values only)")
     ap.add_argument("--port", type=int, help="override the config port")
+    ap.add_argument("--camera", help="override camera.device: index (2 = /dev/video2) or a device path")
     a = ap.parse_args()
     cfg = load_app_config(a.config)
+    if a.camera is not None:
+        cfg["camera"]["device"] = int(a.camera) if a.camera.isdigit() else a.camera
     app = App(cfg, a.image, not a.no_robot)
     app.start()
     port = a.port or cfg["port"]

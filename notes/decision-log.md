@@ -50,6 +50,6 @@ decision log of branch `feat/robot-motion-gripper`. Units: metres / radians in c
 | V4 | `vision_transform` node: service, reload on change (`tests/vision_node_check.py` 17/17; fix: one log call site per severity, rclpy raises otherwise) | done `52970a2` |
 | V3b | Lens term in `calib.py` (V-18) + `lens_effect_mm`, tests 8 tags + distortion (`calib_check` 46/46, node 17/17) | done `b296001` |
 | V5 | Port 20004 reader + FK (V-12, V-20) + offline tests (`robot_pose_check` 21/21) + lab probe | done `c088904` |
-| V6 | Calibration app backend (V-22, V-23): reference tags, record, fit, verify (any moving tag), save, test (`calib_app_check` 38/38) | done |
-| V7 | Calibration app front end (calibrate / verify / test views, tag-area coverage overlay V-21) | |
+| V6 | Calibration app backend (V-22, V-23): reference tags, record, fit, verify (any moving tag), save, test (`calib_app_check` 38/38) | done `aeee880` |
+| V7 | Calibration app front end `web/index.html` (one page: live image + overlay (roles, calibrated area, click -> x / y), robot panel, record source, 1 reference rows + numbered sub-rows, 2 fit review, 3 verify, 4 save; `?snap` = snapshot instead of MJPEG; `--camera` override) | done (functional, polish later) |
 | V8 | Launch file, README | |
