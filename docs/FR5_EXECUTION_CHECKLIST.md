@@ -10,8 +10,6 @@ Owners below are suggested.
 
 ## Ready next
 
-- [ ] T01 — Person B: Commit the tested scripts/demo_web.py. Acceptance: browser UI is tracked in Git; record commit.
-- [ ] T02 — Person A: Connect perception to ROS image input with recorded-image replay. Acceptance: incoming images produce timestamped scene observations, including missing detections.
 
 ## Doing
 
@@ -37,6 +35,7 @@ Owners below are suggested.
 
 ## Done — evidence scope matters
 
+- [x] T02 — Person A: Connect perception to ROS image input with recorded-image replay. Acceptance: incoming images produce timestamped scene observations, including missing detections. Evidence: artifacts/replay-check/verified-scenes.json — all seven historical images passed expected tag/candidate counts and replay metadata checks in the user-run validation. Robot execution remains disabled; live-camera reliability and physical accuracy remain pending.
 - [x] Shared branch, Pixi build and fake bringup verified.
 - [x] Obsolete camera post removed. Commit: 1e12342.
 - [x] C920 acquisition and provisional intrinsic calibration completed. Physical workspace validation remains T06.
@@ -47,3 +46,5 @@ Owners below are suggested.
 - [x] Fake MoveIt, fake gripper and recorded fake joint waypoint checks demonstrated. Commits: 61665c4, 1e30917, df2fae2.
 - [x] Full fake ROS coordinator integration passed. Synthetic pos1/pos2 geometry and observations. Commit: f5aa6a5.
 - [x] Browser submission, progress and invalid-command rejection demonstrated. Source commit remains T01.
+- [x] T01 — Person B: Commit the tested scripts/demo_web.py. Acceptance: browser UI is tracked in Git; record commit.
+
