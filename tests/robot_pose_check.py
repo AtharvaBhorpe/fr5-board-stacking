@@ -76,14 +76,20 @@ check("incomplete packet: waits (nothing yet), completes later", s == [] and [x.
 
 # 3 tcp / tilt / flange cross-check from a packet built from the URDF reference
 ready = REF[0]
-fl = ready["flange"]; ctrl_fl = (-fl[0] * 1000, -fl[1] * 1000, fl[2] * 1000, 0, 0, 0)   # pendant frame: x, y negated, mm
+fl = ready["flange"]; ctrl_fl = (fl[0] * 1000, fl[1] * 1000, fl[2] * 1000, 0, 0, 0)   # controller = base_link frame, mm (V-26)
 st = rp.PacketParser().feed(packet(joints=ready["joints_deg"], flange=ctrl_fl))[0]
 t = rp.tcp_from_state(st, cfg)
 check("ready pose: tcp = URDF reference, tilt 0, flange cross-check ~0 mm, manual mode",
       np.linalg.norm(np.array([t["x"], t["y"], t["z"]]) - ready["tcp"]) < 1e-5 and t["tilt_deg"] < 0.01 and t["tilt_ok"]
       and t["flange_check_mm"] < 0.01 and t["manual_mode"], f"tcp {t['x']:.4f} {t['y']:.4f} {t['z']:.4f}, tilt {t['tilt_deg']:.3f}")
-st = rp.PacketParser().feed(packet(joints=ready["joints_deg"], flange=(fl[0] * 1000, fl[1] * 1000, fl[2] * 1000, 0, 0, 0)))[0]
-check("flange cross-check catches a frame error (x / y not negated): > 100 mm", rp.tcp_from_state(st, cfg)["flange_check_mm"] > 100)
+st = rp.PacketParser().feed(packet(joints=ready["joints_deg"], flange=(-fl[0] * 1000, -fl[1] * 1000, fl[2] * 1000, 0, 0, 0)))[0]
+check("flange cross-check catches a frame error (x / y negated): > 100 mm", rp.tcp_from_state(st, cfg)["flange_check_mm"] > 100)
+# real FR5, 2026-10-26 (lab, read-only): joints + the controller's own flange from one packet -> our FK within 1 mm
+st = rp.PacketParser().feed(packet(joints=(-3.25, -65.37, 82.62, -115.88, -108.94, 6.05),
+                                   flange=(-672.5, -30.99, 342.85, -168.93, -17.66, 77.53)))[0]
+t = rp.tcp_from_state(st, cfg)
+check("real FR5 packet (lab 2026-10-26): flange check < 1 mm, tilt ~21 deg", t["flange_check_mm"] < 1.0
+      and abs(t["tilt_deg"] - 20.8) < 0.2, f"{t['flange_check_mm']:.2f} mm, tilt {t['tilt_deg']:.1f}")
 j = list(ready["joints_deg"]); j[4] += 5.0   # wrist 5 deg off straight down
 st = rp.PacketParser().feed(packet(joints=j, mode=0))[0]; t = rp.tcp_from_state(st, cfg)
 check("j5 + 5 deg: tilt ~5 deg -> tilt_ok false; auto mode -> manual_mode false",

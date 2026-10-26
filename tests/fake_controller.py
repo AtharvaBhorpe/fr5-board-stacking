@@ -45,8 +45,8 @@ class FakeController(threading.Thread):
                 while self.running:
                     j1 = (cnt % 360) * 0.1
                     q = (j1, -90, 90, -90, -90, 0)
-                    T_fl, _ = rp.fk([math.radians(a) for a in q], self.cfg)   # flange like a real controller (pendant frame)
-                    c.sendall(packet(joints=q, flange=(-T_fl[0, 3] * 1000, -T_fl[1, 3] * 1000, T_fl[2, 3] * 1000, 0, 0, 0),
+                    T_fl, _ = rp.fk([math.radians(a) for a in q], self.cfg)   # flange like the real controller (base_link frame, mm)
+                    c.sendall(packet(joints=q, flange=(T_fl[0, 3] * 1000, T_fl[1, 3] * 1000, T_fl[2, 3] * 1000, 0, 0, 0),
                                      cnt=cnt)); cnt += 1
                     try:
                         self.received += c.recv(100)   # the reader must never send anything
@@ -75,7 +75,7 @@ def main():
                     a = time.time() - t0
                     q = (20 * math.sin(a / 4), -90, 90, -90, -90, 0) if "--ready" not in sys.argv else (0, -90, 90, -90, -90, 0)
                     T_fl, _ = rp.fk([math.radians(x) for x in q], cfg)
-                    fl = (-T_fl[0, 3] * 1000, -T_fl[1, 3] * 1000, T_fl[2, 3] * 1000, 0, 0, 0)
+                    fl = (T_fl[0, 3] * 1000, T_fl[1, 3] * 1000, T_fl[2, 3] * 1000, 0, 0, 0)
                     c.sendall(packet(joints=q, flange=fl, cnt=int(a * 100))); time.sleep(0.01)
             except OSError:
                 c.close()

@@ -3,7 +3,8 @@
 Reads the controller real-time state packet (TCP port 20004, ROBOT_STATE_PKG in libfairino robot_types.h,
 packed, little-endian) while the robot is hand-guided in manual mode (our motion bringup must NOT run), and computes
 the tcp in base_link by own forward kinematics from the joints (same chain as our URDF, config/robot.yaml).
-The controller's own flange pose (pendant frame) is only a cross-check (x / y negated vs base_link).
+The controller's own flange pose is only a cross-check: same frame as our base_link (verified on the real FR5
+2026-10-26: 0.6 mm apart, NOT x / y negated).
 
     cfg = load_config(path); r = RobotReader(cfg); r.start()
     st, age = r.latest(); p = tcp_from_state(st, cfg)   # p["x"], p["y"], p["z"], p["tilt_deg"], p["flange_check_mm"]
@@ -195,8 +196,8 @@ def tcp_from_state(st, cfg):
     """tcp x / y / z (m, base_link), tool tilt from straight down (deg), FK flange vs controller flange (mm)."""
     T_fl, T = fk([math.radians(a) for a in st.joints_deg], cfg)
     tilt = math.degrees(math.acos(max(-1.0, min(1.0, -T[2, 2]))))   # tool z axis vs -z of base_link
-    f = st.flange_pose   # pendant frame, mm: base_link = x, y negated (CLAUDE.md / decision-log: base_link rotated 180 deg)
-    ctrl = np.array([-f[0], -f[1], f[2]]) / 1000.0
+    f = st.flange_pose   # mm, controller base frame = our base_link (state packet; lab 2026-10-26, decision-log V-26)
+    ctrl = np.array([f[0], f[1], f[2]]) / 1000.0
     return {"x": float(T[0, 3]), "y": float(T[1, 3]), "z": float(T[2, 3]), "tilt_deg": tilt,
             "tilt_ok": tilt <= cfg["max_tilt_deg"], "flange_check_mm": float(np.linalg.norm(T_fl[:3, 3] - ctrl) * 1000),
             "manual_mode": st.robot_mode == 1, "robot_state": st.robot_state, "estop": st.estop,

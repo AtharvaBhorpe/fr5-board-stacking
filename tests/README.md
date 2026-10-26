@@ -7,7 +7,7 @@ Run from the repo root after `pixi run build`. None needs the robot or the camer
 |---|---|---|---|
 | `calib_check.py` | nothing (offline) | fit / apply / inside / lens term (distorted synthetic camera) / suspect tag rates / rejections / save + load through a symlink / lab homography | 46/46 |
 | `vision_node_check.py` | ROS | `vision_transform` node: placeholder, live reload, values = `calib.apply`, rejections, broken / deleted file, bad parameter, latency, Ctrl+C | 17/17 |
-| `robot_pose_check.py` | nothing | own FK vs our URDF TF (fixture), packet parser (framing, resync, checksum, plausibility), reader vs a fake controller (read-only, stale, reconnect), tilt / flange cross-check | 21/21 |
+| `robot_pose_check.py` | nothing | own FK vs our URDF TF (fixture), packet parser (framing, resync, checksum, plausibility), reader vs a fake controller (read-only, stale, reconnect), tilt / flange cross-check, real FR5 packet | 22/22 |
 | `calib_app_check.py` | nothing | calibration app API: reference tags, records (robot / pendant / manual), limits, fit, moved tags, verification (any moving tag), save, session restore, stream | 38/38 |
 | `web_ui_check.py` | firefox | the real page in headless Firefox clicks through the whole workflow (`web/selftest.js`), fails on any browser error; screenshots to `~/snap/firefox/common/hk_ui_shots/` | 21/21 |
 
