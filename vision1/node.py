@@ -12,6 +12,7 @@ import time
 
 import cv2
 import rclpy
+from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
@@ -36,17 +37,28 @@ def find_camera(name):
 class Vision1(Node):
     def __init__(self):
         super().__init__("vision1_overhead")
-        device = str(self.declare_parameter("device", "C920").value)
+        device = str(self.declare_parameter("device", "C920", ParameterDescriptor(dynamic_typing=True)).value)
         rate = float(self.declare_parameter("rate", 5.0).value)
+        focus = int(self.declare_parameter("focus", 15).value)  # fixed focus as in the team calibration; -1 = leave as is
         self.still = cv2.imread(device) if os.path.isfile(device) else None
         if self.still is None:
             index = int(device) if device.isdigit() else find_camera(device)
             self.cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))  # 1080p at 30 fps (YUYV: ~5 fps)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
             self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # latest frame, not a stale queue
             if not self.cap.isOpened():
                 raise RuntimeError(f"cannot open camera {device!r}")
+            if focus >= 0:
+                self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+                self.cap.set(cv2.CAP_PROP_FOCUS, focus)
+            ok, f = self.cap.read()
+            if not ok or f.shape[:2] != (1080, 1920):
+                raise RuntimeError(f"camera {device!r} gives {None if not ok else f.shape[1::-1]}, need 1920x1080 "
+                                   "(the calibration is for that size)")
+            self.get_logger().info(f"camera /dev/video{index}: 1920x1080, autofocus "
+                                   f"{self.cap.get(cv2.CAP_PROP_AUTOFOCUS):.0f}, focus {self.cap.get(cv2.CAP_PROP_FOCUS):.0f}")
         try:
             self.calib = table.load()
         except (OSError, ValueError) as e:
@@ -54,6 +66,10 @@ class Vision1(Node):
             self.get_logger().warn(f"no calibration ({e}): publishing pixels only")
         self.last = "{}"
         self.create_service(Trigger, "/vision/detect", self.snapshot)
+        time.sleep(1.5)  # DDS discovery
+        if self.count_publishers("/vision/boards"):
+            raise RuntimeError("another node already publishes /vision/boards: stop it first (two sources would mix)")
+        self.device = device
         self.pub = self.create_publisher(String, "/vision/boards", 10)
         self.create_timer(1.0 / rate, self.tick)
         self.get_logger().info(f"publishing /vision/boards at {rate} Hz from {device!r}")
@@ -81,7 +97,7 @@ class Vision1(Node):
             for b in boards:
                 b.pop("area_px")
         msg = {"stamp": time.time(), "image_size": [frame.shape[1], frame.shape[0]],
-               "calibrated": self.calib is not None, "boards": boards, "rejected": rejected}
+               "source": self.device, "calibrated": self.calib is not None, "boards": boards, "rejected": rejected}
         self.last = json.dumps(msg)
         self.pub.publish(String(data=self.last))
         return True
