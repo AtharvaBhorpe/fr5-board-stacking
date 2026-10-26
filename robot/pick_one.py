@@ -24,6 +24,8 @@ HOVER = 0.10  # m above the board top
 ap = argparse.ArgumentParser()
 ap.add_argument("--variant", help="VARa / VARb / VARc (default: first board)")
 ap.add_argument("--hover-only", action="store_true", help="only move above the board, no contact")
+ap.add_argument("--press", type=float, default=0.0,
+                help="mm to go down beyond the computed board top (measured hover gap minus 100 mm, + cup squeeze)")
 ap.add_argument("--speed", type=float, default=0.1, help="velocity_scaling, first runs <= 0.2")
 args = ap.parse_args()
 
@@ -102,22 +104,24 @@ if args.hover_only:
 input(">>> cup centred above the board? ENTER = go down and grip, Ctrl+C = stop ")
 
 # 3. Down (LIN), grip, attach, lift (LIN, rule 3)
-check("down", lin(-HOVER))
+PRESS = args.press / 1000.0
+print(f"  going down {(HOVER + PRESS) * 1000:.0f} mm")
+check("down", lin(-(HOVER + PRESS)))
 g = act(grip, Grip.Goal())
 print(f"  grip: success={g.success} {g.message} time_to_vacuum={g.time_to_vacuum:.2f}s")
 if not g.success:
-    lin(HOVER)
+    lin(HOVER + PRESS)
     raise SystemExit("NO_VACUUM: lifted without board")
 lx, ly = SIZES[b["variant"]]
 call(attach, AttachBoard.Request(length=lx, width=ly, height=BOARD_H, yaw=0.0))  # tool yaw = board yaw (mod pi)
-check("lift", lin(HOVER))
+check("lift", lin(HOVER + PRESS))
 input(">>> board lifted. ENTER = put it back down and release ")
 
 # 4. Put it back where it was
-check("down again", lin(-HOVER))
+check("down again", lin(-(HOVER + PRESS)))
 r = act(release, Release.Goal())
 print(f"  release: success={r.success} {r.message}")
 call(detach, DetachBoard.Request(keep_as_obstacle=False))
-check("lift empty", lin(HOVER))
+check("lift empty", lin(HOVER + PRESS))
 print("done")
 rclpy.shutdown()
