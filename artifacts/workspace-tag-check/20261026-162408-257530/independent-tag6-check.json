@@ -1,0 +1,56 @@
+{
+  "purpose": "independent_single_point_xy_check",
+  "tag_id": 6,
+  "capture": "artifacts/workspace-tag-check/20261026-162408-257530/tags.json",
+  "fit_report": "artifacts/workspace-tag-fit/report.json",
+  "fit_sha256": "1f86f4072c57a9c10ca468375d702dc58ab551c8cf8dfd2950ed7e9fc974300c",
+  "transform_refitted": false,
+  "T_base_link_camera": [
+    [
+      -0.004505050305504427,
+      -0.9569643295454164,
+      0.2901705989576416,
+      -0.8889219278864161
+    ],
+    [
+      -0.99998944723503,
+      0.004572363667423729,
+      -0.00044599223283836885,
+      0.10628373149198857
+    ],
+    [
+      -0.0008999668459479161,
+      -0.2901695460729543,
+      -0.956974829654099,
+      1.5901463579574884
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "measured_xyz_m": [
+    0.0,
+    0.17,
+    -0.06
+  ],
+  "predicted_xyz_m": [
+    -0.0012612740383636245,
+    0.16762450834987305,
+    -0.06000000000000005
+  ],
+  "delta_xy_mm": [
+    -1.2612740383636245,
+    -2.3754916501269596
+  ],
+  "xy_error_mm": 2.6895673963805016,
+  "measurement_method": "user ruler measurement",
+  "measurement_uncertainty_mm": null,
+  "camera_unchanged_user_confirmed": true,
+  "printed_tag_directly_on_table": true,
+  "paper_thickness_neglected": true,
+  "z_accuracy_tested": false,
+  "execution_allowed": false
+}

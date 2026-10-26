@@ -1,0 +1,723 @@
+[
+  {
+    "image": 1,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -695.6822405286725,
+          -727.7189777904816,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          208.37008173448558,
+          299.1634369543287,
+          207.34116142934607,
+          297.79230586232075
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20785562158191584,
+            0.2984778714083247
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -280.2922920778966,
+          -739.65651273806,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          211.59187940871337,
+          147.95473630534798,
+          214.20998641646653,
+          151.0392588490193
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.14949699757718363,
+            0.21290093291258996
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -466.0826912443101,
+          -733.2095497754077,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          134.89613632199175,
+          211.11429175231834,
+          144.85154120257644,
+          215.47433595543785
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 2,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -695.948897682097,
+          -728.2387582715334,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          209.35382746478666,
+          297.0744844617509,
+          207.34116142934607,
+          297.79230586232075
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20834749444706638,
+            0.2974333951620358
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -280.2922920778966,
+          -739.65651273806,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          211.59187940871337,
+          147.95473630534798,
+          214.20998641646653,
+          151.0392588490193
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.14949699757718363,
+            0.21290093291258996
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -466.96052111161237,
+          -735.1339939831548,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          139.87693779123188,
+          203.8527651437571,
+          143.67185254985145,
+          215.47433595543785
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 3,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -695.6824482646185,
+          -727.9964914647381,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          208.32442139588213,
+          298.0534411136817,
+          207.34116142934607,
+          297.79230586232075
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.2078327914126141,
+            0.2979228734880012
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -279.9620006012158,
+          -739.4013447272791,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          210.63007479178555,
+          147.95473630534798,
+          214.20998641646653,
+          152.38871335525275
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.15017172483030036,
+            0.21242003060412606
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -466.37496752699013,
+          -734.05237222928,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          137.31780086917735,
+          208.1487569937024,
+          143.67185254985145,
+          215.47433595543785
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 4,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -703.2042074164701,
+          -711.5247559319866,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          301.9539071814521,
+          205.33054877873226,
+          293.21191453524915,
+          205.7948769570613
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -668.2405340844193,
+          -445.42487385617966,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          293.6737452425743,
+          207.26701278835438,
+          292.7427813267384,
+          208.9251944830812
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.2080961036357178,
+            0.2932082632846563
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 5,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -702.6508771366794,
+          -712.4528905800753,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          300.6739603819603,
+          206.48177089500467,
+          293.4032141415693,
+          204.66869772630992
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -667.4181659216956,
+          -445.2280367004499,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          292.6096439096838,
+          207.30554996803303,
+          292.72153870408107,
+          207.79607400079234
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20755081198441266,
+            0.2926655913068824
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -241.05771750903804,
+          -738.1297486345559,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          149.7246544190613,
+          208.30983885392246,
+          150.50147184700714,
+          207.72521746794317
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.1501130631330342,
+            0.20801752816093283
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-4",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -177.32823100421018,
+          -436.21200977429777,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          148.72238394461326,
+          205.43345375396763,
+          133.3191577540656,
+          207.59373184214718
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-5",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -467.5845618790647,
+          -741.5301935404954,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          138.48182846038674,
+          207.98989795715096,
+          139.91959582955394,
+          209.62856732631857
+        ],
+        "classification": {
+          "variant": "VARc",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.13920071214497032,
+            0.20880923264173476
+          ],
+          "matching_variants": [
+            "VARc"
+          ],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 6,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -667.6832990824015,
+          -445.2046813269893,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          293.6737452425743,
+          207.2929383408173,
+          292.72153870408107,
+          207.79607400079234
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20754450617080483,
+            0.29319764197332765
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -241.05771750903804,
+          -738.1297486345559,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          149.7246544190613,
+          208.30983885392246,
+          150.50147184700714,
+          207.72521746794317
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.1501130631330342,
+            0.20801752816093283
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -466.34845917804256,
+          -743.9947759766395,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          138.31180106056757,
+          205.79748281261817,
+          144.10892752768743,
+          210.15029620871704
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 7,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -667.6832990824015,
+          -445.2046813269893,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          293.6737452425743,
+          207.2929383408173,
+          292.72153870408107,
+          207.79607400079234
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20754450617080483,
+            0.29319764197332765
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -241.05771750903804,
+          -738.1297486345559,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          149.7246544190613,
+          208.30983885392246,
+          150.50147184700714,
+          207.72521746794317
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.1501130631330342,
+            0.20801752816093283
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -466.34845917804256,
+          -743.9947759766395,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          138.31180106056757,
+          205.79748281261817,
+          144.10892752768743,
+          210.15029620871704
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ]
+  },
+  {
+    "image": 8,
+    "camera_stationary_reported_by_user": true,
+    "capture_focus_zoom_verified": false,
+    "assumed_top_z_m": -0.055,
+    "single_sheet_height_verified": false,
+    "execution_allowed": false,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -638.2054501857031,
+          -684.9530930046527,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          153.74038643461589,
+          209.72424385087413,
+          149.53815856842152,
+          209.92709932561172
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "dimensions_do_not_match",
+          "measured_sides_m": [
+            0.1516392725015187,
+            0.20982567158824292
+          ],
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "colour": "white",
+        "diagnostic_centre_mm": [
+          -120.46655155737726,
+          -682.608644716582,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          295.93111609079665,
+          210.5181126416916,
+          294.61189695105,
+          209.59692697767758
+        ],
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.2100575198096846,
+            0.2952715065209233
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "colour": "red",
+        "diagnostic_centre_mm": [
+          -377.75162683675325,
+          -664.8361091107251,
+          -54.999999999999936
+        ],
+        "edge_lengths_mm": [
+          211.55290789753894,
+          136.31722515653067,
+          206.4455671216321,
+          138.2812240046036
+        ],
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ]
+  }
+]

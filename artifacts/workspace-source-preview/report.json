@@ -1,0 +1,150 @@
+{
+  "image": "/home/ub26/Projects/fr5-board-stacking/artifacts/workspace-calibration/20261026-142900-324084/raw.png",
+  "fit": "/home/ub26/Projects/fr5-board-stacking/artifacts/workspace-tag-fit/report.json",
+  "T_base_link_camera": [
+    [
+      -0.004505050305504427,
+      -0.9569643295454164,
+      0.2901705989576416,
+      -0.8889219278864161
+    ],
+    [
+      -0.99998944723503,
+      0.004572363667423729,
+      -0.00044599223283836885,
+      0.10628373149198857
+    ],
+    [
+      -0.0008999668459479161,
+      -0.2901695460729543,
+      -0.956974829654099,
+      1.5901463579574884
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "frame_id": "base_link",
+  "assumed_sheet_top_z_m": -0.055,
+  "rois": [
+    [
+      100,
+      180,
+      500,
+      980
+    ],
+    [
+      1350,
+      680,
+      1700,
+      950
+    ]
+  ],
+  "purpose": "offline_candidate_calibration_preview",
+  "independent_accuracy_validated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "candidates": [],
+  "rejected_regions": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          380,
+          657
+        ],
+        [
+          269,
+          773
+        ],
+        [
+          460,
+          958
+        ],
+        [
+          499,
+          919
+        ],
+        [
+          499,
+          766
+        ]
+      ],
+      "area_px2": 38423.5,
+      "rectangularity": 0.8442776416519199,
+      "reasons": [
+        "touches_search_boundary",
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          260,
+          218
+        ],
+        [
+          160,
+          449
+        ],
+        [
+          298,
+          477
+        ],
+        [
+          394,
+          240
+        ]
+      ],
+      "area_px2": 33756.0,
+      "rectangularity": 0.8493043461017487,
+      "reasons": [
+        "irregular_outline"
+      ]
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1620,
+          712
+        ],
+        [
+          1447,
+          739
+        ],
+        [
+          1456,
+          788
+        ],
+        [
+          1500,
+          742
+        ],
+        [
+          1461,
+          805
+        ],
+        [
+          1476,
+          864
+        ],
+        [
+          1656,
+          836
+        ]
+      ],
+      "area_px2": 21752.0,
+      "rectangularity": 0.8526093403093311,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    }
+  ]
+}

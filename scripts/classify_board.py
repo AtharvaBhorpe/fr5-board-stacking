@@ -5,7 +5,7 @@ import numpy as np
 
 VARIANTS = {
     "VARa": ("white", (0.210, 0.295)),
-    "VARb": ("white", (0.135, 0.210)),
+    "VARb": ("white", (0.150, 0.210)),
     "VARc": ("red", (0.135, 0.210)),
 }
 

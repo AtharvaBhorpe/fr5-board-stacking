@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "mode": "live_camera_diagnostic",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    1091,
+    144,
+    1390,
+    394
+  ],
+  "destination_tags": [],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1114,
+          161
+        ],
+        [
+          1120,
+          375
+        ],
+        [
+          1295,
+          375
+        ],
+        [
+          1280,
+          163
+        ]
+      ],
+      "area_px2": 36657.0,
+      "rectangularity": 0.938832109849192,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null,
+      "diagnostic_centre_px": [
+        1202.25,
+        268.5
+      ]
+    }
+  ],
+  "rejected_source_regions": [],
+  "diagnostics": {
+    "missing_destination_ids": [
+      1,
+      2,
+      16
+    ],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "historical_image": false,
+  "host_processed_at": "2026-10-26T13:57:57.050575+01:00",
+  "camera_device": "/dev/video4",
+  "focus_readback": 15.0,
+  "autofocus_readback": 0.0,
+  "image": "/home/ub26/Projects/fr5-board-stacking/artifacts/live-source/20261026-135757-055111-raw.png"
+}

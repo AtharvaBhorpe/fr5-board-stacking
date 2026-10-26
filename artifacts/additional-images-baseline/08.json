@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "mode": "offline_image",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    1250,
+    280,
+    1840,
+    980
+  ],
+  "destination_tags": [],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1514,
+          723
+        ],
+        [
+          1530,
+          859
+        ],
+        [
+          1715,
+          856
+        ],
+        [
+          1695,
+          724
+        ]
+      ],
+      "area_px2": 24663.0,
+      "rectangularity": 0.9024452764318843,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1648,
+          289
+        ],
+        [
+          1419,
+          305
+        ],
+        [
+          1447,
+          460
+        ],
+        [
+          1683,
+          442
+        ]
+      ],
+      "area_px2": 36613.5,
+      "rectangularity": 0.9090805148921365,
+      "reasons": [],
+      "candidate_id": "candidate-2",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1634,
+          505
+        ],
+        [
+          1464,
+          527
+        ],
+        [
+          1494,
+          636
+        ],
+        [
+          1664,
+          615
+        ]
+      ],
+      "area_px2": 20052.5,
+      "rectangularity": 0.9009216495765636,
+      "reasons": [],
+      "candidate_id": "candidate-3",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    }
+  ],
+  "rejected_source_regions": [],
+  "diagnostics": {
+    "missing_destination_ids": [
+      1,
+      2,
+      16
+    ],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "image": "/home/ub26/.zeron/orgs/org_01M58675C51EJX1YP3DWR18TKH/user_01M5866F9EP1XX3W4Q9WEJCMTV/uploads/9fed00e0-Image_8.jpg",
+  "calibration_applicable": false
+}

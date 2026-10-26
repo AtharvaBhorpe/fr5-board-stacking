@@ -28,7 +28,7 @@ axis_length = spec["square_side_m"] * 2
 
 device = Path(
     "/dev/v4l/by-id/"
-    "usb-046d_HD_Pro_Webcam_C920_E8F8C89F-video-index0"
+    "usb-046d_HD_Pro_Webcam_C920_692E0F9F-video-index0"
 ).resolve(strict=True)
 
 cap = cv2.VideoCapture(str(device), cv2.CAP_V4L2)

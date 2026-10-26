@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "mode": "offline_image",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    1250,
+    280,
+    1840,
+    980
+  ],
+  "destination_tags": [
+    {
+      "tag_id": 2,
+      "variant": "VARb",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          819.9661865234375,
+          784.5057373046875
+        ],
+        [
+          816.1519165039062,
+          818.5114135742188
+        ],
+        [
+          783.2622680664062,
+          815.9403076171875
+        ],
+        [
+          786.3981323242188,
+          782.4765625
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 1,
+      "variant": "VARa",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          590.5,
+          756.5
+        ],
+        [
+          584.67138671875,
+          789.8872680664062
+        ],
+        [
+          552.5,
+          787.5
+        ],
+        [
+          557.5,
+          753.5
+        ]
+      ],
+      "placement_pose_robot": null
+    },
+    {
+      "tag_id": 16,
+      "variant": "VARc",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          386.1441955566406,
+          526.8375854492188
+        ],
+        [
+          381.90869140625,
+          556.8743286132812
+        ],
+        [
+          351.0,
+          557.0
+        ],
+        [
+          355.0,
+          527.0
+        ]
+      ],
+      "placement_pose_robot": null
+    }
+  ],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1765,
+          758
+        ],
+        [
+          1504,
+          754
+        ],
+        [
+          1526,
+          941
+        ],
+        [
+          1790,
+          943
+        ]
+      ],
+      "area_px2": 49574.5,
+      "rectangularity": 0.9057326930909981,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1318,
+          680
+        ],
+        [
+          1310,
+          939
+        ],
+        [
+          1499,
+          959
+        ],
+        [
+          1498,
+          698
+        ]
+      ],
+      "area_px2": 48383.5,
+      "rectangularity": 0.9282424919083452,
+      "reasons": [],
+      "candidate_id": "candidate-2",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1520,
+          402
+        ],
+        [
+          1526,
+          516
+        ],
+        [
+          1699,
+          526
+        ],
+        [
+          1688,
+          411
+        ]
+      ],
+      "area_px2": 19725.0,
+      "rectangularity": 0.9042640570015376,
+      "reasons": [],
+      "candidate_id": "candidate-3",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1269,
+          355
+        ],
+        [
+          1276,
+          466
+        ],
+        [
+          1445,
+          470
+        ],
+        [
+          1436,
+          370
+        ]
+      ],
+      "area_px2": 18277.5,
+      "rectangularity": 0.8881790688179292,
+      "reasons": [],
+      "candidate_id": "candidate-4",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    },
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1544,
+          587
+        ],
+        [
+          1559,
+          702
+        ],
+        [
+          1737,
+          702
+        ],
+        [
+          1719,
+          586
+        ]
+      ],
+      "area_px2": 20940.5,
+      "rectangularity": 0.9117647058823529,
+      "reasons": [],
+      "candidate_id": "candidate-5",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null
+    }
+  ],
+  "rejected_source_regions": [
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          1331,
+          509
+        ],
+        [
+          1328,
+          623
+        ],
+        [
+          1365,
+          628
+        ],
+        [
+          1364,
+          661
+        ],
+        [
+          1487,
+          675
+        ],
+        [
+          1488,
+          639
+        ],
+        [
+          1507,
+          639
+        ],
+        [
+          1491,
+          508
+        ],
+        [
+          1375,
+          494
+        ],
+        [
+          1370,
+          511
+        ]
+      ],
+      "area_px2": 26920.5,
+      "rectangularity": 0.8362433999601264,
+      "reasons": [
+        "not_a_convex_quadrilateral",
+        "irregular_outline"
+      ]
+    }
+  ],
+  "diagnostics": {
+    "missing_destination_ids": [],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "image": "/home/ub26/.zeron/orgs/org_01M58675C51EJX1YP3DWR18TKH/user_01M5866F9EP1XX3W4Q9WEJCMTV/uploads/6712c6fe-Image_5.jpg",
+  "calibration_applicable": false
+}

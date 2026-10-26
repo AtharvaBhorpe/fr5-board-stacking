@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "mode": "live_camera_diagnostic",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    805,
+    136,
+    1159,
+    594
+  ],
+  "destination_tags": [
+    {
+      "tag_id": 16,
+      "variant": "VARc",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          646.5,
+          144.5
+        ],
+        [
+          639.5,
+          180.0
+        ],
+        [
+          599.5,
+          175.5
+        ],
+        [
+          606.5,
+          140.5
+        ]
+      ],
+      "placement_pose_robot": null
+    }
+  ],
+  "source_candidates": [
+    {
+      "colour": "red",
+      "outline_px": [
+        [
+          961,
+          248
+        ],
+        [
+          871,
+          361
+        ],
+        [
+          1055,
+          488
+        ],
+        [
+          1144,
+          371
+        ]
+      ],
+      "area_px2": 32948.5,
+      "rectangularity": 0.9290057988197217,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null,
+      "diagnostic_centre_px": [
+        1007.75,
+        367.0
+      ]
+    }
+  ],
+  "rejected_source_regions": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          805,
+          136
+        ],
+        [
+          805,
+          593
+        ],
+        [
+          1158,
+          593
+        ],
+        [
+          1158,
+          136
+        ]
+      ],
+      "area_px2": 161321.0,
+      "rectangularity": 1.0,
+      "reasons": [
+        "touches_search_boundary"
+      ]
+    }
+  ],
+  "diagnostics": {
+    "missing_destination_ids": [
+      1,
+      2
+    ],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "historical_image": false,
+  "host_processed_at": "2026-10-26T13:31:28.411085+01:00",
+  "camera_device": "/dev/video4",
+  "focus_readback": 15.0,
+  "autofocus_readback": 0.0,
+  "image": "/home/ub26/Projects/fr5-board-stacking/artifacts/live-source/20261026-133128-417049-raw.png"
+}

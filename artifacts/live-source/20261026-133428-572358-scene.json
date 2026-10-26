@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "mode": "live_camera_diagnostic",
+  "image_size": [
+    1920,
+    1080
+  ],
+  "coordinate_space": "original_distorted_image_pixels",
+  "source_roi_xyxy": [
+    834,
+    204,
+    1091,
+    509
+  ],
+  "destination_tags": [
+    {
+      "tag_id": 2,
+      "variant": "VARb",
+      "identity_valid": true,
+      "corners_px": [
+        [
+          613.8462524414062,
+          399.35150146484375
+        ],
+        [
+          608.5775146484375,
+          441.2125549316406
+        ],
+        [
+          564.2056884765625,
+          438.87469482421875
+        ],
+        [
+          569.6107177734375,
+          397.36895751953125
+        ]
+      ],
+      "placement_pose_robot": null
+    }
+  ],
+  "source_candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          892,
+          236
+        ],
+        [
+          852,
+          453
+        ],
+        [
+          1028,
+          481
+        ],
+        [
+          1059,
+          261
+        ]
+      ],
+      "area_px2": 38797.0,
+      "rectangularity": 0.9654592832082228,
+      "reasons": [],
+      "candidate_id": "candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null,
+      "diagnostic_centre_px": [
+        957.75,
+        357.75
+      ]
+    }
+  ],
+  "rejected_source_regions": [],
+  "diagnostics": {
+    "missing_destination_ids": [
+      1,
+      16
+    ],
+    "unexpected_tag_ids": [],
+    "duplicate_tag_ids": []
+  },
+  "metric_calibrated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "historical_image": false,
+  "host_processed_at": "2026-10-26T13:34:28.567862+01:00",
+  "camera_device": "/dev/video4",
+  "focus_readback": 15.0,
+  "autofocus_readback": 0.0,
+  "image": "/home/ub26/Projects/fr5-board-stacking/artifacts/live-source/20261026-133428-572358-raw.png"
+}

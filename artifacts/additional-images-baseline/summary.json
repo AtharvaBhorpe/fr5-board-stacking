@@ -1,0 +1,189 @@
+[
+  {
+    "image": 1,
+    "accepted_colours": [
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ]
+  },
+  {
+    "image": 2,
+    "accepted_colours": [
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ]
+  },
+  {
+    "image": 3,
+    "accepted_colours": [
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ]
+  },
+  {
+    "image": 4,
+    "accepted_colours": [
+      "white",
+      "white"
+    ],
+    "rejected": [
+      {
+        "colour": "white",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "white",
+        "reasons": [
+          "touches_search_boundary",
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      },
+      {
+        "colour": "red",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ]
+  },
+  {
+    "image": 5,
+    "accepted_colours": [
+      "white",
+      "white",
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": [
+      {
+        "colour": "red",
+        "reasons": [
+          "not_a_convex_quadrilateral",
+          "irregular_outline"
+        ]
+      }
+    ]
+  },
+  {
+    "image": 6,
+    "accepted_colours": [
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": []
+  },
+  {
+    "image": 7,
+    "accepted_colours": [
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": []
+  },
+  {
+    "image": 8,
+    "accepted_colours": [
+      "white",
+      "white",
+      "red"
+    ],
+    "rejected": []
+  }
+]

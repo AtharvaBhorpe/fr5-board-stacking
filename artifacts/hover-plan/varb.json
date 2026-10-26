@@ -1,0 +1,139 @@
+{
+  "purpose": "plan_only_horizontal_hover",
+  "source_report": "/home/ub26/Projects/fr5-board-stacking/artifacts/source-inspection/workspace-varb-162649/report.json",
+  "variant": "VARb",
+  "created_unix": 1793029811.6961834,
+  "target": {
+    "position": {
+      "x": -0.3891260828826638,
+      "y": -0.6279223304228587,
+      "z": 0.393559208557032
+    },
+    "orientation": {
+      "x": 0.7112692344437707,
+      "y": 0.6983632199161374,
+      "z": 0.055208404176528336,
+      "w": 0.057766091354861694
+    }
+  },
+  "response": {
+    "start_state": {
+      "joint_state": {
+        "header": {
+          "stamp": {
+            "sec": 0,
+            "nanosec": 0
+          },
+          "frame_id": "base_link"
+        },
+        "name": [
+          "j1",
+          "j2",
+          "j3",
+          "j4",
+          "j5",
+          "j6"
+        ],
+        "position": [
+          0.8417246659311269,
+          -0.38534033263447837,
+          -0.4869744277746147,
+          -0.5952378847502938,
+          -1.4483691227307283,
+          0.8536982644636779
+        ],
+        "velocity": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "effort": []
+      },
+      "multi_dof_joint_state": {
+        "header": {
+          "stamp": {
+            "sec": 0,
+            "nanosec": 0
+          },
+          "frame_id": "base_link"
+        },
+        "joint_names": [],
+        "transforms": [],
+        "twist": [],
+        "wrench": []
+      },
+      "attached_collision_objects": [],
+      "is_diff": false
+    },
+    "solution": {
+      "joint_trajectory": {
+        "header": {
+          "stamp": {
+            "sec": 0,
+            "nanosec": 0
+          },
+          "frame_id": "base_link"
+        },
+        "joint_names": [
+          "j1",
+          "j2",
+          "j3",
+          "j4",
+          "j5",
+          "j6"
+        ],
+        "points": [
+          {
+            "positions": [
+              -0.17764181623220737,
+              -0.375958184770377,
+              -0.5336886274412549,
+              -0.5028419316146532,
+              -1.5939465203606829,
+              -0.15749881423506812
+            ],
+            "velocities": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "accelerations": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "effort": [],
+            "time_from_start": {
+              "sec": 0,
+              "nanosec": 0
+            }
+          }
+        ]
+      },
+      "multi_dof_joint_trajectory": {
+        "header": {
+          "stamp": {
+            "sec": 0,
+            "nanosec": 0
+          },
+          "frame_id": ""
+        },
+        "joint_names": [],
+        "points": []
+      }
+    },
+    "fraction": 0.006756756756756757,
+    "error_code": {
+      "val": 1
+    }
+  }
+}

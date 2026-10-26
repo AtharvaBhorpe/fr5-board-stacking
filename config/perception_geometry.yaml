@@ -63,7 +63,7 @@ variants:
   VARb:
     colour: white
     size_m:
-    - 0.135
+    - 0.15
     - 0.21
     - 0.005
     destination_tag_id: 2

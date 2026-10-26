@@ -1,0 +1,405 @@
+[
+  {
+    "image": 1,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20785562158191584,
+            0.2984778714083247
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.14949699757718363,
+            0.21290093291258996
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 2,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20834749444706638,
+            0.2974333951620358
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.14949699757718363,
+            0.21290093291258996
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 3,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.2078327914126141,
+            0.2979228734880012
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.15017172483030036,
+            0.21242003060412606
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 4,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.2080961036357178,
+            0.2932082632846563
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 5,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20755081198441266,
+            0.2926655913068824
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.1501130631330342,
+            0.20801752816093283
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-4",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-5",
+        "classification": {
+          "variant": "VARc",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.13920071214497032,
+            0.20880923264173476
+          ],
+          "matching_variants": [
+            "VARc"
+          ],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 6,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20754450617080483,
+            0.29319764197332765
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.1501130631330342,
+            0.20801752816093283
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 7,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.20754450617080483,
+            0.29319764197332765
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.1501130631330342,
+            0.20801752816093283
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  },
+  {
+    "image": 8,
+    "candidates": [
+      {
+        "candidate_id": "candidate-1",
+        "classification": {
+          "variant": "VARb",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.1516392725015187,
+            0.20982567158824292
+          ],
+          "matching_variants": [
+            "VARb"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-2",
+        "classification": {
+          "variant": "VARa",
+          "status": "matched",
+          "reason": null,
+          "measured_sides_m": [
+            0.2100575198096846,
+            0.2952715065209233
+          ],
+          "matching_variants": [
+            "VARa"
+          ],
+          "execution_allowed": false
+        }
+      },
+      {
+        "candidate_id": "candidate-3",
+        "classification": {
+          "variant": null,
+          "status": "rejected",
+          "reason": "opposite_edges_disagree",
+          "measured_sides_m": null,
+          "matching_variants": [],
+          "execution_allowed": false
+        }
+      }
+    ],
+    "execution_allowed": false
+  }
+]

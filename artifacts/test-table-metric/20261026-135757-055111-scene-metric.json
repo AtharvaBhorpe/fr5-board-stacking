@@ -1,0 +1,102 @@
+{
+  "frame_id": "test_table_c0",
+  "frame_definition": "C0 origin; X=board X, Y=-board Y, Z=-board Z",
+  "scene": "artifacts/live-source/20261026-135757-055111-scene.json",
+  "pose_report": "artifacts/workspace-calibration/20261026-135031-900116/pose/report.json",
+  "assumption": "Fixed camera; sheet top coplanar with calibration face",
+  "results": [
+    {
+      "pose_candidate": 1,
+      "corner_rms_px": 0.15224429506247497,
+      "corners_m": [
+        [
+          -0.07682361839273788,
+          -0.22604818242879923,
+          0.0
+        ],
+        [
+          0.1028909530986617,
+          -0.09017251906966928,
+          0.0
+        ],
+        [
+          0.0029380988835683297,
+          0.03948155458383807,
+          0.0
+        ],
+        [
+          -0.17407411478134005,
+          -0.09621210876434591,
+          0.0
+        ]
+      ],
+      "centre_m": [
+        -0.036267170297961976,
+        -0.09323781391974409,
+        0.0
+      ],
+      "side_lengths_mm": [
+        162.96427010164308,
+        224.16853304481748
+      ],
+      "classification": {
+        "variant": null,
+        "status": "rejected",
+        "reason": "dimensions_do_not_match",
+        "measured_sides_m": [
+          0.16296427010164308,
+          0.2241685330448175
+        ],
+        "matching_variants": [],
+        "execution_allowed": false
+      }
+    },
+    {
+      "pose_candidate": 2,
+      "corner_rms_px": 4.040621120779581,
+      "corners_m": [
+        [
+          -0.06296301966181289,
+          -0.21803127257692131,
+          0.0
+        ],
+        [
+          0.10148129272720252,
+          -0.09110116567009685,
+          0.0
+        ],
+        [
+          0.0014991424947135568,
+          0.03651851390691785,
+          0.0
+        ],
+        [
+          -0.1449820030633367,
+          -0.1021721713343352,
+          0.0
+        ]
+      ],
+      "centre_m": [
+        -0.026241146875808377,
+        -0.09369652391860889,
+        0.0
+      ],
+      "side_lengths_mm": [
+        152.03662278543794,
+        204.72780509504105
+      ],
+      "classification": {
+        "variant": null,
+        "status": "rejected",
+        "reason": "corners_not_rectangular",
+        "measured_sides_m": null,
+        "matching_variants": [],
+        "execution_allowed": false
+      }
+    }
+  ],
+  "pose_ambiguity_resolved": false,
+  "physical_accuracy_validated": false,
+  "execution_allowed": false,
+  "robot_targets": []
+}

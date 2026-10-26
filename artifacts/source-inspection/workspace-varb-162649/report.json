@@ -1,0 +1,122 @@
+{
+  "image": "/home/ub26/Projects/fr5-board-stacking/artifacts/workspace-tag-check/20261026-162649-800683/raw.png",
+  "fit": "/home/ub26/Projects/fr5-board-stacking/artifacts/workspace-tag-fit/report.json",
+  "T_base_link_camera": [
+    [
+      -0.004505050305504427,
+      -0.9569643295454164,
+      0.2901705989576416,
+      -0.8889219278864161
+    ],
+    [
+      -0.99998944723503,
+      0.004572363667423729,
+      -0.00044599223283836885,
+      0.10628373149198857
+    ],
+    [
+      -0.0008999668459479161,
+      -0.2901695460729543,
+      -0.956974829654099,
+      1.5901463579574884
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "frame_id": "base_link",
+  "assumed_sheet_top_z_m": -0.055,
+  "rois": [
+    [
+      1200,
+      400,
+      1750,
+      720
+    ]
+  ],
+  "purpose": "offline_candidate_calibration_preview",
+  "independent_accuracy_validated": false,
+  "execution_allowed": false,
+  "robot_targets": [],
+  "candidates": [
+    {
+      "colour": "white",
+      "outline_px": [
+        [
+          1610,
+          515
+        ],
+        [
+          1438,
+          523
+        ],
+        [
+          1457,
+          645
+        ],
+        [
+          1633,
+          637
+        ]
+      ],
+      "area_px2": 21742.0,
+      "rectangularity": 0.9115943823506608,
+      "reasons": [],
+      "candidate_id": "region-1-candidate-1",
+      "variant": null,
+      "single_sheet_verified": false,
+      "grasp_pose_robot": null,
+      "metric_outline_m": [
+        [
+          -0.3083020078976715,
+          -0.7301039380696717,
+          -0.05499999999999994
+        ],
+        [
+          -0.3187573980718359,
+          -0.5209229848181455,
+          -0.05499999999999994
+        ],
+        [
+          -0.46968470419893044,
+          -0.5260503488226473,
+          -0.05499999999999994
+        ],
+        [
+          -0.4597602213622174,
+          -0.7346120499809704,
+          -0.05499999999999994
+        ]
+      ],
+      "edge_lengths_mm": [
+        209.44208361003098,
+        151.01437546278953,
+        208.79769766362335,
+        151.5252899646681
+      ],
+      "diagnostic_centre_m": [
+        -0.3891260828826638,
+        -0.6279223304228587,
+        -0.05499999999999994
+      ],
+      "metric_classification": {
+        "variant": "VARb",
+        "status": "matched",
+        "reason": null,
+        "measured_sides_m": [
+          0.15126983271372882,
+          0.20911989063682718
+        ],
+        "matching_variants": [
+          "VARb"
+        ],
+        "execution_allowed": false
+      },
+      "execution_allowed": false
+    }
+  ],
+  "rejected_regions": []
+}
