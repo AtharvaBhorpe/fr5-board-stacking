@@ -45,9 +45,9 @@ surfaces:
   source_support_z_m: -0.06
   profile_support_z_m: -0.02
   destination_support_z_m:
-    VARa: null
-    VARb: null
-    VARc: null
+    VARa: -0.055
+    VARb: -0.055
+    VARc: -0.055
   destination_marker_plane_z_m:
     '1': null
     '2': null
@@ -58,21 +58,21 @@ variants:
     size_m:
     - 0.295
     - 0.21
-    - 0.006
+    - 0.005
     destination_tag_id: 1
   VARb:
     colour: white
     size_m:
     - 0.135
     - 0.21
-    - 0.006
+    - 0.005
     destination_tag_id: 2
   VARc:
     colour: red
     size_m:
     - 0.135
     - 0.21
-    - 0.006
+    - 0.005
     destination_tag_id: 16
 destination_markers:
   dictionary: DICT_5X5_100

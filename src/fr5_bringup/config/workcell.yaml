@@ -35,4 +35,4 @@ place_zone:                    # 95 cm side
   yaw: 0.0
 
 board:
-  size: [0.27, 0.20, 0.006]    # measured: 27 x 20 cm, 6 mm thick
+  size: [0.295, 0.210, 0.005]  # VARa; other variants in perception_geometry.yaml
