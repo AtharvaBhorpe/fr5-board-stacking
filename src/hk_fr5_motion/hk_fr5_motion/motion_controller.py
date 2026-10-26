@@ -57,6 +57,7 @@ HINTS = {  # short explanations for the common codes (T-6)
     E.TIMED_OUT: "timed out",
     E.PREEMPTED: "stopped (cancel or new goal)",
     E.START_STATE_IN_COLLISION: "robot is currently in collision",
+    E.START_STATE_INVALID: "robot start state in collision (attached board touching? lift with move_delta, S-12)",
     E.GOAL_IN_COLLISION: "target is in collision",
     E.GOAL_STATE_INVALID: "target unreachable or in collision (check pose / obstacles)",
     E.NO_IK_SOLUTION: "target out of reach (no IK solution)",

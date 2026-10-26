@@ -663,6 +663,10 @@ T20c results (scene objects vs real planning, 2026-10-26, headless sim, scratchp
   remove "" -> 3 boxes (stack_0, stack_1, wall).
 - Motion regression: move_to ready, move_delta dx 50 mm (tcp frame), cancel after 1 s -> CANCELED + PREEMPTED (-7),
   back to ready: all as before.
+- T25 re-run (adapter FixStartStateCollision removed from ompl_planning.yaml, 28/28): OMPL from the contact state ->
+  **-26 START_STATE_INVALID** (no jump); move_group adapters now: AddTimeOptimalParameterization, ResolveConstraintFrames,
+  FixWorkspaceBounds, FixStartStateBounds (<= 0.1 rad joint-limit clamp, kept), FixStartStatePathConstraints; every
+  other T20c check unchanged.
 - Test bugs on the way (not code bugs): relative heights from the wrong start z; a wall placed through the robot
   (the attach/add warning flagged it: `wall <-> wrist1_link, gripper_link ...`).
 

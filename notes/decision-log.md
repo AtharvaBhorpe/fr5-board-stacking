@@ -902,8 +902,8 @@ fails at once on a start state in collision" -> **wrong**):
 - Must be < height (validated); for thin boards (<= 2 mm) pass a smaller margin per request.
 - **Rule for the control loop (S-12, follows from the measurement): lift after attach with move_delta (Pilz LIN),
   never with an OMPL move_to straight from the contact pose.** If the margin is not enough (table higher than the
-  estimate, E-2), Pilz still lifts from the real state, OMPL would jump. Open question (T25): remove the OMPL
-  "Fix Start State In Collision" adapter, so OMPL fails clearly (START_STATE_IN_COLLISION) instead of jumping?
+  estimate, E-2), Pilz still lifts from the real state. **T25 done:** the OMPL "Fix Start State In Collision" adapter
+  is removed -> OMPL now fails clearly with -26 START_STATE_INVALID instead of jumping (measured).
 
 **Stack model:** detach(keep) -> `stack_<n>` with the attached shape (S-9): top = real top of the placed board, bottom
 2 mm above the layer below (floating gap, harmless). Next place: tcp goes to stack top + height -> the new attached
@@ -982,7 +982,7 @@ The rationale below is only what was recorded at the time.
 | T21 | Frozen read-back warning in motion_controller (X-4) | open |
 | T22 | Reject unknown bringup launch args (X-7) | open |
 | T23 | Commit gripper test scripts + mock XML-RPC server (X-1 / D1) | open |
-| T25 | Remove OMPL request adapter "Fix Start State In Collision" (ompl_planning.yaml)? It silently replaced a colliding start state by one 0.26-1.02 rad away (T20c, 5n-1). Ask user | open (decision) |
+| T25 | ~~Remove OMPL request adapter "Fix Start State In Collision"~~ | DONE 2026-10-26 (user: remove): OMPL from a colliding start now fails with -26 START_STATE_INVALID (T20c re-run 28/28, Pilz unaffected); motion_controller hint for -26 added |
 | T24 | Team README: run, ROS names, interfaces, result codes (X-8) | open, last of this session |
 | T8 | OPTIONAL IK benchmark KDL vs pick_ik (`/compute_ik`, same random tcp poses: success rate, time, joint distance to seed; throwaway `pixi add`). **Only if KDL fails noticeably** (IK failures in move_to/move_delta/RViz drag). Not in the step plan. | open, optional |
 

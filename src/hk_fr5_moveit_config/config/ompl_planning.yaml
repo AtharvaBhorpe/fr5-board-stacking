@@ -4,10 +4,10 @@ request_adapters: >-
   default_planner_request_adapters/ResolveConstraintFrames
   default_planner_request_adapters/FixWorkspaceBounds
   default_planner_request_adapters/FixStartStateBounds
-  default_planner_request_adapters/FixStartStateCollision
   default_planner_request_adapters/FixStartStatePathConstraints
+# FixStartStateCollision REMOVED (decision-log T25): with a start state in collision it silently planned from a
+# state 0.26-1.02 rad away from the real one (T20c). Now OMPL fails clearly instead (lift with Pilz, rule S-12).
 start_state_max_bounds_error: 0.1
-jiggle_fraction: 0.05
 
 # Only the planner we use (F6). Defining planner_configs here stops
 # moveit_configs_utils from adding all ~25 OMPL default planners.

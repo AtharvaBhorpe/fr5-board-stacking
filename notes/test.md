@@ -79,4 +79,5 @@ Ctrl+C in terminal 1 (driver StopMotion + disconnect). Web UI: **manual mode + d
 ## Result codes (error_code.val)
 1 SUCCESS | -1 PLANNING_FAILED | -2 INVALID_MOTION_PLAN (path in collision) | -4 CONTROL_FAILED |
 -7 PREEMPTED (cancel / new goal) | -16 INVALID_GOAL_CONSTRAINTS (bad input) | -23 ROBOT_STATE_STALE |
--25 COMMUNICATION_FAILURE | -27 GOAL_STATE_INVALID (unreachable / in collision)
+-25 COMMUNICATION_FAILURE | -26 START_STATE_INVALID (OMPL: start in collision, e.g. board touching -> lift with move_delta) |
+-27 GOAL_STATE_INVALID (unreachable / in collision)
