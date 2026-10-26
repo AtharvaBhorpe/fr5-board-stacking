@@ -63,6 +63,23 @@ def add_metric(c, board):
     return board
 
 
+def pickable(c, boards, rejected):
+    """Add metric fields; keep only size-verified boards (renumbered), move the rest to `rejected`.
+    Size-mismatched blobs are stacks, partly hidden boards or the robot arm: never pick them."""
+    ok = []
+    for b in boards:
+        b.pop("area_px", None)
+        add_metric(c, b)
+        if b["size_ok"]:
+            ok.append(b)
+        else:
+            rejected.append({"reason": "size_mismatch", "variant_guess": b["variant"], "u": b["u"], "v": b["v"],
+                             "size_mm": b["size_mm"]})
+    for i, b in enumerate(ok):
+        b["id"] = i
+    return ok
+
+
 if __name__ == "__main__":
     import sys
     from detect import detect

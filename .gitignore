@@ -1,3 +1,4 @@
 .pixi/
 *.overlay.jpg
 __pycache__/
+eval_out/

@@ -73,13 +73,15 @@ class Vision1(Node):
             if not ok:
                 self.get_logger().warn("camera read failed", throttle_duration_sec=2.0)
                 return False
-        boards = detect(frame)
-        for b in boards:
-            b.pop("area_px")
-            if self.calib is not None:
-                table.add_metric(self.calib, b)
+        rejected = []
+        boards = detect(frame, rejected)
+        if self.calib is not None:
+            boards = table.pickable(self.calib, boards, rejected)
+        else:
+            for b in boards:
+                b.pop("area_px")
         msg = {"stamp": time.time(), "image_size": [frame.shape[1], frame.shape[0]],
-               "calibrated": self.calib is not None, "boards": boards}
+               "calibrated": self.calib is not None, "boards": boards, "rejected": rejected}
         self.last = json.dumps(msg)
         self.pub.publish(String(data=self.last))
         return True

@@ -11,13 +11,15 @@ import numpy as np
 
 # --- Lab knobs (pixel values are for the 1920x1080 overhead image) -------------------------------
 # Where to look: pick area (right table), normalized [x, y] in image, perimeter order.
-ROI = [[0.585, 0.17], [0.96, 0.17], [0.96, 0.93], [0.585, 0.93]]
-WHITE = ((0, 0, 110), (179, 70, 255))          # HSV lo, hi
-RED = [((0, 90, 80), (12, 255, 255)), ((165, 90, 80), (179, 255, 255))]
+ROI = [[0.57, 0.15], [0.985, 0.15], [0.985, 0.97], [0.57, 0.97]]  # A/B on 755 frames: +34 boards, 0 lost
+WHITE = ((0, 0, 100), (179, 80, 255))         # HSV lo, hi. Picked by A/B on 190 lab frames (eval_dataset.py)
+RED = [((0, 110, 80), (12, 255, 255)), ((165, 110, 80), (179, 255, 255))]  # V<80 merges red with tape / shadows
 MIN_AREA = 12000                               # px^2, smaller blobs are ignored
 VARA_MIN_AREA = 38000                          # white board bigger than this -> VARa, else VARb
 MAX_AREA = 90000                               # bigger -> merged boards, rejected
 MIN_RECTANGULARITY = 0.88                      # blob area / fitted rectangle area
+HULL_RECT = False  # True admits boards with a hand on them: keep False
+RED_CLOSE = 9      # red paint is streaky with white margins; bigger close fills it
 # ponytail: area thresholds assume the camera height stays fixed; re-tune (or use mm via calibration, MVP 3) if it moves.
 
 # Board +X edge per variant (README "Board coordinates"): VARa = long edge, VARb / VARc = short edge.
@@ -26,13 +28,13 @@ ARUCO = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT
                                 cv2.aruco.DetectorParameters())
 
 
-def _mask(hsv, ranges, roi):
+def _mask(hsv, ranges, roi, close=9):
     m = np.zeros(hsv.shape[:2], np.uint8)
     for lo, hi in ranges:
         m |= cv2.inRange(hsv, np.array(lo), np.array(hi))
     m &= roi
     m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-    return cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+    return cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((close, close), np.uint8))
 
 
 def _yaw_deg(box, x_is_long):
@@ -56,8 +58,14 @@ def _quad(contour):
     return None
 
 
-def detect(bgr):
-    """Return [{'id','variant','u','v','yaw_deg','corners'}], sorted left -> right, id = index."""
+def detect(bgr, rejected=None):
+    """Return [{'id','variant','u','v','yaw_deg','corners'}], sorted left -> right, id = index.
+    rejected: optional list, gets {'reason','colour','u','v','area_px'} for every board-sized blob that was dropped."""
+    def reject(reason, c, area):
+        if rejected is not None:
+            (u, v), _, _ = cv2.minAreaRect(c)
+            rejected.append({"reason": reason, "colour": colour, "u": round(u), "v": round(v), "area_px": int(area)})
+
     h, w = bgr.shape[:2]
     roi = np.zeros((h, w), np.uint8)
     cv2.fillPoly(roi, [np.int32(np.array(ROI) * [w - 1, h - 1])], 255)
@@ -66,20 +74,26 @@ def detect(bgr):
     tag_centres = [c.reshape(4, 2).mean(0) for c in tags]
 
     boards = []
-    for colour, ranges in (("white", [WHITE]), ("red", RED)):
-        contours, _ = cv2.findContours(_mask(hsv, ranges, roi), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for colour, ranges, close in (("white", [WHITE], 9), ("red", RED, RED_CLOSE)):
+        contours, _ = cv2.findContours(_mask(hsv, ranges, roi, close), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for c in contours:
             area = cv2.contourArea(c)
-            if not MIN_AREA <= area <= MAX_AREA:
+            if area < MIN_AREA:
+                continue
+            if area > MAX_AREA:
+                reject("too_big", c, area)  # merged boards
                 continue
             rect = cv2.minAreaRect(c)
-            if area / (rect[1][0] * rect[1][1]) < MIN_RECTANGULARITY:
-                continue  # overlapping / partly hidden boards
+            if (cv2.contourArea(cv2.convexHull(c)) if HULL_RECT else area) / (rect[1][0] * rect[1][1]) < MIN_RECTANGULARITY:
+                reject("not_rectangular", c, area)  # overlapping / partly hidden boards
+                continue
             box = _quad(c)
             if box is None:
+                reject("no_4_corners", c, area)
                 continue
             if any(cv2.pointPolygonTest(box, tuple(map(float, t)), False) >= 0 for t in tag_centres):
-                continue  # destination template, not a board
+                reject("has_tag", c, area)  # destination template, not a board
+                continue
             variant = "VARc" if colour == "red" else ("VARa" if area >= VARA_MIN_AREA else "VARb")
             boards.append({"variant": variant, "u": round(float(box[:, 0].mean()), 1), "v": round(float(box[:, 1].mean()), 1),
                            "yaw_deg": round(_yaw_deg(box, X_IS_LONG_EDGE[variant]), 1),
