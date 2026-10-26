@@ -5,7 +5,8 @@ Args:
                                  false: real FR5 via the Fairino driver (must be built).
   update_rate:=50                controller_manager rate in Hz (decision P-9: 125 gave a 2 s lag on the real FR5).
   use_rviz:=true|false           false = headless (scripts, tests).
-  use_obstacles:=true|false      add static collision boxes (hk_fr5_motion/config/obstacles.yaml).
+  use_obstacles:=true|false      add static collision boxes (hk_fr5_motion/config/obstacles.yaml) via scene_manager.
+                                 scene_manager (/scene/attach_board, detach_board, add_box, remove_box) always runs.
   use_motion_controller:=true|false  /motion/move_to, move_delta, get_state (hk_fr5_motion/config/motion.yaml).
   use_gripper:=true|false        /gripper/grip, release, state (hk_fr5_gripper/config/gripper.yaml);
                                  fake I/O with use_fake_hardware:=true, robot tool I/O (XML-RPC) with false.
@@ -96,9 +97,11 @@ def _setup(context):
     actions += generate_move_group_launch(moveit_config).entities
     if use_rviz:
         actions += generate_moveit_rviz_launch(moveit_config).entities
-    if use_obstacles:
-        # one-shot: waits for move_group, adds the boxes, exits
-        actions.append(Node(package="hk_fr5_motion", executable="obstacle_loader", output="screen"))
+    # scene_manager owns the planning scene objects (decision-log 5n, S-1; replaces obstacle_loader):
+    # static boxes (use_obstacles) + the /scene/* services for the control loop (always on)
+    scene_cfg = os.path.join(get_package_share_directory("hk_fr5_motion"), "config", "scene.yaml")
+    actions.append(Node(package="hk_fr5_motion", executable="scene_manager", namespace="scene",
+                        parameters=[scene_cfg, {"load_static": use_obstacles}], output="screen"))
     if use_motion_controller:
         motion_cfg = os.path.join(get_package_share_directory("hk_fr5_motion"), "config", "motion.yaml")
         actions.append(Node(package="hk_fr5_motion", executable="motion_controller", namespace="motion",
@@ -120,7 +123,8 @@ def generate_launch_description():
         DeclareLaunchArgument("use_rviz", default_value="true",
                               description="start RViz with the MotionPlanning display"),
         DeclareLaunchArgument("use_obstacles", default_value="true",
-                              description="add static collision boxes from hk_fr5_motion/config/obstacles.yaml"),
+                              description="add static collision boxes from hk_fr5_motion/config/obstacles.yaml "
+                                          "(scene_manager; its /scene/* services run either way)"),
         DeclareLaunchArgument("use_motion_controller", default_value="true",
                               description="start motion_controller (/motion/move_to, move_delta, get_state)"),
         DeclareLaunchArgument("use_gripper", default_value="true",

@@ -561,7 +561,7 @@ Not added: tolerances (config yaml, step 16), separate acceleration scaling (F14
 | O-3 | Node behaviour | **one-shot**: wait for move_group (timeout param), add all, log, exit; re-run to reload (same name = replace) | simplest |
 | O-4 | Boxes removed from yaml | **document only** (restart bringup) | never remove objects others added (e.g. attached board, F12) |
 | O-5 | yaml validation | **strict** (unique names, 3 positive sizes, 3-value position, numeric yaw; else error, nothing added) | |
-| O-6 | Launch | **`use_obstacles:=true`** arg in bringup.launch.py | |
+| O-6 | Launch | **`use_obstacles:=true`** arg in bringup.launch.py | (2026-10-26: obstacle_loader merged into scene_manager, 5n T20d) |
 | O-7 | z values | **absolute centres** in yaml (frozen format), top_z maths in comments | keeps frozen format |
 
 Values = teammate estimates converted (implementation-ref 10e), all TODO-measure (T4).
@@ -857,6 +857,10 @@ bottom by a contact margin.
   that are slightly in collision: keep in mind when testing the margin.
 - Sub-steps: T20a interfaces, T20b scene_manager (static boxes = obstacle_loader behaviour, then the services),
   T20c tests in sim, T20d launch (obstacle_loader removed), T20e motion_shell commands.
+- **T20d done (2026-10-26):** bringup starts `scene_manager` (namespace scene, scene.yaml + `load_static: use_obstacles`)
+  instead of obstacle_loader; scene_manager **always runs** (the control loop needs /scene/*), `use_obstacles` keeps its
+  meaning (static boxes on / off). obstacle_loader.py, its entry point and its stale installed script removed; package
+  descriptions updated. motion_controller untouched by T20d. Historical entries (step 13, 5e O-*) stay as history.
 
 ### 5n-1. T20a interfaces (user approved 2026-10-26) + collision model: metrics and reasons (check here first on collision issues)
 
@@ -983,6 +987,7 @@ The rationale below is only what was recorded at the time.
 | T22 | Reject unknown bringup launch args (X-7) | open |
 | T23 | Commit gripper test scripts + mock XML-RPC server (X-1 / D1) | open |
 | T25 | ~~Remove OMPL request adapter "Fix Start State In Collision"~~ | DONE 2026-10-26 (user: remove): OMPL from a colliding start now fails with -26 START_STATE_INVALID (T20c re-run 28/28, Pilz unaffected); motion_controller hint for -26 added |
+| T26 | Ctrl+C of the bringup: several nodes end "process has died, exit code -2" instead of "finished cleanly" (pre-existing, same with the pre-T20d launch: SIGINT reaches the process group AND ros2 launch forwards a 2nd SIGINT). Risk on the real robot: ros2_control_node may die before the driver's on_deactivate (StopMotion / CloseRPC). Check at the lab (T18) whether the driver logs its stop | open |
 | T24 | Team README: run, ROS names, interfaces, result codes (X-8) | open, last of this session |
 | T8 | OPTIONAL IK benchmark KDL vs pick_ik (`/compute_ik`, same random tcp poses: success rate, time, joint distance to seed; throwaway `pixi add`). **Only if KDL fails noticeably** (IK failures in move_to/move_delta/RViz drag). Not in the step plan. | open, optional |
 

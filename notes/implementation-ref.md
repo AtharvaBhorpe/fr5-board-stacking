@@ -670,6 +670,14 @@ T20c results (scene objects vs real planning, 2026-10-26, headless sim, scratchp
 - Test bugs on the way (not code bugs): relative heights from the wrong start z; a wall placed through the robot
   (the attach/add warning flagged it: `wall <-> wrist1_link, gripper_link ...`).
 
+T20d results (launch integration, 2026-10-26, scratchpad `test_t20d.py`, `test_scene_motion.py`, `test_stop.py`):
+- Default bringup: node list has `/scene/scene_manager`, no obstacle_loader; `/get_planning_scene` world objects
+  **identical** to the obstacle_loader reference (T20b); /scene/add_box works. `use_obstacles:=false`: world empty,
+  /scene/add_box works. `ros2 pkg executables hk_fr5_motion`: motion_controller, motion_shell, scene_manager.
+- T20c suite (28 checks) against the launched scene_manager: 28/28.
+- Ctrl+C (SIGINT to the process group, like a terminal): several nodes "process has died, exit code -2"; same with
+  the pre-T20d launch file (rsp, move_group, motion_controller) -> pre-existing (T26), not caused by T20d.
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders

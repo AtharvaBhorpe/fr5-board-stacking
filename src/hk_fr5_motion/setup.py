@@ -17,11 +17,10 @@ setup(
     zip_safe=True,
     maintainer="vortexcv",
     maintainer_email="69069296+vortexcv@users.noreply.github.com",
-    description="hk_fr5 motion nodes: motion_controller (move_to, move_delta, get_state), obstacle_loader.",
+    description="hk_fr5 motion nodes: motion_controller (move_to, move_delta, get_state), scene_manager (static boxes, /scene/* services), motion_shell.",
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
-            "obstacle_loader = hk_fr5_motion.obstacle_loader:main",
             "motion_controller = hk_fr5_motion.motion_controller:main",
             "motion_shell = hk_fr5_motion.motion_shell:main",
             "scene_manager = hk_fr5_motion.scene_manager:main",
