@@ -1,0 +1,4 @@
+# Camera -> table calibration (decision-log V-7). Written by the calibration app; do not edit by hand.
+# Not calibrated yet: run the calibration app, record the tags, fit, save, then commit this file.
+version: 1
+calibrated: false

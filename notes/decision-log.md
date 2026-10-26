@@ -20,6 +20,8 @@ decision log of branch `feat/robot-motion-gripper`. Units: metres / radians in c
 | V-10 | Camera ownership | Only the calibration app opens the camera; close it before the board detection runs | Two processes cannot open the C920 at once |
 | V-11 | Calibration app | aiohttp + one HTML / JS / CSS page, no framework, no build step; polished UI (light / dark, overlay drawn in the browser), wizard (tag status, record, fit, per-tag error, save), test mode (pixel -> x / y, optional go-to plan-only, drift check), camera reconnect, runs without ROS | User: robust and beautiful; features reviewed as we go |
 | V-12 | TCP for record | **Joints from port 20004 (`jt_cur_pos`, deg) + own forward kinematics (numpy)**: FR5 joint chain copied from the vendor URDF + our tool (flange -> cup tip 0.1129 m along flange z, no x / y offset), numbers in config with their source. `flange_cur_pos` from the same packet only as a cross-check (verifies the packet layout + pendant frame, VT1) | The Fairino web app / controller pose stops at the flange (no tool set). motion_shell gets the tcp via TF (robot_state_publisher FK on /joint_states with our URDF), which needs the bringup = not allowed while hand-guiding. Options: A flange pose + 112.9 mm (needs the pendant RPY convention for tilt, VT2), **B own FK (user)**: same kinematics as MoveIt (model errors cancel), result directly in base_link, testable offline vs the motion sim TF, C tool on the pendant (changes shared controller config) |
+| V-13 | calib.yaml file handling | Placeholder `calib.yaml` (`calibrated: false`) committed, so the file is always installed; `save()` = temp file + rename (node never reads half a file), follows the symlink-install chain (install -> build -> **src**), keeps `calib.yaml.bak` (`*.bak` in `.gitignore`). Units in the file: metres | A rename on the installed path would replace the symlink and leave the committed source file unchanged; a file created after the build would not be installed at all |
+| V-14 | Fit quality per tag | Per tag `err_mm` (residual) + `drop_rms_mm` (rms of the OTHER tags without this one, 6+ tags); `suspect` = tag whose removal makes the rest fit (rms > 2 mm, removal halves it, 3x clearer than any other tag), else None. A hint (re-record this tag), not proof | Offline (lab homography as the true camera, 0.5 px noise, 6 tags, 8 seeds x 300 random cases): wrong tag < 1 %, found 30 mm ~86 %, 20 mm ~77 %, 10 mm ~38 %, 5 mm ~3 %. Rejected: leave-one-out prediction error (blamed corner tags: 1 / 6 right, 5 mm on clean data), largest residual (4 / 6). Small errors (<= 10 mm at a corner) are absorbed by the fit (rms 1.4-1.8 mm vs 0.4 mm noise): the real check is the moving-tag accuracy test (VT3). 0.5 px noise: 6 tags worst probe error 1.06 mm mean vs 4 tags 1.26 mm |
 
 ## 2. Open items
 
@@ -34,8 +36,8 @@ decision log of branch `feat/robot-motion-gripper`. Units: metres / radians in c
 | # | Step | Status |
 |---|---|---|
 | V1 | Branch + worktree, `.gitignore`, pixi env, this log | done `7ed958b` |
-| V2 | `hk_fr5_vision_interfaces`: `PixelToTable.srv` (u[] / v[] -> success, message, x[] / y[], inside[]) | done |
-| V3 | `calib.yaml` format + homography fit / apply + offline test | |
+| V2 | `hk_fr5_vision_interfaces`: `PixelToTable.srv` (u[] / v[] -> success, message, x[] / y[], inside[]) | done `ddaea94` |
+| V3 | `calib.yaml` format + homography fit / apply + offline test (`hk_fr5_vision/calib.py`, `tests/calib_check.py` 34/34) | done |
 | V4 | `vision_transform` node: service, reload on change, test | |
 | V5 | Port 20004 reader + FK (V-12) + offline tests: fake server, FK vs motion sim TF | |
 | V6 | Calibration app backend: camera, tags, record tcp, fit, save | |

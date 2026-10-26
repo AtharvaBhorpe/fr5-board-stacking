@@ -12,3 +12,5 @@ __pycache__/
 .idea/
 *.swp
 .DS_Store
+# calibration backups (calib.yaml.bak)
+*.bak
