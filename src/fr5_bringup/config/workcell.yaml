@@ -13,10 +13,11 @@
 
 table:
   size: [1.00, 2.00, 0.03]     # depth (x), width (y), top-slab thickness
-  top_z: -0.045                # table surface relative to robot base   TODO measure
+  top_z: -0.060                # measured: base mounting face is 60 mm above tabletop
   center_xy: [-0.42, 0.03]
 
 profile:
+  height: 0.040               # measured profile thickness; rests on tabletop
   size_xy: [1.00, 0.16]
   center_xy: [-0.42, 0.0]
 

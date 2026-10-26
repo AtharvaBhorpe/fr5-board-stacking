@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- Static workcell from config/workcell.yaml: table, profile,
-       overhead camera frame and zone frames. Collision shapes keep 1 mm gaps
-       so MoveIt never sees permanent contacts. -->
+       overhead camera frame and zone frames. The profile collision box
+       has a 1 mm underside clearance; its physical top surface is preserved. -->
 
   <!-- Zone frame on the table surface, with a thin visual-only marker -->
   <xacro:macro name="workcell_zone" params="name x y yaw z rgba">
@@ -26,7 +26,7 @@
     <xacro:property name="p" value="${cfg['profile']}"/>
     <xacro:property name="oc" value="${cfg['overhead_camera']}"/>
     <xacro:property name="gap" value="0.001"/>
-    <xacro:property name="profile_h" value="${-t['top_z'] - 2 * gap}"/>
+    <xacro:property name="profile_h" value="${p['height']}"/>
 
     <!-- Table top slab: its surface is at top_z -->
     <joint name="table_joint" type="fixed">
@@ -44,11 +44,11 @@
       </collision>
     </link>
 
-    <!-- Profile: 1 mm below the robot base, 1 mm above the table -->
+    <!-- Physical profile rests on the table; link origin is its centre. -->
     <joint name="profile_joint" type="fixed">
       <parent link="base_link"/>
       <child link="profile"/>
-      <origin xyz="${p['center_xy'][0]} ${p['center_xy'][1]} ${-gap - profile_h / 2}"/>
+      <origin xyz="${p['center_xy'][0]} ${p['center_xy'][1]} ${t['top_z'] + profile_h / 2}"/>
     </joint>
     <link name="profile">
       <visual>
@@ -56,7 +56,9 @@
         <material name="aluminium"><color rgba="0.75 0.75 0.78 1"/></material>
       </visual>
       <collision>
-        <geometry><box size="${p['size_xy'][0]} ${p['size_xy'][1]} ${profile_h}"/></geometry>
+        <!-- Remove clearance from the underside only. -->
+        <origin xyz="0 0 ${gap / 2}"/>
+        <geometry><box size="${p['size_xy'][0]} ${p['size_xy'][1]} ${profile_h - gap}"/></geometry>
       </collision>
     </link>
 
