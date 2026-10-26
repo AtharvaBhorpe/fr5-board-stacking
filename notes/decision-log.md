@@ -858,6 +858,58 @@ bottom by a contact margin.
 - Sub-steps: T20a interfaces, T20b scene_manager (static boxes = obstacle_loader behaviour, then the services),
   T20c tests in sim, T20d launch (obstacle_loader removed), T20e motion_shell commands.
 
+### 5n-1. T20a interfaces (user approved 2026-10-26) + collision model: metrics and reasons (check here first on collision issues)
+
+Interfaces (`hk_fr5_interfaces/srv`): `AttachBoard` (length, width, height, yaw, dx, dy, contact_margin),
+`DetachBoard` (keep_as_obstacle -> success, message, **name**), `AddBox` (name, size[3], position[3], yaw),
+`RemoveBox` (name, "" = all dynamic). Two user-approved choices on top of S-3 / S-6:
+| # | Choice | Why |
+|---|---|---|
+| S-8 | DetachBoard returns the kept name in its own field `name` (not only in `message`) | the control loop uses it (later remove_box / logging) without parsing text |
+| S-9 | A kept board keeps **exactly its attached shape and pose**, incl. the margin at its bottom | its top = the real board top (that is what the next place lands on), and the next board gets its own margin -> no contact ever between stack layers |
+| S-11 | Pick-zone board added as an obstacle (E-3) | API unchanged (user: no `replace_box` field); **rule: the control loop always calls remove_box for that box before attach_board** (documented in AttachBoard.srv) | an overlap gives START_STATE_IN_COLLISION on every motion |
+| S-10 | contact_margin per request, 0 -> yaml default 0.002 (S-4) | same "0 = default" rule as Grip.timeout / Release.blow_off_time / velocity_scaling; a CLI call without the field gets the safe default. Side effect: an exact 0 margin is impossible (use 1e-6) |
+
+**Attached box model** (tcp frame; tcp z points out of the cup = DOWN when the tool points down):
+box centre = (dx, dy, (height - margin) / 2) in the **tcp frame**, box turned by `yaw` about tcp z (board x = tcp x at
+yaw 0); (corrected 2026-10-26: a first draft said "in the board frame"; the srv comment was right);
+box size = (length, width, height - margin) -> the box spans tcp z = 0 (cup tip = board top) .. height - margin.
+Attached to link `tcp`; touch_links = gripper_link + tcp (the cup sits on the board).
+
+**Clearances from the attached board top (tcp z = 0) to the tool collision shapes** (tool_geometry.yaml, computed
+2026-10-26, pitch -8 deg of the camera arm included): cup cylinder (r 18 mm) **5.0 mm** (= cup_collision_gap),
+gripper body cylinder (r 32 mm) 30.0 mm, D405 body box 73.0 mm (it sits at x 64.5..109.3 mm, i.e. above a 270 mm board),
+camera arm box 98.3 mm. -> no tool shape touches the board; touch_links only cover the real cup contact.
+
+**Why a contact margin, why 2 mm:**
+- A box resting on a surface is at distance 0: MoveIt / FCL counts touching as collision. After attach the robot state
+  would be in collision with the table (pick) or the stack (place) -> START_STATE_IN_COLLISION on the lift.
+- The lift / place are `move_delta` = **Pilz LIN, which has no request adapters** (no FixStartStateCollision; implementation-ref sec. 4 "Pilz default: no adapters"):
+  it fails at once. OMPL's FixStartStateCollision may nudge a slightly colliding start state (unpredictable): do not
+  rely on it.
+- 2 mm: clearly above numeric noise, below the board thickness (teammate board 270 x 200 x 6 mm -> modelled
+  **4 mm thick, 33 % shorter**). Same principle as the 1 mm gaps of obstacles.yaml (O-*), larger because a picked board's
+  pose is less certain than a static box (cup compression, vision, table estimate). Nothing of the robot fits in 2 mm.
+- Must be < height (validated); for thin boards (<= 2 mm) pass a smaller margin per request.
+
+**Stack model:** detach(keep) -> `stack_<n>` with the attached shape (S-9): top = real top of the placed board, bottom
+2 mm above the layer below (floating gap, harmless). Next place: tcp goes to stack top + height -> the new attached
+box's bottom is 2 mm above stack_<n> top.
+
+**Known model errors / assumptions (debug here first):**
+| # | Item | Effect | Sign of trouble |
+|---|---|---|---|
+| E-1 | Cup compression under vacuum (unknown, est. a few mm): the real board top sits above tcp z = 0 | modelled board lower than the real one by the compression -> conservative toward the table; real board closer to the gripper body (30 mm gap, OK) | real board hits something MoveIt thinks is clear above the board: unlikely |
+| E-2 | Table top -0.045 is an estimate (T4) | board-on-table contact depends on it; margin covers <= 2 mm error | START_STATE_IN_COLLISION right after attach on the table -> measure the table (T4) or pass a larger margin |
+| E-3 | A pick-zone board added as a dynamic box (add_box) still exists at attach time | attached box overlaps it -> START_STATE_IN_COLLISION | remove_box(that name) **before** attach_board (control loop, rule S-11) |
+| E-4 | Descent onto a board / the stack | cup collision ends 5 mm short of tcp -> tcp can reach a box top without collision | GOAL_STATE_INVALID at the pick height -> the box top is above the commanded tcp z |
+| E-5 | MoveIt padding assumed 0 (world + robot links, defaults) | margins above are exact | to verify in T20c |
+| E-6 | Place height: tcp target z = stack top (or table) + height | if the target is lower than that, the goal collides | GOAL_STATE_INVALID at place -> check the stack top z |
+| E-7 | yaw / dx / dy wrong (vision) | box sticks out on one side | collisions only on one side of the board |
+
+Validation (T20b): length, width, height > 0 and finite; yaw, dx, dy finite; contact_margin >= 0, finite, < height;
+add_box sizes > 0, finite values, non-empty name, not a static name, not "board".
+
 ---------------------------------------------------------------------------
 
 ## 6. Control design / algorithms (C)

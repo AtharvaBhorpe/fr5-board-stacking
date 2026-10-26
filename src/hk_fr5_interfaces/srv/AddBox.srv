@@ -1,0 +1,10 @@
+# Add a dynamic collision box, /scene/add_box (decision-log 5n, S-3). Same format as obstacles.yaml.
+# All in base_link, metres / radians. An existing dynamic name is replaced; static (obstacles.yaml)
+# names and "board" (the attached board) are rejected.
+string name
+float64[3] size           # x, y, z, all > 0
+float64[3] position       # box centre
+float64 yaw               # about base z
+---
+bool success
+string message

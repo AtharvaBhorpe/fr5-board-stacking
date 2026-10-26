@@ -3,7 +3,7 @@
 <package format="3">
   <name>hk_fr5_interfaces</name>
   <version>0.1.0</version>
-  <description>Interfaces for hk_fr5: MoveTo / MoveDelta actions, GetState service (motion); Grip / Release actions, GripperState, GripperErrorCode (gripper).</description>
+  <description>Interfaces for hk_fr5: MoveTo / MoveDelta actions, GetState service (motion); Grip / Release actions, GripperState, GripperErrorCode (gripper); AttachBoard / DetachBoard / AddBox / RemoveBox services (scene).</description>
   <maintainer email="69069296+vortexcv@users.noreply.github.com">vortexcv</maintainer>
   <license>Apache-2.0</license>
 
