@@ -1,0 +1,29 @@
+# World model (control-loop.md sections 2-3, 6; decision-log TM-8). base_link, metres / radians / seconds.
+table_z: -0.060                # table top (motion branch H-10)
+
+variants:                      # CL-9 / CL-17: thickness is a per-variant field. SIZES = PLACEHOLDERS, TODO measure
+  white_small: {length: 0.100, width: 0.070, thickness: 0.006}
+  white_large: {length: 0.200, width: 0.140, thickness: 0.006}
+  red:         {length: 0.150, width: 0.100, thickness: 0.006}
+  processed:   {length: 0.0,   width: 0.0,   thickness: 0.006}   # CL-8: printed board, any size (0 = not checked)
+size_tol: 0.020                # measured vs nominal length / width: more off -> size_ok false (CL-9)
+
+zone_margin: 0.030             # CL-7: zone + margin reserved for processing / drop-off (input boards are outside)
+max_stack: 10                  # drop-off / fault: FULL at this count
+fixed_zones: []                # CL-15 fallback, used only when Vision 1 does not detect that zone, e.g.:
+#  - {name: fault, kind: fault, x: -0.30, y: 0.95, yaw: 0.0, length: 0.25, width: 0.20, z: -0.060}
+
+work_area:                     # obstacles inside (+ margin) stop / pause motion
+  x: [-0.90, 0.15]
+  y: [-1.00, 1.00]
+  margin: 0.05
+
+match_dist: 0.040              # tracking: same board if the centre moved less than this between frames
+lost_after: 1.0                # s unseen -> board removed (not for held / zone boards)
+stale_after: 0.5               # s without detections -> vision_ok false
+gone_after: 1.0                # s: LOADED zone empty this long -> PROCESSING (operator took the board)
+back_after: 1.0                # s: board in a PROCESSING zone this long -> DONE (or FAULT, CL-8)
+unknown_after: 1.0             # s: board in an EMPTY processing zone this long -> FAULT (not placed by us)
+process_timeout: 60.0          # s in PROCESSING -> message "overdue" (state stays PROCESSING)
+require_processed: false       # CL-8: true -> only a 'processed' board coming back counts as DONE, a plain one -> FAULT
+min_score: 0.3                 # detections below are ignored

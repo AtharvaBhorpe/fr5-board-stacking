@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypeversion="1.0"?>
+<package format="3">
+  <name>hk_fr5_task</name>
+  <version>0.1.0</version>
+  <description>hk_fr5 main control loop: world model, fake world, skills, task_main_controller.</description>
+  <maintainer email="69069296+vortexcv@users.noreply.github.com">vortexcv</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>vision_msgs</exec_depend>
+  <exec_depend>hk_fr5_task_interfaces</exec_depend>
+  <exec_depend>hk_fr5_interfaces</exec_depend>
+  <exec_depend>hk_fr5_vision_interfaces</exec_depend>
+  <exec_depend>hk_fr5_vision</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -1,0 +1,18 @@
+# Fake world scenario (stands in for Vision 1, decision-log TM-5 / TM-8). base_link, metres / radians / seconds.
+# Everything inside the real calibrated area (tags x -0.66..0.09, y -0.86..0.84, calibration 2026-10-26).
+zones:
+  - {name: processing_1, kind: processing, x: -0.50, y: 0.45, yaw: 0.0, length: 0.20, width: 0.16}
+  - {name: processing_2, kind: processing, x: -0.50, y: -0.45, yaw: 0.0, length: 0.20, width: 0.16}
+  - {name: drop_off_1, kind: drop_off, x: -0.15, y: 0.55, yaw: 0.0, length: 0.24, width: 0.20}
+  - {name: drop_off_2, kind: drop_off, x: -0.15, y: -0.55, yaw: 0.0, length: 0.24, width: 0.20}
+boards:                          # input area; count > 1 = input stack (only the top board is seen)
+  - {variant: red, x: -0.35, y: 0.10, yaw: 0.2}
+  - {variant: white_small, x: -0.35, y: -0.12, yaw: -0.1, count: 3}
+  - {variant: white_large, x: -0.58, y: 0.0, yaw: 1.57}
+operator:                        # simulated processing (CL-4)
+  take_after: 1.5                # s after the robot placed a board in a processing zone: operator takes it away
+  return_after: 3.0              # s later: a board comes back
+  return_variant: same           # same | processed (CL-8 demo: a printed board comes back)
+processed_size: [0.15, 0.10]     # size of a 'processed' (printed) board
+hands: []                        # e.g. - {t: 30.0, x: -0.30, y: 0.0, duration: 2.0, label: hand}
+noise_px: 0.3                    # pixel noise per corner (Vision 1 jitter)
