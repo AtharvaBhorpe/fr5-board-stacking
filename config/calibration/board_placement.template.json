@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "frame_id": "base_link",
+  "units": {
+    "length": "metres",
+    "angle": "radians"
+  },
+  "pose_source": null,
+  "measurement_method": null,
+  "board_axes_description": null,
+  "T_base_link_board": null
+}
