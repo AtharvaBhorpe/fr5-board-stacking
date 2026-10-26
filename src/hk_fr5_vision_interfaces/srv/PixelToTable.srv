@@ -1,0 +1,12 @@
+# Camera pixel(s) -> table point(s) in base_link, using the stored calibration (hk_fr5_vision/config/calib.yaml).
+# Pixels: OpenCV convention, u = column (from the left), v = row (from the top), sub-pixel allowed, in the image
+# size used for the calibration (camera must not have moved since). Several points per call (e.g. board corners).
+# Result is on the table plane (where the calibration tags lay); x / y only, metres.
+float64[] u
+float64[] v
+---
+bool success          # false -> no valid calibration or bad request (u / v lengths differ); x / y / inside empty
+string message        # human-readable reason
+float64[] x           # base_link, metres; same order and length as u / v
+float64[] y
+bool[] inside         # true = inside the calibrated tag area; false = extrapolated, less accurate

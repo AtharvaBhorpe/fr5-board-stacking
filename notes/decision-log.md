@@ -19,6 +19,7 @@ decision log of branch `feat/robot-motion-gripper`. Units: metres / radians in c
 | V-9 | Record current tcp | Calibration app: button per tag row fills x / y from the real robot: read-only client on the controller state port 20004 (robot in manual mode, hand-guided onto the tag). tcp = flange pose + R * (0, 0, 0.1129); pendant frame -> `base_link` = x, y negated. Warning if the tool tilts > ~2 deg. Fallbacks: pendant values typed in (x / y negated), direct entry | User workflow: open app, connect camera + robot, hand-guide tcp to a tag, record, all tags, fit, save. **Our bringup must not run while hand-guiding** (controller can jump back to the last commanded position) |
 | V-10 | Camera ownership | Only the calibration app opens the camera; close it before the board detection runs | Two processes cannot open the C920 at once |
 | V-11 | Calibration app | aiohttp + one HTML / JS / CSS page, no framework, no build step; polished UI (light / dark, overlay drawn in the browser), wizard (tag status, record, fit, per-tag error, save), test mode (pixel -> x / y, optional go-to plan-only, drift check), camera reconnect, runs without ROS | User: robust and beautiful; features reviewed as we go |
+| V-12 | TCP for record | **Joints from port 20004 (`jt_cur_pos`, deg) + own forward kinematics (numpy)**: FR5 joint chain copied from the vendor URDF + our tool (flange -> cup tip 0.1129 m along flange z, no x / y offset), numbers in config with their source. `flange_cur_pos` from the same packet only as a cross-check (verifies the packet layout + pendant frame, VT1) | The Fairino web app / controller pose stops at the flange (no tool set). motion_shell gets the tcp via TF (robot_state_publisher FK on /joint_states with our URDF), which needs the bringup = not allowed while hand-guiding. Options: A flange pose + 112.9 mm (needs the pendant RPY convention for tilt, VT2), **B own FK (user)**: same kinematics as MoveIt (model errors cancel), result directly in base_link, testable offline vs the motion sim TF, C tool on the pendant (changes shared controller config) |
 
 ## 2. Open items
 
@@ -32,11 +33,11 @@ decision log of branch `feat/robot-motion-gripper`. Units: metres / radians in c
 
 | # | Step | Status |
 |---|---|---|
-| V1 | Branch + worktree, `.gitignore`, pixi env, this log | done |
-| V2 | `hk_fr5_vision_interfaces`: `PixelToTable.srv` | |
+| V1 | Branch + worktree, `.gitignore`, pixi env, this log | done `7ed958b` |
+| V2 | `hk_fr5_vision_interfaces`: `PixelToTable.srv` (u[] / v[] -> success, message, x[] / y[], inside[]) | done |
 | V3 | `calib.yaml` format + homography fit / apply + offline test | |
 | V4 | `vision_transform` node: service, reload on change, test | |
-| V5 | Port 20004 pose reader + offline test against a fake server | |
+| V5 | Port 20004 reader + FK (V-12) + offline tests: fake server, FK vs motion sim TF | |
 | V6 | Calibration app backend: camera, tags, record tcp, fit, save | |
 | V7 | Calibration app front end | |
 | V8 | Launch file, README | |
