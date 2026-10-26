@@ -1,0 +1,17 @@
+[workspace]
+name = "fr5-vision1-overhead"
+channels = ["https://prefix.dev/robostack-humble", "https://prefix.dev/conda-forge"]
+platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34" }]
+version = "0.1.0"
+
+[tasks]
+# Live overhead camera -> /vision/boards (JSON). Override: pixi run vision --ros-args -p device:=samples/01.jpg
+vision = "python vision1/node.py"
+# Offline: detect on one image, print JSON, write <image>.overlay.jpg
+detect = "python vision1/detect.py"
+check = "python vision1/check_samples.py"
+
+[dependencies]
+ros-humble-ros-base = ">=0.10.0,<0.11"
+py-opencv = ">=4.10,<5"
+numpy = "*"
