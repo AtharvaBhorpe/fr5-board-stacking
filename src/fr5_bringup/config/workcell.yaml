@@ -21,6 +21,11 @@ profile:
   size_xy: [1.00, 0.16]
   center_xy: [-0.42, 0.0]
 
+robot_spacer:
+  size: [0.155, 0.155, 0.020]  # measured, centred beneath robot base
+  center_xy: [0.0, 0.0]
+  top_z: 0.0                 # robot base mounting face
+
 overhead_camera:               # approximate; replaced by extrinsic calibration
   xy: [-0.87, 0.116]
   height_above_table: 1.61     # previous mounting value; remeasure tripod setup

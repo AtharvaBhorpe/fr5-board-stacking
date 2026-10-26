@@ -25,6 +25,7 @@
     <xacro:property name="t" value="${cfg['table']}"/>
     <xacro:property name="p" value="${cfg['profile']}"/>
     <xacro:property name="oc" value="${cfg['overhead_camera']}"/>
+    <xacro:property name="sp" value="${cfg['robot_spacer']}"/>
     <xacro:property name="gap" value="0.001"/>
     <xacro:property name="profile_h" value="${p['height']}"/>
 
@@ -59,6 +60,29 @@
         <!-- Remove clearance from the underside only. -->
         <origin xyz="0 0 ${gap / 2}"/>
         <geometry><box size="${p['size_xy'][0]} ${p['size_xy'][1]} ${profile_h - gap}"/></geometry>
+      </collision>
+    </link>
+
+    <!-- Measured mounting spacer; visual faces meet profile and robot base. -->
+    <joint name="robot_spacer_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="robot_spacer"/>
+      <origin xyz="${sp['center_xy'][0]} ${sp['center_xy'][1]} ${sp['top_z'] - sp['size'][2] / 2}"/>
+    </joint>
+    <link name="robot_spacer">
+      <visual>
+        <geometry>
+          <box size="${sp['size'][0]} ${sp['size'][1]} ${sp['size'][2]}"/>
+        </geometry>
+        <material name="spacer_aluminium">
+          <color rgba="0.65 0.65 0.68 1"/>
+        </material>
+      </visual>
+      <collision>
+        <!-- Deliberate 1 mm clearance at each fixed mounting face. -->
+        <geometry>
+          <box size="${sp['size'][0]} ${sp['size'][1]} ${sp['size'][2] - 2 * gap}"/>
+        </geometry>
       </collision>
     </link>
 
