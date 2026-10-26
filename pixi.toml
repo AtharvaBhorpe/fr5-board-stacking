@@ -6,7 +6,8 @@ platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34"
 version = "0.1.0"
 
 [tasks]
-build = 'colcon build --symlink-install --base-paths src'
+# TM-6: until the integration branch (T6), also build the interfaces of the neighbouring worktrees (read-only)
+build = 'colcon build --symlink-install --base-paths src ../feat-robot-motion-gripper/src/hk_fr5_interfaces ../feat-vision-transform/src/hk_fr5_vision_interfaces ../feat-vision-transform/src/hk_fr5_vision'
 
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"

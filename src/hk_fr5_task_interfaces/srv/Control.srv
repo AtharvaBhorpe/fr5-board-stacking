@@ -1,0 +1,8 @@
+# Main controller commands (dashboard buttons / LLM tools).
+# command: "pause" | "resume" | "stop" (cancel the running skill, keep the queue) | "cancel_job" (job_id) |
+#          "clear_queue" | "home"
+string command
+string job_id
+---
+bool success
+string message

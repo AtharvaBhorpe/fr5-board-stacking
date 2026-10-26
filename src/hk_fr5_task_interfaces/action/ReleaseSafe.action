@@ -1,0 +1,8 @@
+# Recovery: put a held board down safely (default: the fault zone), then home.
+string target               # "" -> fault zone
+---
+bool success
+SkillCode code
+string message
+---
+string phase

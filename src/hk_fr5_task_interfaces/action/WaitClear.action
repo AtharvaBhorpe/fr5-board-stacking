@@ -1,0 +1,8 @@
+# Wait until no obstacle is in the work area for the configured clear time.
+float64 timeout             # s; 0 -> default
+---
+bool success
+SkillCode code              # SUCCESS | TIMEOUT | CANCELLED
+string message
+---
+int32 obstacles             # obstacles in the work area right now

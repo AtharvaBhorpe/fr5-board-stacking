@@ -1,0 +1,14 @@
+# Place the held board (control-loop.md 4.2). Cancel = smooth stop.
+string target               # zone name; "" -> explicit pose below
+float64 x                   # explicit target (base_link) when target == ""
+float64 y
+float64 yaw
+float64 velocity_scaling    # (0, 1]; 0 -> default
+---
+bool success
+SkillCode code
+string message
+string target
+int32 stack_count           # drop-off / fault: count after this place
+---
+string phase                # HOVER | CHECK | DESCEND | RELEASE | DETACH | RETRACT | VERIFY | RETRY

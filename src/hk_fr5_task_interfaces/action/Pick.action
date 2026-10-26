@@ -1,0 +1,13 @@
+# Pick one board (control-loop.md 4.1). Cancel = smooth stop.
+string board_id
+bool contact_search         # true: slow descent until the vacuum seals (input stacks, CL-16); false: to the known top
+float64 velocity_scaling    # (0, 1]; 0 -> default
+---
+bool success
+SkillCode code
+string message
+string board_id
+string variant
+float64 attach_yaw          # board yaw relative to the tcp after attach (needed to place it aligned)
+---
+string phase                # HOVER | CHECK | DESCEND | GRIP | ATTACH | LIFT | VERIFY | RETRY
