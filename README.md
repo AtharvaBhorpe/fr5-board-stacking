@@ -16,9 +16,10 @@ pixi run check                                     # self-check on recorded phot
 |---|---|---|
 | `/vision/boards` | topic `std_msgs/String`, 5 Hz | JSON, latest state (below) |
 | `/vision/detect` | service `std_srvs/Trigger` | fresh snapshot; same JSON in `.message` |
+| `/vision/markers` | topic `visualization_msgs/MarkerArray` | RViz (Add -> By topic): green = pickable boards, red = destination poses. Display only, not in the MoveIt scene |
 
 ```python
-msg = json.loads(s.data)   # {"stamp", "image_size", "calibrated", "boards": [...]}
+msg = json.loads(s.data)   # {"stamp", "source", "calibrated", "boards": [...], "rejected": [...], "destinations": [...]}
 ```
 
 Per board:
@@ -34,7 +35,29 @@ Per board:
 | `inside_calibration` | false = outside the calibration tags, position extrapolated (less accurate) |
 | `corners_xy` | 4 corners in `base_link` |
 
+`boards` holds only size-verified boards (pick these). Everything else (stacks, partly hidden boards, robot arm,
+hands) is in `rejected` with a `reason`.
+
+`destinations`: one per visible template tag (DICT_5X5_100, ids 1 / 2 / 16 = VARa / VARb / VARc), anywhere in the
+image: `variant`, `tag_id`, `x`, `y`, `yaw` (target board pose, base_link, team offsets from
+`feat/fr5-demo-integration` `config/perception_geometry.yaml`), `support_z` (template top, -0.055), `age` (s since
+the tag was last seen; kept 10 s because small tags are missed in ~10 % of frames).
+
 Board +X is the long edge for VARa and the short edge for VARb / VARc (team geometry handoff).
+
+## Pick / place script (robot workspace)
+
+From `fr5-board-stacking` (both repos side by side):
+
+```bash
+pixi run python3 ../vision1-overhead/robot/pick_one.py --hover-only   # real robot, first: check the position
+pixi run python3 ../vision1-overhead/robot/pick_one.py                # pick, lift, put back (ENTER twice)
+pixi run python3 ../vision1-overhead/robot/pick_one.py --place        # pick -> its template (--stack N, --press mm)
+```
+
+Simulation test (no robot, no camera): `pixi run sim` in `fr5-board-stacking`, then `robot/sim_regression.sh` here
+(8 cases, ~3 min). **Never run `sim` and `robot` at the same time**: a leftover sim process makes the real robot load
+mock hardware (it then reports SUCCESS but does not move).
 
 ## Limits
 

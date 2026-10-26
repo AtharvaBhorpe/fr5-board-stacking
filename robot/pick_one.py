@@ -3,8 +3,12 @@
     cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py --hover-only   # 1st: check position
     cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py                # hover, Enter, pick
 
+    cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py --place        # pick -> template
+
 Sequence: hover 10 cm above the board centre -> ENTER -> straight down to the board top -> grip -> attach -> lift
 10 cm -> ENTER -> back down -> release -> detach -> lift. The board ends where it started. Ctrl+C any time = stop.
+--place: after the lift, carry it to the destination template of its variant (vision `destinations`: tag 1 / 2 / 16
++ team offsets), ENTER, down onto the template (+ --stack boards already there), release, lift.
 """
 import argparse
 import json
@@ -26,6 +30,8 @@ ap.add_argument("--variant", help="VARa / VARb / VARc (default: first board)")
 ap.add_argument("--hover-only", action="store_true", help="only move above the board, no contact")
 ap.add_argument("--press", type=float, default=0.0,
                 help="mm to go down beyond the computed board top (measured hover gap minus 100 mm, + cup squeeze)")
+ap.add_argument("--place", action="store_true", help="place on the destination template instead of putting back")
+ap.add_argument("--stack", type=int, default=0, help="--place: boards already lying on that template")
 ap.add_argument("--speed", type=float, default=0.1, help="velocity_scaling, first runs <= 0.2")
 args = ap.parse_args()
 
@@ -77,10 +83,10 @@ def tool_yaw(b):
     return min((b["yaw"], b["yaw"] + math.pi), key=lambda a: abs(math.remainder(a - math.pi / 2, 2 * math.pi)))
 
 
-def reachable(b):
+def reachable(b, z_contact):
     """Plan only (no motion): hover pose and contact pose must both have a plan. Far corner of the pick table
     (> ~0.9 m from the base) is out of the FR5's reach."""
-    for z in (b["z"] + HOVER, b["z"]):
+    for z in (z_contact + HOVER, z_contact):
         r = act(move_to, MoveTo.Goal(x=b["x"], y=b["y"], z=z, yaw=tool_yaw(b), plan_only=True))
         if not r.success:
             print(f"  skip {b['variant']} at ({b['x']:.3f}, {b['y']:.3f}), {math.hypot(b['x'], b['y']):.2f} m "
@@ -89,9 +95,17 @@ def reachable(b):
     return True
 
 
-b = next((b for b in boards if reachable(b)), None)
+dests = {d["variant"]: d for d in msg.get("destinations", [])}
+place_z = lambda d: d["support_z"] + (args.stack + 1) * BOARD_H  # cup tip = top of the placed board
+if args.place:
+    print(f"destinations seen: {sorted(dests) or 'none'}")
+    boards = [b for b in boards if b["variant"] in dests]
+    if not boards:
+        raise SystemExit("--place: no board whose destination template (tag) is visible")
+b = next((b for b in boards if reachable(b, b["z"]) and
+          (not args.place or reachable(dests[b["variant"]], place_z(dests[b["variant"]])))), None)
 if b is None:
-    raise SystemExit("no reachable board: move one closer to the robot")
+    raise SystemExit("no reachable board (and destination): move one closer to the robot")
 yaw = tool_yaw(b)
 print(f"board {b['variant']} at x={b['x']:.4f} y={b['y']:.4f} top z={b['z']:.3f} yaw={math.degrees(b['yaw']):.1f} deg, "
       f"size {b['size_mm']} mm, inside_calibration={b['inside_calibration']}")
@@ -115,9 +129,18 @@ if not g.success:
 lx, ly = SIZES[b["variant"]]
 call(attach, AttachBoard.Request(length=lx, width=ly, height=BOARD_H, yaw=0.0))  # tool yaw = board yaw (mod pi)
 check("lift", lin(HOVER + PRESS))
-input(">>> board lifted. ENTER = put it back down and release ")
+if args.place:
+    # 4a. Carry to the template (OMPL avoids the workcell, held board attached), down, release
+    d = dests[b["variant"]]
+    print(f"  destination {d['variant']} (tag {d['tag_id']}) at x={d['x']:.4f} y={d['y']:.4f} "
+          f"yaw={math.degrees(d['yaw']):.1f} deg, place top z={place_z(d):.3f}, seen {d['age']} s ago")
+    check("carry", act(move_to, MoveTo.Goal(x=d["x"], y=d["y"], z=place_z(d) + HOVER, yaw=tool_yaw(d),
+                                            velocity_scaling=args.speed)))
+    input(">>> board above its template? ENTER = put it down and release ")
+else:
+    input(">>> board lifted. ENTER = put it back down and release ")
 
-# 4. Put it back where it was
+# 4. Down (back where it was, or onto the template), release
 check("down again", lin(-(HOVER + PRESS)))
 r = act(release, Release.Goal())
 print(f"  release: success={r.success} {r.message}")

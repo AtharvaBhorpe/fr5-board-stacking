@@ -24,8 +24,10 @@ RED_CLOSE = 9      # red paint is streaky with white margins; bigger close fills
 
 # Board +X edge per variant (README "Board coordinates"): VARa = long edge, VARb / VARc = short edge.
 X_IS_LONG_EDGE = {"VARa": True, "VARb": False, "VARc": False}
-ARUCO = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_100),
-                                cv2.aruco.DetectorParameters())
+_P = cv2.aruco.DetectorParameters()
+_P.adaptiveThreshWinSizeMax, _P.adaptiveThreshWinSizeStep = 53, 4      # small (~35 px) tags: A/B on 77 frames
+_P.minMarkerPerimeterRate, _P.polygonalApproxAccuracyRate = 0.01, 0.05
+ARUCO = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_100), _P)
 
 
 def _mask(hsv, ranges, roi, close=9):
@@ -58,9 +60,10 @@ def _quad(contour):
     return None
 
 
-def detect(bgr, rejected=None):
+def detect(bgr, rejected=None, tags=None):
     """Return [{'id','variant','u','v','yaw_deg','corners'}], sorted left -> right, id = index.
-    rejected: optional list, gets {'reason','colour','u','v','area_px'} for every board-sized blob that was dropped."""
+    rejected: optional list, gets {'reason','colour','u','v','area_px'} for every board-sized blob that was dropped.
+    tags: optional list, gets {'id','corners'} for every DICT_5X5_100 marker in the whole image (destinations)."""
     def reject(reason, c, area):
         if rejected is not None:
             (u, v), _, _ = cv2.minAreaRect(c)
@@ -70,8 +73,10 @@ def detect(bgr, rejected=None):
     roi = np.zeros((h, w), np.uint8)
     cv2.fillPoly(roi, [np.int32(np.array(ROI) * [w - 1, h - 1])], 255)
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-    tags = ARUCO.detectMarkers(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))[0]
-    tag_centres = [c.reshape(4, 2).mean(0) for c in tags]
+    found, ids, _ = ARUCO.detectMarkers(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
+    tag_centres = [c.reshape(4, 2).mean(0) for c in found]
+    if tags is not None and ids is not None:
+        tags += [{"id": int(i), "corners": c.reshape(4, 2).tolist()} for c, i in zip(found, ids.flatten())]
 
     boards = []
     for colour, ranges, close in (("white", [WHITE], 9), ("red", RED, RED_CLOSE)):

@@ -62,6 +62,35 @@ def add_metric(c, board):
     })
     return board
 
+# Destination templates (team geometry handoff, feat/fr5-demo-integration config/perception_geometry.yaml).
+# Marker frame: origin = black-square centre, +X = corner 0 -> 1 (metric), +Y = Z x X. offset = marker centre -> board
+# centre in that frame; yaw = board +X relative to marker +X.
+DEST = {1: ("VARa", (-0.150, 0.0), math.pi / 2), 2: ("VARb", (-0.150, 0.0), math.pi / 2),
+        16: ("VARc", (0.140, 0.0), -math.pi / 2)}
+DEST_SUPPORT_Z = -0.055   # top of the template on the table
+TAG_SIDE = 0.039
+# ponytail: tag corners mapped on the table plane (-0.060), tags lie 5 mm higher -> ~2 mm parallax; fine for now.
+
+
+def destination(c, tag):
+    """One detected tag -> place pose for its variant, or None (unknown id, wrong metric size = bad detection)."""
+    if tag["id"] not in DEST:
+        return None
+    variant, (ox, oy), dyaw = DEST[tag["id"]]
+    xy = to_base(c, tag["corners"])
+    e = np.roll(xy, -1, axis=0) - xy
+    side = np.linalg.norm(e, axis=1)
+    if np.any(np.abs(side - TAG_SIDE) > 0.008):
+        return None
+    xa = e[0] / side[0] - e[2] / side[2]          # average the two edges pointing corner 0 -> 1
+    xa /= np.linalg.norm(xa)
+    ya = np.array([-xa[1], xa[0]])
+    cx, cy = xy.mean(0) + ox * xa + oy * ya
+    yaw = math.atan2(xa[1], xa[0]) + dyaw
+    return {"variant": variant, "tag_id": tag["id"], "x": round(float(cx), 4), "y": round(float(cy), 4),
+            "yaw": round(math.atan2(math.sin(yaw), math.cos(yaw)), 4), "support_z": DEST_SUPPORT_Z,
+            "tag_side_mm": round(float(side.mean()) * 1000, 1)}
+
 
 def pickable(c, boards, rejected):
     """Add metric fields; keep only size-verified boards (renumbered), move the rest to `rejected`.
