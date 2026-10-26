@@ -76,8 +76,9 @@ try:
     send({"type": "placed", "board": red.id, "zone": "processing_1", "x": -0.50, "y": 0.45, "yaw": 0.0, "variant": "red"})
     check("event placed -> processing_1 LOADED", until(lambda m: zone(m, "processing_1").state == "LOADED", 3))
     check("simulated operator takes it -> PROCESSING (zone busy)", until(lambda m: zone(m, "processing_1").state == "PROCESSING", 6))
-    check("board comes back -> DONE, same board id", until(lambda m: zone(m, "processing_1").state == "DONE"
-          and zone(m, "processing_1").board_id == red.id, 8), W["m"] and zone(W["m"], "processing_1").state)
+    check("board comes back -> DONE, same board id, processed flag (CL-19)", until(lambda m: zone(m, "processing_1").state == "DONE"
+          and zone(m, "processing_1").board_id == red.id and next(b for b in m.boards if b.id == red.id).processed, 8),
+          W["m"] and zone(W["m"], "processing_1").state)
     b = next(b for b in W["m"].boards if b.id == red.id)
     send({"type": "picked", "board": red.id, "x": b.x, "y": b.y})
     check("pick the processed board -> processing_1 EMPTY", until(lambda m: zone(m, "processing_1").state == "EMPTY", 3))

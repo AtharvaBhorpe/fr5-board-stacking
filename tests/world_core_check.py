@@ -66,9 +66,14 @@ check("variant + size_ok + location input + top_z unknown (input stack, CL-16) +
 check("yaw / size measured within noise", abs(bs["b1"]["yaw"] - 0.3) < 0.02 and abs(bs["b1"]["length"] - V["red"]["length"]) < 0.002)
 w.update(t + 0.1, ZONES + [det("board/red", -0.60, 0.0, 0.3, l=0.30, w=0.10), det("board/white_small", -0.60, 0.12)])
 check("wrong size for the label -> size_ok false (CL-9)", not boards(w, t + 0.1)["b1"]["size_ok"])
-w.update(t + 0.2, ZONES + [det("board/blue", -0.60, 0.0, 0.3, l=0.15, w=0.10), det("board/white_small", -0.60, 0.12)])
-check("unknown variant label -> size_ok false, thickness NaN", not boards(w, t + 0.2)["b1"]["size_ok"]
-      and math.isnan(boards(w, t + 0.2)["b1"]["thickness"]))
+w.update(t + 0.2, ZONES + [det("board/blue", -0.60, 0.0, 0.3, l=0.15, w=0.10), det("board/white_small", -0.60, 0.12),
+                           det("board/blue", -0.30, 0.30, l=0.15, w=0.10)])
+bs = boards(w, t + 0.2)
+check("unknown label on a known board: original variant + thickness kept, label 'blue', size_ok false (CL-19)",
+      bs["b1"]["variant"] == "red" and bs["b1"]["label"] == "blue" and not bs["b1"]["size_ok"]
+      and bs["b1"]["thickness"] == V["red"]["thickness"], str(bs["b1"]))
+check("NEW board with an unknown label: variant 'unknown', thickness NaN", bs["b3"]["variant"] == "unknown"
+      and math.isnan(bs["b3"]["thickness"]))
 w = World(CFG)
 w.update(0.0, [det("board/red", -0.6, 0.0), det("board/red", -0.6, 0.155)])
 w.update(0.1, [det("board/red", -0.6, 0.002), det("board/red", -0.6, 0.157)])
@@ -92,7 +97,7 @@ check("4 zones from Vision 1, kinds, not fixed", [z["name"] for z in w.snapshot(
       and not zone(w, "processing_1")["fixed"])
 
 # 4 processing zone state machine (CL-4): place -> operator takes it -> brings it back -> robot picks
-c = copy.deepcopy(CFG); c["require_processed"] = False
+c = copy.deepcopy(CFG); c["expanded_detection"] = False
 w = World(c); t = 0.0
 def run(dets, secs, step=0.1):
     global t
@@ -117,8 +122,9 @@ check("zone empty >= gone_after -> PROCESSING (busy), board kept", zone(w, "proc
 run([det("board/red", -0.44, 0.46, 0.1)], CFG["back_after"] - 0.2)
 check("board back, before back_after -> still PROCESSING", zone(w, "processing_1")["state"] == "PROCESSING")
 run([det("board/red", -0.44, 0.46, 0.1)], 0.4)
-check("board back >= back_after -> DONE, same identity b1 (CL-4)", zone(w, "processing_1")["state"] == "DONE"
-      and sorted(boards(w, t)) == ["b1"] and zone(w, "processing_1")["board_id"] == "b1")
+check("board back >= back_after -> DONE, same identity b1 (CL-4), processed flag set, variant still red (CL-19)",
+      zone(w, "processing_1")["state"] == "DONE" and sorted(boards(w, t)) == ["b1"] and zone(w, "processing_1")["board_id"] == "b1"
+      and boards(w, t)["b1"]["processed"] and boards(w, t)["b1"]["variant"] == "red")
 w.event(t, {"type": "picked", "board": "b1"})
 check("robot picks it -> EMPTY", zone(w, "processing_1")["state"] == "EMPTY" and zone(w, "processing_1")["board_id"] == "")
 w.event(t, {"type": "placed", "board": "b1", "zone": "drop_off_2", "x": -0.2, "y": -0.55, "yaw": 0.0})
@@ -127,18 +133,20 @@ check("drop-off: count 1, stack_top_z = table + 6 mm, board top_z = stack top, O
       zone(w, "drop_off_2")["stack_count"] == 1 and abs(zone(w, "drop_off_2")["stack_top_z"] - (CFG["table_z"] + 0.006)) < 1e-9
       and abs(boards(w, t)["b1"]["top_z"] - (CFG["table_z"] + 0.006)) < 1e-9 and zone(w, "drop_off_2")["state"] == "OK")
 
-# CL-8: require a processed (printed) board back
-c = copy.deepcopy(CFG); c["require_processed"] = True
-for back, want in (("board/processed", "DONE"), ("board/red", "FAULT")):
+# CL-19: expanded detection on -> only a non-variant (printed) board back = processed
+c = copy.deepcopy(CFG); c["expanded_detection"] = True
+for back, want in (("board/other", "DONE"), ("board/red", "FAULT")):
     w = World(c); t = 0.0
     run([det("board/red", -0.6, 0.0)], 0.3); w.event(t, {"type": "picked", "board": "b1"})
     w.event(t, {"type": "placed", "board": "b1", "zone": "processing_2", "x": -0.45, "y": -0.45, "yaw": 0.0})
     run([det("board/red", -0.45, -0.45)], 0.3); run([], 1.2); run([det(back, -0.45, -0.45, l=0.15, w=0.10)], 1.2)
     z = zone(w, "processing_2")
-    check(f"CL-8 on: {back.split('/')[1]} board back -> {want}", z["state"] == want and (want == "DONE" or "not processed" in z["message"]),
-          f"{z['state']} {z['message']}")
+    b1 = boards(w, t)["b1"]
+    check(f"expanded detection on: '{back.split('/')[1]}' board back -> {want}, processed {want == 'DONE'}, variant still red",
+          z["state"] == want and (want == "DONE" or "not processed" in z["message"]) and b1["processed"] == (want == "DONE")
+          and b1["variant"] == "red", f"{z['state']} {z['message']} {b1['label']}")
 w.event(t, {"type": "picked", "board": z["board_id"]})
-check("CL-8 FAULT board picked (to the fault zone) -> EMPTY", zone(w, "processing_2")["state"] == "EMPTY")
+check("FAULT board picked (to the fault zone) -> EMPTY", zone(w, "processing_2")["state"] == "EMPTY")
 
 # unknown board in an EMPTY processing zone, fault clears when the zone is empty again
 w = World(CFG); t = 0.0

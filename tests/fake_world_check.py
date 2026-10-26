@@ -107,7 +107,7 @@ try:
 except ValueError as e:
     check("pick where no board is: rejected", "no board within" in str(e), str(e))
 
-for mode, want_variant in (("same", "red"), ("processed", "processed")):
+for mode, want_label in (("same", "red"), ("nonvariant", "other")):
     s = copy.deepcopy(SCN); s["noise_px"] = 0.0; s["operator"]["return_variant"] = mode
     fw, w = FakeWorld(s, cam, CFG["variants"]), World(CFG)
     t = sim(fw, w, 0.0, 0.3)
@@ -120,9 +120,10 @@ for mode, want_variant in (("same", "red"), ("processed", "processed")):
         t = sim(fw, w, t, t + 0.25); states.append({z["name"]: z for z in w.snapshot(t)["zones"]}["processing_1"]["state"])
     seq = [s0 for i, s0 in enumerate(states) if i == 0 or states[i - 1] != s0]
     back = [b for b in w.snapshot(t)["boards"] if b["zone"] == "processing_1"]
-    check(f"operator ({mode}): processing_1 LOADED -> PROCESSING -> DONE, board back as '{want_variant}', same id",
-          seq == ["LOADED", "PROCESSING", "DONE"] and len(back) == 1 and back[0]["variant"] == want_variant
-          and back[0]["id"] == red["id"], f"{seq} {[(b['id'], b['variant']) for b in back]}")
+    check(f"operator ({mode}): LOADED -> PROCESSING -> DONE, back with label '{want_label}', same id, variant red, processed",
+          seq == ["LOADED", "PROCESSING", "DONE"] and len(back) == 1 and back[0]["label"] == want_label
+          and back[0]["variant"] == "red" and back[0]["processed"] and back[0]["id"] == red["id"],
+          f"{seq} {[(b['id'], b['variant'], b['label'], b['processed']) for b in back]}")
 
 s = copy.deepcopy(SCN); s["hands"] = [{"t": 1.0, "x": -0.3, "y": 0.0, "duration": 1.0}]
 fw = FakeWorld(s, cam, CFG["variants"])

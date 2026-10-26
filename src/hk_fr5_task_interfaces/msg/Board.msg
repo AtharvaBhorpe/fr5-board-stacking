@@ -1,6 +1,8 @@
 # One board as the world model knows it. base_link, metres / radians.
 string id                   # world-model id, stable across frames (e.g. "b7"); not the Vision 1 track id
-string variant              # "white_small" | "white_large" | "red" | "processed" (CL-8) | "unknown"
+string variant              # ORIGINAL variant, kept through processing (CL-19): "white_small" | "white_large" | "red" | "unknown"
+string label                # raw Vision 1 class right now (e.g. "red", or "other" = non-variant board, CL-19)
+bool processed              # set by the world model when the board came back into its processing zone (CL-19)
 string location             # "input" (input area / input stack) | "zone" | "held"
 string zone                 # zone name when location == "zone", else ""
 float64 x                   # board centre

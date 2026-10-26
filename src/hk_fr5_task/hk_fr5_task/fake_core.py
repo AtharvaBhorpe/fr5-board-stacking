@@ -76,8 +76,9 @@ class FakeWorld:
 
     def _size(self, variant):
         v = self.variants.get(variant, {})
-        size = self.s.get("processed_size", [0.15, 0.10]) if variant == "processed" else [v.get("length", 0.1), v.get("width", 0.07)]
-        return size
+        if variant not in self.variants:                     # non-variant (printed) board, CL-19
+            return self.s.get("nonvariant_size", [0.15, 0.10])
+        return [v.get("length", 0.1), v.get("width", 0.07)]
 
     def zone_at(self, x, y):
         for z in self.zones:
@@ -121,7 +122,7 @@ class FakeWorld:
             raise ValueError(f"unknown event type '{typ}'")
 
     def _operator(self, t):
-        mode = self.s.get("operator", {}).get("return_variant", "same")    # same | processed | plain
+        mode = self.s.get("operator", {}).get("return_variant", "same")    # same | nonvariant (printed board, CL-19)
         for item in [p for p in self.pending if p[0] <= t]:
             self.pending.remove(item)
             _, action, zname = item
@@ -133,7 +134,7 @@ class FakeWorld:
                 self.log.append((t, f"operator took the board out of {zname}"))
             elif action == "return":
                 old = getattr(self, "_taken", {}).pop(zname, "white_small")
-                variant = "processed" if mode == "processed" else old
+                variant = self.s.get("nonvariant_label", "other") if mode == "nonvariant" else old
                 self._add(variant, z["x"] + 0.004, z["y"] - 0.003, z["yaw"] + 0.05)   # never exactly where it was
                 self.log.append((t, f"operator put a {variant} board back into {zname}"))
 

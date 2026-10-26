@@ -5,7 +5,6 @@ variants:                      # CL-9 / CL-17: thickness is a per-variant field.
   white_small: {length: 0.100, width: 0.070, thickness: 0.006}
   white_large: {length: 0.200, width: 0.140, thickness: 0.006}
   red:         {length: 0.150, width: 0.100, thickness: 0.006}
-  processed:   {length: 0.0,   width: 0.0,   thickness: 0.006}   # CL-8: printed board, any size (0 = not checked)
 size_tol: 0.020                # measured vs nominal length / width: more off -> size_ok false (CL-9)
 
 zone_margin: 0.030             # CL-7: zone + margin reserved for processing / drop-off (input boards are outside)
@@ -25,5 +24,7 @@ gone_after: 1.0                # s: LOADED zone empty this long -> PROCESSING (o
 back_after: 1.0                # s: board in a PROCESSING zone this long -> DONE (or FAULT, CL-8)
 unknown_after: 1.0             # s: board in an EMPTY processing zone this long -> FAULT (not placed by us)
 process_timeout: 60.0          # s in PROCESSING -> message "overdue" (state stays PROCESSING)
-require_processed: false       # CL-8: true -> only a 'processed' board coming back counts as DONE, a plain one -> FAULT
+expanded_detection: false      # CL-19: true (only if Vision 1 can classify printed boards as non-variant) -> only a
+                               #   non-variant board coming back = processed (DONE); a plain variant board -> FAULT
+nonvariant_labels: [other]     # Vision 1 class(es) of a non-variant (printed) board: board/<label> (to confirm with the teammate)
 min_score: 0.3                 # detections below are ignored

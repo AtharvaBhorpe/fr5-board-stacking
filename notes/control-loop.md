@@ -66,7 +66,7 @@ every decision, trade-off and rule about the control loop goes here (CL-*). Star
 The world state must show a zone as **busy** for the whole time from the robot's place until the robot picks the
 processed board out again (`LOADED`, `PROCESSING`, `DONE` = busy; only `EMPTY` accepts a board) (user).
 
-**CL-8 (conditional, depends on Vision 1):** the teammate tries to detect a **printed / painted board** as a
+**CL-8 (conditional, depends on Vision 1; refined by CL-19: 'processed' is a world-model state):** the teammate tries to detect a **printed / painted board** as a
 "non-variant" (processed) board. If that works: a plain board goes into processing, the operator replaces it with a
 printed board -> only a **non-variant board** coming back counts as `DONE` (processed) and goes to the drop-off;
 if a **plain variant board** comes back -> "processing did not happen" -> the robot moves it to the **fault zone**.
@@ -204,6 +204,8 @@ main way to set up operations**: the operator says what to do, the LLM turns it 
 | CL-16 | Input stack height: **contact search only** for now (vacuum on, slow LIN descent, stop on the vacuum seal = smooth motion cancel). D405 only if Vision 2 ever lands | user |
 | CL-17 | Board thickness is a **per-variant field** (all 3 variants 6 mm today); never one global thickness, so variants with other thicknesses can be added | user |
 | CL-18 | LLM tools = job types **and** single validated steps (`pick board N`, `place in <zone>`). **The LLM part comes near the end**, once skills / actions are about final; parts of it can be written in parallel as pieces finalize, so it is not one large block at the end | user |
+| CL-19 | **Processed is a world-model state, not a Vision 1 label** (user): Vision 1 only gives variant labels (white_small / white_large / red) and, if its expanded detection lands, a **non-variant** class (proposed `board/other`). The world model keeps each board's ORIGINAL variant through processing and sets `processed` when the board comes back into a busy processing zone. Only with `expanded_detection: true`: non-variant board back = processed (DONE); plain white / red board back = not processed (FAULT -> fault zone). `Board` gets `label` (raw Vision 1 class) + `processed` | user; replaces the 'processed' variant of CL-8 |
+| CL-20 | **World update strategy: B (user, 2026-10-26)** - implemented with T4: held board / arm visible to the real overhead camera. A: snapshots only (world rebuilt from one Vision 1 snapshot at start + after each action, robot moved away) - user's proposal; misses the operator's processing (take + return between two snapshots) and hands during motion. **B (recommended): continuous + arm shadow mask** (ignore detections / pause empty + lost timers inside a band base -> tcp, ~12 cm wide, from TF) **+ settle check** (after a place the skill moves away, the world confirms from fresh frames); ~1 h, with T4. C: continuous, no mask (current T3; fine with the fake world, which hides the held board) | do not forget: needed before the real Vision 1 / setup test (TM-5) |
 
 ## 9. Open questions
 

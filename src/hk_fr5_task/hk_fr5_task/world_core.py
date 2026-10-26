@@ -75,8 +75,6 @@ class World:
         v = self._variant(variant)
         if not v:
             return False
-        if v["length"] <= 0 or v["width"] <= 0:          # e.g. 'processed': size not checked
-            return True
         tol = self.c["size_tol"]
         return abs(length - v["length"]) <= tol and abs(width - v["width"]) <= tol
 
@@ -137,11 +135,12 @@ class World:
                                        "width": wd, "in_work_area": inside, "seen": t})
         # boards: associate detections with known boards
         bdets = sorted((d for d in dets if d["cls"].startswith("board/")), key=lambda d: -d.get("score", 1.0))
+        known = c["variants"]
         free = {i: b for i, b in self.boards.items() if b["location"] != "held"}
         matched = set()
         for d in bdets:
             x, y, yaw, l, wd = rect_from_corners(d["corners"])
-            variant = d["cls"].split("/", 1)[1]
+            label = d["cls"].split("/", 1)[1]
             best, bd = None, None
             for i, b in free.items():
                 if i in matched:
@@ -154,11 +153,15 @@ class World:
                         best, bd = i, key
             if best is None:
                 best = self._new_board_id(t, x, y)
-            b = self.boards.setdefault(best, {"id": best, "location": "input", "zone": "", "first": t})
-            if b.get("variant") not in (None, variant):
-                self._note(t, f"board {best}: variant {b['variant']} -> {variant}")
-            b.update(variant=variant, x=x, y=y, yaw=yaw, length=l, width=wd, score=d.get("score", 1.0),
-                     track=d.get("id", ""), seen=t, size_ok=self._size_ok(variant, l, wd), inside=d.get("inside", True))
+            b = self.boards.setdefault(best, {"id": best, "location": "input", "zone": "", "first": t,
+                                              "variant": "unknown", "processed": False})
+            if label in known and label != b["variant"]:          # CL-19: a non-variant label never replaces the
+                if b["variant"] != "unknown":                     # original variant (kept through processing)
+                    self._note(t, f"board {best}: variant {b['variant']} -> {label}")
+                b["variant"] = label
+            b.update(label=label, x=x, y=y, yaw=yaw, length=l, width=wd, score=d.get("score", 1.0),
+                     track=d.get("id", ""), seen=t, inside=d.get("inside", True),
+                     size_ok=self._size_ok(label, l, wd) if label in known else label in c["nonvariant_labels"])
             if b["location"] != "held":
                 zn = self.zone_of(x, y)
                 b["location"], b["zone"] = ("zone", zn) if zn else ("input", "")
@@ -204,9 +207,10 @@ class World:
             elif st == "PROCESSING":
                 if present and t - z["occ_since"] >= c["back_after"]:
                     b = self.boards[present[0]]
-                    if c["require_processed"] and b["variant"] != "processed":
-                        self._set_state(z, "FAULT", t, f"not processed: plain {b['variant']} board came back")
+                    if c["expanded_detection"] and b.get("label") not in c["nonvariant_labels"]:
+                        self._set_state(z, "FAULT", t, f"not processed: plain {b.get('label')} board came back")
                     else:
+                        b["processed"] = True                     # CL-19: processed = state, not a label
                         self._set_state(z, "DONE", t)
                     z["board_id"] = present[0]
                 elif not present and t - z["since"] > c["process_timeout"]:
@@ -281,7 +285,8 @@ class World:
                 top = self.zones[b["zone"]]["stack_top_z"]
             else:
                 top = c["table_z"] + self._thickness(b.get("variant", ""))
-            boards.append({"id": b["id"], "variant": b.get("variant", "unknown"), "location": b["location"],
+            boards.append({"id": b["id"], "variant": b.get("variant", "unknown"), "label": b.get("label", ""),
+                           "processed": b.get("processed", False), "location": b["location"],
                            "zone": b["zone"], "x": b.get("x", NAN), "y": b.get("y", NAN), "yaw": b.get("yaw", 0.0),
                            "length": b.get("length", 0.0), "width": b.get("width", 0.0),
                            "thickness": self._thickness(b.get("variant", "")), "top_z": top,

@@ -12,7 +12,8 @@ boards:                          # input area; count > 1 = input stack (only the
 operator:                        # simulated processing (CL-4)
   take_after: 1.5                # s after the robot placed a board in a processing zone: operator takes it away
   return_after: 3.0              # s later: a board comes back
-  return_variant: same           # same | processed (CL-8 demo: a printed board comes back)
-processed_size: [0.15, 0.10]     # size of a 'processed' (printed) board
+  return_variant: same           # same | nonvariant (CL-19 demo: a printed, non-variant board comes back)
+nonvariant_label: other          # Vision 1 class of a printed board: board/other (to confirm with the teammate)
+nonvariant_size: [0.15, 0.10]    # its size
 hands: []                        # e.g. - {t: 30.0, x: -0.30, y: 0.0, duration: 2.0, label: hand}
 noise_px: 0.3                    # pixel noise per corner (Vision 1 jitter)
