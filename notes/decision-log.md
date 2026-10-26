@@ -759,7 +759,7 @@ Open items reviewed after step 18 (A = doable now without robot, B = needs user/
   stop both late. At 50 points/s no queue builds. The smooth stop (5j) and the limits were not the cause.
   Applied: ros2_controllers.yaml update_rate 50, state_publish_rate 50; bringup default `update_rate:=50`.
   Pitfall during the test: `update-rate:=50` (hyphen) is silently ignored by ros2 launch (log still said
-  125 Hz) -> always check the `controller_manager update_rate: N Hz` log line. (Todo: reject unknown launch args.)
+  125 Hz) -> always check the `controller_manager update_rate: N Hz` log line. (~~Todo: reject unknown launch args.~~ DONE T22.)
   ~~Open: confirm motion is smooth at 50 Hz~~ CLOSED 2026-10-26 (user: very smooth, 5m).
 - Real-robot session result (2026-10-25, user: "ok this works now"): at 50 Hz moves start at once and
   cancel / smooth stop works on the real FR5. Next session: step 20 gripper (T1 questions first).
@@ -816,7 +816,7 @@ T1 answers (user, 2026-10-25):
 | X-1 | Lost test scripts (steps 15-18 scratchpads gone) | OK **as long as every test is documented** (implementation-ref 10i-10l, 10n). D1: commit the surviving gripper test scripts + mock XML-RPC server with run commands. Motion tests are **not** rebuilt (user confirmed) |
 | X-2 | Attached board (F12, W-11 amended) | **Only our nodes talk to MoveIt.** The control loop needs our API to attach a picked board (variable w, l, h) to `tcp`, and detach it. Design pending |
 | X-3 | Dynamic obstacles (D3) | assume the control loop needs to add / remove **dynamic stack obstacles** (placed boards, stack). Same API family as X-2. Design pending |
-| X-4 | Driver hides a lost connection (Q3-1) | OK for a demo; plus the cheap check: motion_controller warns when the read-back stays frozen while motion is commanded |
+| X-4 | Driver hides a lost connection (Q3-1) | OK for a demo; ~~plus the cheap check (frozen read-back warning)~~ dropped 2026-10-26 (user: existing implementation enough, T21 closed) |
 | X-5 | CONTROLLER_ERROR not auto-cleared (W-12 vs W-13) | keep |
 | X-6 | Gripper start with robot unreachable shows pumps off (unknown) | accept |
 | X-7 | Unknown launch args silently ignored (P-9 pitfall) | reject them with a clear error listing the valid names |
@@ -983,8 +983,8 @@ The rationale below is only what was recorded at the time.
 | T18 | 20f-4 lab: first `pixi run robot` with the gripper node (real launch never run) | open (lab) |
 | T19 | Vendor-ref acceleration 6.283 rad/s^2 re-test (P-6/P-7); then revisit V-7 stop values, L-7 Pilz limits, M-11 execution tolerances | open (lab) |
 | T20 | ~~Scene objects API for the control loop~~ | DONE 2026-10-26: 5n (T20a interfaces `e84e6ba`, b scene_manager `5a18bf0`, c tests `9838d04`, T25 `c3f3843`, d launch `dd593ac`, e motion_shell) |
-| T21 | Frozen read-back warning in motion_controller (X-4) | open |
-| T22 | Reject unknown bringup launch args (X-7) | open |
+| T21 | ~~Frozen read-back warning in motion_controller (X-4)~~ | CLOSED 2026-10-26 (user): existing implementation is enough for the demo; not built |
+| T22 | ~~Reject unknown bringup launch args (X-7)~~ | DONE 2026-10-26: `ARGS` table in bringup.launch.py feeds the declarations + `_check_unknown_args` (first thing in `_setup`): unknown name -> exit 1 before any process, error lists valid names + underscore hint |
 | T23 | Commit gripper test scripts + mock XML-RPC server (X-1 / D1) | open |
 | T25 | ~~Remove OMPL request adapter "Fix Start State In Collision"~~ | DONE 2026-10-26 (user: remove): OMPL from a colliding start now fails with -26 START_STATE_INVALID (T20c re-run 28/28, Pilz unaffected); motion_controller hint for -26 added |
 | T26 | Ctrl+C of the bringup: several nodes end "process has died, exit code -2" instead of "finished cleanly" (pre-existing, same with the pre-T20d launch: SIGINT reaches the process group AND ros2 launch forwards a 2nd SIGINT). Risk on the real robot: ros2_control_node may die before the driver's on_deactivate (StopMotion / CloseRPC). Check at the lab (T18) whether the driver logs its stop | open |

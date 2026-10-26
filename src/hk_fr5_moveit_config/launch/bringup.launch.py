@@ -51,6 +51,7 @@ def _int_arg(context, name):
 
 
 def _setup(context):
+    _check_unknown_args(context)  # first: before anything starts
     fake = _bool_arg(context, "use_fake_hardware")
     use_rviz = _bool_arg(context, "use_rviz")
     use_obstacles = _bool_arg(context, "use_obstacles")
@@ -114,20 +115,29 @@ def _setup(context):
     return actions
 
 
+# name -> (default, description). Single source for the declarations and the unknown-argument check (T22).
+ARGS = {
+    "use_fake_hardware": ("true", "true = mock joints, false = real FR5"),
+    "update_rate": ("50", "controller_manager rate in Hz (50 = real-FR5 proven, P-9)"),
+    "use_rviz": ("true", "start RViz with the MotionPlanning display"),
+    "use_obstacles": ("true", "add static collision boxes from hk_fr5_motion/config/obstacles.yaml "
+                              "(scene_manager; its /scene/* services run either way)"),
+    "use_motion_controller": ("true", "start motion_controller (/motion/move_to, move_delta, get_state)"),
+    "use_gripper": ("true", "start gripper_controller (/gripper/grip, release, state)"),
+}
+
+
+def _check_unknown_args(context):
+    """Unknown launch arguments are an error (T22): ros2 launch silently ignores them, e.g. update-rate:=50
+    (hyphen) left the rate at 125 Hz on the real robot (P-9)."""
+    unknown = sorted(set(context.launch_configurations) - set(ARGS))
+    if unknown:
+        raise RuntimeError(f"unknown launch argument(s) {', '.join(unknown)}; valid: {', '.join(ARGS)} "
+                           "(note: underscores, e.g. update_rate:=50)")
+
+
 def generate_launch_description():
-    return LaunchDescription([
-        DeclareLaunchArgument("use_fake_hardware", default_value="true",
-                              description="true = mock joints, false = real FR5"),
-        DeclareLaunchArgument("update_rate", default_value="50",
-                              description="controller_manager rate in Hz (50 = real-FR5 proven, P-9)"),
-        DeclareLaunchArgument("use_rviz", default_value="true",
-                              description="start RViz with the MotionPlanning display"),
-        DeclareLaunchArgument("use_obstacles", default_value="true",
-                              description="add static collision boxes from hk_fr5_motion/config/obstacles.yaml "
-                                          "(scene_manager; its /scene/* services run either way)"),
-        DeclareLaunchArgument("use_motion_controller", default_value="true",
-                              description="start motion_controller (/motion/move_to, move_delta, get_state)"),
-        DeclareLaunchArgument("use_gripper", default_value="true",
-                              description="start gripper_controller (/gripper/grip, release, state)"),
-        OpaqueFunction(function=_setup),
-    ])
+    return LaunchDescription(
+        [DeclareLaunchArgument(name, default_value=default, description=text)
+         for name, (default, text) in ARGS.items()]
+        + [OpaqueFunction(function=_setup)])

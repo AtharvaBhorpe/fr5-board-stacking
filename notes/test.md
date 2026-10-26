@@ -72,6 +72,7 @@ Real robot: **ask before switching** (safety rule 3). First check = read only (s
 ## Troubleshooting
 - Default control rate is **50 Hz** (P-9). Check terminal 1: `controller_manager update_rate: 50 Hz`.
   At 125 Hz the FR5 lagged 2 s behind every command (and every stop). Arg is `update_rate` (underscore!).
+  Unknown / misspelled launch args (e.g. `update-rate`) now stop the bringup with a list of valid names (T22).
 - Lag check: `pixi run python3 notes/lag_probe.py 15`, then one small move: lag should be ~0.1 s.
 - All plans fail `START_STATE_IN_COLLISION`: obstacle estimates (T4) do not match reality -> stop, report.
 - Anything unexpected: **e-stop first**, then Ctrl+C in terminal 1.

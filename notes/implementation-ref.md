@@ -685,6 +685,14 @@ attach / 2nd attach rejected / detach keep -> stack_0 / box add / same name -> "
 rejected (add + rm) / rm wall / rm unknown lists dynamic boxes / rm all / detach nothing / margin 10 mm > 6 mm rejected /
 attach with yaw 30 deg, offset (10, -5) mm, margin 1.5 mm -> modelled 4.5 mm / usage errors for bad input / history.
 
+T22 results (unknown launch args, 2026-10-26): ros2 launch puts every CLI `name:=value` into
+`context.launch_configurations`, declared or not (probe launch file: `a:=2 update-rate:=50 b:=x` -> a, b, update-rate).
+bringup: `update-rate:=50` and `use_gripper_x:=false` -> "[ERROR] [launch]: ... unknown launch argument(s) ...; valid:
+use_fake_hardware, update_rate, use_rviz, use_obstacles, use_motion_controller, use_gripper (note: underscores ...)",
+exit 1, no process started; `--show-args` lists the 6 args; `update_rate:=50 use_rviz:=false` starts normally (log
+"update_rate: 50 Hz", all nodes incl. /scene/scene_manager). Caveat: a check inside the launch file only sees args of
+this launch; included vendor launch files are not affected.
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders
