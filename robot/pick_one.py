@@ -62,6 +62,21 @@ def lin(d):
         r = act(move_delta, MoveDelta.Goal(dz=d, frame=MoveDelta.Goal.FRAME_BASE, velocity_scaling=args.speed / 3))
     return r
 
+# 0. Which robot is this? A leftover sim process once made the real robot load mock hardware (SUCCESS, no motion).
+from rclpy.qos import DurabilityPolicy, QoSProfile
+desc = []
+node.create_subscription(String, "/robot_description", lambda m: desc.append(m.data),
+                         QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+t0 = time.time()
+while not desc and time.time() - t0 < 5.0:
+    rclpy.spin_once(node, timeout_sec=0.5)
+n_desc = node.count_publishers("/robot_description")
+if n_desc > 1:
+    raise SystemExit(f"{n_desc} robot stacks publish /robot_description (sim + robot?): stop all but one")
+hw = "none (robot not started?)" if not desc else ("MOCK (simulation, arm will NOT move)"
+                                                    if "mock_components" in desc[-1] else "REAL FR5")
+print(f"robot hardware: {hw}")
+
 # 1. One fresh vision message with a calibrated board
 msgs = []
 node.create_subscription(String, "/vision/boards", lambda m: msgs.append(json.loads(m.data)), 1)

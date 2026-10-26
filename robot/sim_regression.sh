@@ -5,9 +5,10 @@
 #   terminal 1 (fr5-board-stacking):  pixi run sim          # NEVER together with `pixi run robot`
 #   terminal 2 (vision1-overhead):    robot/sim_regression.sh
 #
+# 01-03 VARa: the board lies 1.01 m from the base (beyond the FR5 reach) -> must be refused before any motion.
+# samples/composite_vara_dest.png = left half of logitech_dataset_1 scene_0000 (templates) + right half of
+# samples/06.jpg (VARa board in reach), same camera pose: the only image with a reachable VARa board + its template.
 # Needs: fr5-board-stacking next to vision1-overhead, built (pixi run build). No other vision node running.
-# samples/composite_vara_dest.png = left half of logitech_dataset_1 scene_0000 (3 templates) + right half of
-# samples/06.jpg (VARa board), same camera pose: the only image with a VARa board and its template.
 cd "$(dirname "$0")/.." || exit 1
 VISION=$PWD; ROBOT=$VISION/../fr5-board-stacking
 CASES=(  # image | pick_one.py args | expected last line
@@ -15,10 +16,13 @@ CASES=(  # image | pick_one.py args | expected last line
   "samples/06.jpg|--variant VARb|done"
   "samples/06.jpg|--variant VARc|done"
   "samples/composite_vara_dest.png|--place --variant VARa|done"
+  "samples/01.jpg|--place --variant VARa|no reachable board"
+  "samples/02.jpg|--place --variant VARa|no reachable board"
+  "samples/03.jpg|--place --variant VARa|no reachable board"
   "samples/05.jpg|--place --variant VARb|done"
   "samples/05.jpg|--place --variant VARc|done"
   "samples/01.jpg|--place --variant VARc --stack 1|done"
-  "samples/01.jpg|--place --variant VARa|--place: no board whose destination template (tag) is visible"
+  "samples/06.jpg|--place --variant VARa|--place: no board whose destination template (tag) is visible"
 )
 pass=0; fail=0
 for c in "${CASES[@]}"; do

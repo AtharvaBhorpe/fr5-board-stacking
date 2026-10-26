@@ -56,8 +56,8 @@ pixi run python3 ../vision1-overhead/robot/pick_one.py --place        # pick -> 
 ```
 
 Simulation test (no robot, no camera): `pixi run sim` in `fr5-board-stacking`, then `robot/sim_regression.sh` here
-(8 cases, ~3 min). **Never run `sim` and `robot` at the same time**: a leftover sim process makes the real robot load
-mock hardware (it then reports SUCCESS but does not move).
+(11 cases, ~4 min). **Never run `sim` and `robot` at the same time**: a leftover sim process makes the real robot load
+mock hardware (it then reports SUCCESS but does not move). `pick_one.py` prints `robot hardware: REAL FR5` or `MOCK` first, and stops if two robot stacks run.
 
 ## Limits
 

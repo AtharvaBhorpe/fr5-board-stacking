@@ -30,6 +30,19 @@ _P.minMarkerPerimeterRate, _P.polygonalApproxAccuracyRate = 0.01, 0.05
 ARUCO = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_100), _P)
 
 
+def _markers(gray):
+    """{id: 4x2 corners}. Second pass on a sharpened copy: blurred ~35 px tags (tag 1 on the yellow template) decode
+    there (A/B on 84 frames: tag 1 found 68 -> 76). errorCorrectionRate up would find more but decodes ghost ids."""
+    out = {}
+    sharp = cv2.addWeighted(gray, 1.8, cv2.GaussianBlur(gray, (0, 0), 2), -0.8, 0)
+    for img in (gray, sharp):
+        corners, ids, _ = ARUCO.detectMarkers(img)
+        if ids is not None:
+            for c, i in zip(corners, ids.flatten()):
+                out.setdefault(int(i), c.reshape(4, 2))
+    return out
+
+
 def _mask(hsv, ranges, roi, close=9):
     m = np.zeros(hsv.shape[:2], np.uint8)
     for lo, hi in ranges:
@@ -73,10 +86,10 @@ def detect(bgr, rejected=None, tags=None):
     roi = np.zeros((h, w), np.uint8)
     cv2.fillPoly(roi, [np.int32(np.array(ROI) * [w - 1, h - 1])], 255)
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-    found, ids, _ = ARUCO.detectMarkers(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
-    tag_centres = [c.reshape(4, 2).mean(0) for c in found]
-    if tags is not None and ids is not None:
-        tags += [{"id": int(i), "corners": c.reshape(4, 2).tolist()} for c, i in zip(found, ids.flatten())]
+    found = _markers(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
+    tag_centres = [c.mean(0) for c in found.values()]
+    if tags is not None:
+        tags += [{"id": i, "corners": c.tolist()} for i, c in found.items()]
 
     boards = []
     for colour, ranges, close in (("white", [WHITE], 9), ("red", RED, RED_CLOSE)):
