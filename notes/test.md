@@ -4,6 +4,26 @@ Worktree: `cd ~/hackathon/wt/feat-robot-motion-gripper` in every terminal.
 Units: metres / radians. `frame: 1` = base frame, default (0) = TCP frame.
 First real runs: `velocity_scaling: 0.1` (<= 20 % rule). Human at the e-stop watches the ARM.
 
+## 0. Lab session 2026-10-27: open items (do in this order)
+Only the items still open (full history: decision-log §7). **M** = robot moves, **G** = gripper switches:
+both need the user's explicit OK in the session (safety rules 1-3), first runs `v 0.1`, e-stop person in place.
+Log each result in decision-log (new entry per item) and close the T-row.
+
+| # | Item | Check | Expected / pass | M/G |
+|---|---|---|---|---|
+| 1 | A + B | network, web UI auto mode + enabled, e-stop person (section A) | `ping` OK, no alarms | - |
+| 2 | T15 | read-only, BEFORE the bringup: the C1 one-liner, then once more with `block` = 1: `GetToolDI(0, 1)` | reply format (`[err, value]`? bare int?) + whether `block` changes anything; if not `[0, x]`: fix `parse_reply` in `gripper_io.py` | - |
+| 3 | T18 | `pixi run robot` (first real launch with the gripper node) | section B messages; gripper log: real I/O, start state read, **nothing switched**; G1: `/gripper/state` DO/DI = web UI | - |
+| 4 | T12 | C0 `state` vs web UI TCP pose (no motion) | x, y negated (base rotated 180 deg, G6); roll = rx, pitch = ry, yaw = rz +- 180 deg (5m); else fix the RPY extraction / interface comment | - |
+| 5 | T17 | terminal 3: `pixi run python3 notes/lag_probe.py 15`; during it `d 0 0 30 base`, `d 0 0 -30 base` (gripper node running = polling) | lag stays ~0.1 s (X-10); 2 s = queueing again (check 50 Hz, P-9) | M |
+| 6 | T16 | board under the cup: `grip`, lift `d 0 0 30 base`, put down, `release`; also `grip` with no board | `SUCCESS ... in x s` (note x = time_to_vacuum); no board: NO_VACUUM after 3 s, pump off; after release: how long DI0 stays 1 (vacuum decay) in `gstate` / G1; no DI0 flicker (else raise `debounce_reads` 2) | M + G |
+| 7 | T3 -> T10 | look at / measure the D405 mount yaw on the real wrist | note the angle; compare with the xacro; decide the home yaw (j6 of SRDF `ready`) when camera use is designed | - |
+| 8 | T4 | jog the TCP (`jog`, `v 0.1`) gently to the table top + corners of table, profile, camera post; read `state` at each | table top z vs estimate -0.045 (E-2); update `obstacles.yaml` (formulas in its header); re-run `home` + `d` | M |
+| 9 | T19 / T9 | vendor acceleration 6.283 rad/s^2 in `joint_limits.yaml` (now 2.0), re-test Pilz LIN at rising `v` | no `-4` / planning failures at high scaling; then revisit V-7 stop values, L-7 Pilz limits, M-11 tolerances | M |
+| 10 | T26 | at the end: Ctrl+C in terminal 1 | terminal 1 shows the driver's `Stopping ...please wait...` and `System successfully stopped!` (on_deactivate = StopMotion / CloseRPC); gripper log: both pumps off | - |
+
+Parked (optional, only if time): T13 blended motion (Pilz sequence), T8 IK benchmark (only if KDL fails noticeably).
+
 ## A. Real robot preparation
 1. Ethernet laptop <-> controller. Find interface: `nmcli dev`
    `nmcli con add type ethernet ifname <iface> con-name fr5-robot ipv4.method manual ipv4.addresses 192.168.58.10/24`

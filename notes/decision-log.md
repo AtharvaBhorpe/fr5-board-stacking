@@ -962,6 +962,8 @@ The rationale below is only what was recorded at the time.
 
 ## 7. Open items / TODOs (T)
 
+Lab checklist (only the open items, in order, with checks + expected results): `notes/test.md` section 0.
+
 | # | Item | Status |
 |---|---|---|
 | T1 | ~~Before step 20 ask: Schmalz model, tool DO suction, DO blow-off, DI vacuum-achieved, lift/blow-off control~~ | DONE: 5l (DO0 vacuum, DO1 blow-off, DI0 vacuum achieved) |
