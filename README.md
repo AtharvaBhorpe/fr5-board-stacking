@@ -29,7 +29,7 @@ Per board:
 | `variant` | `VARa` white 295x210, `VARb` white 150x210, `VARc` red 135x210 (mm) |
 | `u`, `v`, `yaw_deg`, `corners` | image pixels (u right, v down); yaw of board +X, degrees in [-90, 90) |
 | `x`, `y`, `z`, `yaw` | `base_link`, metres / radians; yaw of board +X about +Z, modulo pi. `z` = top of one sheet on the table (fixed) |
-| `size_mm`, `size_ok` | measured short / long side; `size_ok` = within 10 mm of the variant size |
+| `size_mm`, `size_ok` | measured short / long side; `size_ok` = within 10 mm of the variant size. **Pick only `size_ok` boards** (false = partly hidden, e.g. under the arm) |
 | `zone` | `pick` (y < 0) or `drop` |
 | `inside_calibration` | false = outside the calibration tags, position extrapolated (less accurate) |
 | `corners_xy` | 4 corners in `base_link` |
