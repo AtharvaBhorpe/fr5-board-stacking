@@ -982,7 +982,7 @@ The rationale below is only what was recorded at the time.
 | T17 | 20f-3 lab: `notes/lag_probe.py` while the gripper polls; motion lag must stay ~0.1 s (X-10) | open (lab) |
 | T18 | 20f-4 lab: first `pixi run robot` with the gripper node (real launch never run) | open (lab) |
 | T19 | Vendor-ref acceleration 6.283 rad/s^2 re-test (P-6/P-7); then revisit V-7 stop values, L-7 Pilz limits, M-11 execution tolerances | open (lab) |
-| T20 | Scene objects API for the control loop: attach / detach picked board (w, l, h) + add / remove stack obstacles (X-2, X-3) | open, next |
+| T20 | ~~Scene objects API for the control loop~~ | DONE 2026-10-26: 5n (T20a interfaces `e84e6ba`, b scene_manager `5a18bf0`, c tests `9838d04`, T25 `c3f3843`, d launch `dd593ac`, e motion_shell) |
 | T21 | Frozen read-back warning in motion_controller (X-4) | open |
 | T22 | Reject unknown bringup launch args (X-7) | open |
 | T23 | Commit gripper test scripts + mock XML-RPC server (X-1 / D1) | open |

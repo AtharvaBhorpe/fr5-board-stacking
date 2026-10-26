@@ -31,6 +31,9 @@ Ctrl+C while moving        # cancel = smooth stop
 grip [TIMEOUT_S]            # gripper: vacuum on, wait for vacuum (default 3 s)  | Ctrl+C = cancel (pump off)
 release [BLOW_S]            # vacuum off + blow-off (default 1 s)
 gstate                      # gripper state (DO0 / DO1 / DI0); says so if the gripper node is not running
+attach 270 200 6            # board L W H mm under the cup [YAW DX DY MARGIN] (only after vacuum; lift with `d`, S-12)
+detach | detach keep        # remove the board | keep it as obstacle stack_<n>
+box add stack 300 220 50 -450 250 -20 [YAW]   # dynamic box NAME SX SY SZ X Y Z (mm, base_link) | box rm [NAME] (none = all)
 history | help | quit
 ```
 

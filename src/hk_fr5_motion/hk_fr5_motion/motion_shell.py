@@ -3,7 +3,8 @@
     pixi run shell        (next to `pixi run sim` or `pixi run robot`)
 
 Input in mm / deg (sent as m / rad). Uses only the public API: /motion/move_to, /motion/move_delta,
-/motion/get_state, and /gripper/grip, /gripper/release, /gripper/state (step 20e).
+/motion/get_state, /gripper/grip, /gripper/release, /gripper/state (step 20e) and
+/scene/attach_board, detach_board, add_box, remove_box (T20e).
 Ctrl+C while a goal runs = cancel (smooth stop / gripper cancel). Type `help` for commands.
 """
 import math
@@ -15,7 +16,7 @@ import time
 import rclpy
 from hk_fr5_interfaces.action import Grip, MoveDelta, MoveTo, Release
 from hk_fr5_interfaces.msg import GripperState
-from hk_fr5_interfaces.srv import GetState
+from hk_fr5_interfaces.srv import AddBox, AttachBoard, DetachBoard, GetState, RemoveBox
 from moveit_msgs.msg import MoveItErrorCodes
 from rclpy.action import ActionClient
 from rclpy.executors import SingleThreadedExecutor
@@ -38,6 +39,10 @@ units: mm and deg (sent as m / rad). '.' = keep the current value of that field.
   jog +z [MM] | jog -yaw [DEG]    move_delta along / about one axis (step / rstep, frame setting)
   v 0.1 | planner ompl|ptp|lin | plan on|off | frame tcp|base | step MM | rstep DEG | set
   grip [TIMEOUT_S] | release [BLOW_S] | gstate   gripper (s; omitted / 0 = gripper.yaml default)
+  attach L W H [YAW DX DY MARGIN]  board under the cup (mm / deg; MARGIN 0 = default 2 mm). Rules: only after vacuum,
+                                  remove its pick-zone box first (S-11), lift with `d` (Pilz, S-12)
+  detach [keep]                   remove the board, or keep it as obstacle stack_<n>
+  box add NAME SX SY SZ X Y Z [YAW] | box rm [NAME]   dynamic box in base_link (mm / deg); rm without NAME = all
   history | help | quit
   Ctrl+C while moving = cancel (smooth stop); during grip / release = cancel (pump / blow-off off)
 TCP frame: +z = out of the cup (DOWN when the tool points down). base frame: +z = up."""
@@ -52,6 +57,9 @@ class Shell:
         self.grip = ActionClient(self.node, Grip, f"{gripper_ns}/grip")
         self.release = ActionClient(self.node, Release, f"{gripper_ns}/release")
         self.gripper_state, self.gripper_stamp = None, 0.0  # latest /gripper/state + arrival time
+        self.scene = {name: self.node.create_client(srv, f"/scene/{name}") for name, srv in
+                      (("attach_board", AttachBoard), ("detach_board", DetachBoard),
+                       ("add_box", AddBox), ("remove_box", RemoveBox))}
         self.node.create_subscription(GripperState, f"{gripper_ns}/state", self._on_gripper_state,
                                       QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self.executor = SingleThreadedExecutor()
@@ -113,7 +121,8 @@ class Shell:
         print(f"  move_to {ok(self.move_to.wait_for_server(timeout_sec=1.0))}   "
               f"move_delta {ok(self.move_delta.wait_for_server(timeout_sec=1.0))}   "
               f"get_state {ok(self.get_state.wait_for_service(timeout_sec=1.0))}")
-        print(f"  gripper {'● (grip, release, state)' if self.gripper_up() else '○ not running (use_gripper:=false?)'}")
+        print(f"  gripper {'● (grip, release, state)' if self.gripper_up() else '○ not running (use_gripper:=false?)'}   "
+              f"scene {'● (attach, detach, box)' if self.scene_up() else '○ not running'}")
         s = self.state()
         print(f"  state: {'OK' if s is not None and s.success else 'INVALID'}  "
               f"{'' if s is None else s.message}")
@@ -294,6 +303,52 @@ class Shell:
         print(f"  vacuum pump {onoff(g.vacuum_on)} | blow-off {onoff(g.blow_off_on)} | "
               f"vacuum {'achieved' if g.vacuum_achieved else 'not achieved'}")
 
+    # ---- scene -------------------------------------------------------------------------------
+    SCENE_MISSING = "scene_manager not running (is the bringup running?)"
+
+    def scene_up(self):
+        return self.scene["attach_board"].wait_for_service(timeout_sec=1.0)
+
+    def _scene_call(self, name, request, label):
+        if not self.scene[name].wait_for_service(timeout_sec=1.0):
+            print(f"✘ {self.SCENE_MISSING}")
+            return
+        r = self._wait(self.scene[name].call_async(request), 10.0)
+        if r is None:
+            print(f"✘ {label}: no answer from /scene/{name} within 10 s")
+            return
+        line = f"{'✔' if r.success else '✘'} {r.message}"
+        print(line)
+        self.history.append(f"{time.strftime('%H:%M:%S')} {label} -> {line}")
+
+    def cmd_attach(self, args):
+        usage = "attach L W H [YAW DX DY MARGIN]   (mm / deg)"
+        if len(args) not in (3, 4, 6, 7):
+            raise ValueError(usage)
+        v = [float(a) for a in args] + [0.0] * (7 - len(args))
+        req = AttachBoard.Request(length=v[0] / 1000, width=v[1] / 1000, height=v[2] / 1000, yaw=math.radians(v[3]),
+                                  dx=v[4] / 1000, dy=v[5] / 1000, contact_margin=v[6] / 1000)
+        self._scene_call("attach_board", req, f"attach {v[0]:g} x {v[1]:g} x {v[2]:g} mm")
+
+    def cmd_detach(self, args):
+        if args not in ([], ["keep"]):
+            raise ValueError("detach [keep]")
+        self._scene_call("detach_board", DetachBoard.Request(keep_as_obstacle=bool(args)),
+                         f"detach{' keep' if args else ''}")
+
+    def cmd_box(self, args):
+        usage = "box add NAME SX SY SZ X Y Z [YAW]  |  box rm [NAME]   (mm / deg, base_link)"
+        if args and args[0] == "add" and len(args) in (8, 9):
+            v = [float(a) for a in args[2:]] + [0.0] * (9 - len(args))
+            req = AddBox.Request(name=args[1], size=[x / 1000 for x in v[0:3]], position=[x / 1000 for x in v[3:6]],
+                                 yaw=math.radians(v[6]))
+            self._scene_call("add_box", req, f"box add {args[1]}")
+        elif args and args[0] == "rm" and len(args) in (1, 2):
+            name = args[1] if len(args) == 2 else ""
+            self._scene_call("remove_box", RemoveBox.Request(name=name), f"box rm {name or '(all dynamic)'}")
+        else:
+            raise ValueError(usage)
+
     def _opts(self):
         return f"planner {self.planner}, v {self.scale:.2f}{', plan_only' if self.plan_only else ''}"
 
@@ -350,6 +405,12 @@ class Shell:
             self.cmd_release(a)
         elif c == "gstate":
             self.print_gripper()
+        elif c == "attach":
+            self.cmd_attach(a)
+        elif c == "detach":
+            self.cmd_detach(a)
+        elif c == "box":
+            self.cmd_box(a)
         elif c == "history":
             print("\n".join(self.history) or "  (empty)")
         else:

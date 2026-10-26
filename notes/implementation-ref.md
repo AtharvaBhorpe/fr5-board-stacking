@@ -678,6 +678,13 @@ T20d results (launch integration, 2026-10-26, scratchpad `test_t20d.py`, `test_s
 - Ctrl+C (SIGINT to the process group, like a terminal): several nodes "process has died, exit code -2"; same with
   the pre-T20d launch file (rsp, move_group, motion_controller) -> pre-existing (T26), not caused by T20d.
 
+T20e results (motion_shell scene commands, 2026-10-26, scratchpad `test_shell_scene.py`): `attach L W H [YAW DX DY
+MARGIN]`, `detach [keep]`, `box add NAME SX SY SZ X Y Z [YAW]`, `box rm [NAME]` (mm / deg), scene line in `status`.
+No bringup: status "scene ○ not running", every scene command -> "scene_manager not running" (no hang). With bringup:
+attach / 2nd attach rejected / detach keep -> stack_0 / box add / same name -> "replaced" (yaw 15 deg) / static name
+rejected (add + rm) / rm wall / rm unknown lists dynamic boxes / rm all / detach nothing / margin 10 mm > 6 mm rejected /
+attach with yaw 30 deg, offset (10, -5) mm, margin 1.5 mm -> modelled 4.5 mm / usage errors for bad input / history.
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders
