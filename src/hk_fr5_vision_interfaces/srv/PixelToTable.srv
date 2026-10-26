@@ -9,4 +9,5 @@ bool success          # false -> no valid calibration or bad request (u / v leng
 string message        # human-readable reason
 float64[] x           # base_link, metres; same order and length as u / v
 float64[] y
-bool[] inside         # true = inside the calibrated tag area; false = extrapolated, less accurate
+bool[] inside         # true = inside the calibrated tag area; false = extrapolated, less accurate (x / y still
+                      #   returned, never refused; sim: < 10 cm outside ~1.3 mm mean, > 20 cm outside up to 30-40 mm)

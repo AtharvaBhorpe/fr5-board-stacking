@@ -1,0 +1,20 @@
+# Robot pose for "record current tcp" (decision-log V-9, V-12): READ-ONLY client on the controller state port.
+# Robot in manual mode (hand-guiding), our motion bringup NOT running. Units: metres / radians unless noted.
+robot_ip: 192.168.58.2
+state_port: 20004            # controller real-time state packet (ROBOT_STATE_PKG, libfairino robot_types.h)
+connect_timeout: 1.0         # s
+stale_after: 0.5             # s without a valid packet -> pose not usable
+reconnect_period: 1.0        # s between reconnect attempts
+max_tilt_deg: 2.0            # warn if the tool axis is tilted more than this from straight down (V-9)
+
+# Forward kinematics base_link -> tcp. Joints j1..j6 rotate about their local z axis. Copied from
+# fairino_description/urdf/fairino5_v6.urdf (frcobot_ros2 @ fcf0c7f, branch feat/robot-motion-gripper) - keep in sync.
+chain:
+  - {xyz: [0.0, 0.0, 0.0], rpy: [0.0, 0.0, 0.0]}           # j1 base_link -> shoulder_link
+  - {xyz: [0.0, 0.0, 0.152], rpy: [1.5708, 0.0, 0.0]}      # j2 shoulder_link -> upperarm_link
+  - {xyz: [-0.425, 0.0, 0.0], rpy: [0.0, 0.0, 0.0]}        # j3 upperarm_link -> forearm_link
+  - {xyz: [-0.39501, 0.0, 0.0], rpy: [0.0, 0.0, 0.0]}      # j4 forearm_link -> wrist1_link
+  - {xyz: [0.0, 0.0, 0.1021], rpy: [1.5708, 0.0, 0.0]}     # j5 wrist1_link -> wrist2_link
+  - {xyz: [0.0, 0.0, 0.102], rpy: [-1.5708, 0.0, 0.0]}     # j6 wrist2_link -> wrist3_link
+flange_z: 0.100              # wrist3_link -> flange face (hk_fr5_description tool_geometry.yaml flange.z)
+tcp_z: 0.1129                # flange face -> relaxed cup tip (plate 0.0095 + gripper tcp_z 0.1034), along flange z
