@@ -77,11 +77,33 @@ variants:
 destination_markers:
   dictionary: DICT_5X5_100
   black_square_side_m: 0.039
-  placement_offset_convention: null
+  placement_offset_convention: 'Origin: marker black-square centre. +X: detected corner
+    0 toward corner 1, reconstructed on the horizontal marker plane. +Z: base_link
+    up. +Y: Z cross X. offset_xy_m: marker centre to intended board centre in this
+    frame. board_yaw_rad: board local +X relative to marker-frame +X, positive about
+    +Z; null means not established.'
   placement_offsets:
-    '1': null
-    '2': null
-    '16': null
+    '1':
+      variant: VARa
+      offset_xy_m:
+      - -0.15
+      - 0.0
+      board_yaw_rad: null
+      physical_placement_validated: false
+    '2':
+      variant: VARb
+      offset_xy_m:
+      - -0.15
+      - 0.0
+      board_yaw_rad: null
+      physical_placement_validated: false
+    '16':
+      variant: VARc
+      offset_xy_m:
+      - 0.14
+      - 0.0
+      board_yaw_rad: null
+      physical_placement_validated: false
 calibration_board:
   dictionary: DICT_5X5_100
   squares:
