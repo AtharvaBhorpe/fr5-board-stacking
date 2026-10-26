@@ -993,7 +993,7 @@ The rationale below is only what was recorded at the time.
 
 ---------------------------------------------------------------------------
 
-## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `dd8140d`+1 (this notes commit) on 2026-10-26)
+## 8. Commit log (branch `feat/robot-motion-gripper`; pushed up to `3f7d178` on 2026-10-26)
 
 | Commit | Content |
 |---|---|
@@ -1016,3 +1016,13 @@ The rationale below is only what was recorded at the time.
 | `50d563d` | bringup use_gripper, build task, gripper SIGINT/SIGTERM handlers (Q20-4), test.md C1 |
 | `14ad348` | motion_shell: grip / release / gstate, works without the gripper node (W-17) |
 | `dd8140d` | notes: branch review 5m, open items T15-T24, housekeeping |
+| `910674a` | notes: T20 scene objects design (5n), T5 / T6 closed for the demo |
+| `e84e6ba` | hk_fr5_interfaces: AttachBoard, DetachBoard, AddBox, RemoveBox + collision model notes 5n-1 |
+| `5a18bf0` | hk_fr5_motion: scene_manager (static boxes + /scene/* services, reentrant callback group Q20-5) |
+| `9838d04` | T20c scene vs planning tests (27/27), margin rationale corrected with measurements |
+| `c3f3843` | moveit_config: OMPL FixStartStateCollision adapter removed (T25) + -26 hint |
+| `dd593ac` | bringup starts scene_manager, obstacle_loader removed (T20d), T26 noted |
+| `f650c78` | motion_shell: attach / detach / box commands (T20e) |
+| `5bcfa93` | bringup rejects unknown launch arguments (T22), T21 closed |
+| `dab07e2` | tests/: gripper + scene checks, mock Fairino XML-RPC server (T23) |
+| `3f7d178` | README.md: team API documentation (T24) |
