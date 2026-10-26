@@ -13,6 +13,8 @@ Owners below are suggested.
 
 ## Doing
 
+- [ ] T03 — Person B: Show perception in the browser. Requires T02. Acceptance: observed tags/candidates are clearly separate from simulated job state. Partial evidence: scene_bridge.py serves historical replay at http://127.0.0.1:8082/api/scene; user screenshots verified waiting, receiving with IDs 1/2/16, and stale after publisher shutdown (183.719 seconds since receipt), retaining the last scene with execution_allowed=false. Pending: integrate the panel into the demo UI and verify disconnected/error display.
+
 ## Waiting for hardware
 
 - [ ] T06 — Person B: Validate C920 settings and calibration loading. Acceptance: intended resolution/focus and calibrated CameraInfo confirmed; fresh workspace images checked.
@@ -25,7 +27,6 @@ Owners below are suggested.
 
 ## Queued / dependencies
 
-- [ ] T03 — Person B: Show perception in the browser. Requires T02. Acceptance: observed tags/candidates are clearly separate from simulated job state.
 - [ ] T04 — Person B: Resolve source variant identification and ambiguous detections. Acceptance: distinguish VARa/VARb by validated geometry and VARc by colour; ambiguous scenes do not create execution targets.
 - [ ] T05 — Person A: Prepare calibration and target-generation tools offline. Acceptance: explicit coordinate frames and height handling; unknown physical values remain unset.
 - [ ] T13 — Both: Freeze and rehearse the demonstration; prepare slides and backup recording. Requires a clearly documented tested capability.
