@@ -646,6 +646,26 @@ T20b results (scene_manager, 2026-10-26, headless sim, scratchpad `test_scene_st
   collision: gripper_link <-> probe"; remove static rejected; remove "" -> 3 boxes removed, only static left;
   detach with nothing attached rejected; clean exit 0.
 
+T20c results (scene objects vs real planning, 2026-10-26, headless sim, scratchpad `test_scene_motion.py` +
+`scene_lib.py`, 27/27). Setup: bringup `use_obstacles:=false use_gripper:=false` + scene_manager; table top -0.045
+(estimate), board 270 x 200 x 6 mm, pick spot (-0.45, -0.25), stack spot (-0.45, +0.25), tool down yaw 90 deg, v 0.5.
+- Pick: OMPL above, LIN down to tcp z -0.039 (board top, measured -0.0390); attach (2 mm) -> no warning; LIN lift 100 mm
+  SUCCESS; LIN back down SUCCESS (board bottom 2 mm above the table).
+- Default detach `{}` (keep_as_obstacle false) -> "removed", name '', no board / stack in the world.
+- No margin (1e-6 m): state check warns `board <-> table`; OMPL plan_only SUCCESS **but its start-state adapter jumped
+  1.022 then 0.261 rad** (move_group log, 5n-1); Pilz LIN plan + execute SUCCESS from the real state.
+- Blocking: without a board tcp z -0.043 is a valid goal; with the board the same goal -> INVALID_MOTION_PLAN.
+- Place: OMPL carry with the board attached, LIN down to -0.039 (measured -0.0390), detach keep -> stack_0 at
+  (-0.4500, 0.2500, -0.0410), dims 0.27 x 0.20 x 0.004 (top -0.039 = real top); lift OK; next board at the old place
+  height -> INVALID_MOTION_PLAN (stack_0 there); place on stack_0 at tcp z -0.033 (measured -0.0330) SUCCESS ->
+  stack_1 at z -0.0350; lift OK.
+- Dynamic wall 0.30 x 0.02 x 0.30 between the spots: no warning; straight LIN -> PLANNING_FAILED; OMPL around SUCCESS;
+  remove "" -> 3 boxes (stack_0, stack_1, wall).
+- Motion regression: move_to ready, move_delta dx 50 mm (tcp frame), cancel after 1 s -> CANCELED + PREEMPTED (-7),
+  back to ready: all as before.
+- Test bugs on the way (not code bugs): relative heights from the wrong start z; a wall placed through the robot
+  (the attach/add warning flagged it: `wall <-> wrist1_link, gripper_link ...`).
+
 ---------------------------------------------------------------------------
 
 ## 11. Later-step reminders

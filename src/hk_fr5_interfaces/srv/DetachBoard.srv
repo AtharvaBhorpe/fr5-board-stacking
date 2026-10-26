@@ -1,7 +1,7 @@
 # Detach the attached board, /scene/detach_board (decision-log 5n, S-3 / S-6).
 # keep_as_obstacle true: the board stays as a fixed obstacle with exactly its attached shape and pose
 # (incl. the contact margin at its bottom), named stack_<n> -> the stack grows. false: removed.
-bool keep_as_obstacle
+bool keep_as_obstacle     # default false -> the board is removed
 ---
 bool success              # false: no board attached, MoveIt not reachable
 string message

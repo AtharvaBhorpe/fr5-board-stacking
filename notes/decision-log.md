@@ -867,6 +867,7 @@ Interfaces (`hk_fr5_interfaces/srv`): `AttachBoard` (length, width, height, yaw,
 |---|---|---|
 | S-8 | DetachBoard returns the kept name in its own field `name` (not only in `message`) | the control loop uses it (later remove_box / logging) without parsing text |
 | S-9 | A kept board keeps **exactly its attached shape and pose**, incl. the margin at its bottom | its top = the real board top (that is what the next place lands on), and the next board gets its own margin -> no contact ever between stack layers |
+| S-12 | Lift after attach (measured T20c, see "Why a contact margin") | control loop lifts with move_delta (Pilz LIN), never OMPL move_to from the contact pose | OMPL's start-state fix jumped 0.26-1.02 rad from the real state when the board touched the table |
 | S-11 | Pick-zone board added as an obstacle (E-3) | API unchanged (user: no `replace_box` field); **rule: the control loop always calls remove_box for that box before attach_board** (documented in AttachBoard.srv) | an overlap gives START_STATE_IN_COLLISION on every motion |
 | S-10 | contact_margin per request, 0 -> yaml default 0.002 (S-4) | same "0 = default" rule as Grip.timeout / Release.blow_off_time / velocity_scaling; a CLI call without the field gets the safe default. Side effect: an exact 0 margin is impossible (use 1e-6) |
 
@@ -881,16 +882,28 @@ Attached to link `tcp`; touch_links = gripper_link + tcp (the cup sits on the bo
 gripper body cylinder (r 32 mm) 30.0 mm, D405 body box 73.0 mm (it sits at x 64.5..109.3 mm, i.e. above a 270 mm board),
 camera arm box 98.3 mm. -> no tool shape touches the board; touch_links only cover the real cup contact.
 
-**Why a contact margin, why 2 mm:**
-- A box resting on a surface is at distance 0: MoveIt / FCL counts touching as collision. After attach the robot state
-  would be in collision with the table (pick) or the stack (place) -> START_STATE_IN_COLLISION on the lift.
-- The lift / place are `move_delta` = **Pilz LIN, which has no request adapters** (no FixStartStateCollision; implementation-ref sec. 4 "Pilz default: no adapters"):
-  it fails at once. OMPL's FixStartStateCollision may nudge a slightly colliding start state (unpredictable): do not
-  rely on it.
+**Why a contact margin, why 2 mm** (CORRECTED 2026-10-26 with T20c measurements; the first draft said "Pilz LIN
+fails at once on a start state in collision" -> **wrong**):
+- A box resting on a surface is at distance 0 and FCL counts that as a collision (measured: margin 1e-6 m ->
+  `/check_state_validity` reports `board <-> table`, move_group logs "Found a contact between 'table' and 'board'").
+- **Pilz LIN does not check the start state**: with margin 1e-6 m the lift was planned AND executed (SUCCESS, tcp
+  -0.039 -> 0.061). So Pilz alone would not need the margin.
+- **OMPL silently replaces a colliding start state** (request adapter "Fix Start State In Collision", jiggle_fraction
+  0.05, max_sampling_attempts 100): measured from the contact state, attempt 1 "Found a valid state near the start
+  state at distance **1.022** (joint space, rad) after 2 attempts" -> path invalid at index 0, 2 -> our retry (T-3)
+  -> attempt 2 jumped **0.261** -> "SUCCESS". **The plan then starts 0.26-1.0 rad away from where the robot really is**
+  (real robot: a jump at the first point, at best an abort on MoveIt's start tolerance). -> **This is the main reason
+  for the margin**: after attach the robot state must be collision free so OMPL plans from the real state.
+- Also: a collision-free state keeps `/check_state_validity` (our attach warning) meaningful: a warning then always
+  means a real problem (E-2 / E-3).
 - 2 mm: clearly above numeric noise, below the board thickness (teammate board 270 x 200 x 6 mm -> modelled
   **4 mm thick, 33 % shorter**). Same principle as the 1 mm gaps of obstacles.yaml (O-*), larger because a picked board's
   pose is less certain than a static box (cup compression, vision, table estimate). Nothing of the robot fits in 2 mm.
 - Must be < height (validated); for thin boards (<= 2 mm) pass a smaller margin per request.
+- **Rule for the control loop (S-12, follows from the measurement): lift after attach with move_delta (Pilz LIN),
+  never with an OMPL move_to straight from the contact pose.** If the margin is not enough (table higher than the
+  estimate, E-2), Pilz still lifts from the real state, OMPL would jump. Open question (T25): remove the OMPL
+  "Fix Start State In Collision" adapter, so OMPL fails clearly (START_STATE_IN_COLLISION) instead of jumping?
 
 **Stack model:** detach(keep) -> `stack_<n>` with the attached shape (S-9): top = real top of the placed board, bottom
 2 mm above the layer below (floating gap, harmless). Next place: tcp goes to stack top + height -> the new attached
@@ -969,6 +982,7 @@ The rationale below is only what was recorded at the time.
 | T21 | Frozen read-back warning in motion_controller (X-4) | open |
 | T22 | Reject unknown bringup launch args (X-7) | open |
 | T23 | Commit gripper test scripts + mock XML-RPC server (X-1 / D1) | open |
+| T25 | Remove OMPL request adapter "Fix Start State In Collision" (ompl_planning.yaml)? It silently replaced a colliding start state by one 0.26-1.02 rad away (T20c, 5n-1). Ask user | open (decision) |
 | T24 | Team README: run, ROS names, interfaces, result codes (X-8) | open, last of this session |
 | T8 | OPTIONAL IK benchmark KDL vs pick_ik (`/compute_ik`, same random tcp poses: success rate, time, joint distance to seed; throwaway `pixi add`). **Only if KDL fails noticeably** (IK failures in move_to/move_delta/RViz drag). Not in the step plan. | open, optional |
 
