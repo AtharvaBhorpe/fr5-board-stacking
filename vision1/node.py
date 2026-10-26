@@ -18,7 +18,7 @@ from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
 sys.path.insert(0, os.path.dirname(__file__))
-from detect import detect  # noqa: E402
+from detect import detect, draw  # noqa: E402
 import table  # noqa: E402
 
 
@@ -99,6 +99,12 @@ class Vision1(Node):
         msg = {"stamp": time.time(), "image_size": [frame.shape[1], frame.shape[0]],
                "source": self.device, "calibrated": self.calib is not None, "boards": boards, "rejected": rejected}
         self.last = json.dumps(msg)
+        if time.time() - getattr(self, "saved", 0) > 2.0:  # debug overlay for the lab, every 2 s
+            self.saved = time.time()
+            img = draw(frame, boards)
+            for r in rejected:
+                cv2.putText(img, r["reason"], (int(r["u"]) - 90, int(r["v"])), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 255), 3)
+            cv2.imwrite("/tmp/vision1_last.jpg", img)
         self.pub.publish(String(data=self.last))
         return True
 
