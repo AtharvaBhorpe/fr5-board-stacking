@@ -360,7 +360,8 @@ private:
     const bool ok = status == QProcess::NormalExit && code == 0;
     const bool stopped = status == QProcess::CrashExit;  // Ctrl+C: python re-raises SIGINT
     line(QString("[panel] pick_one finished, %1").arg(stopped ? "stopped" : QString("exit code %1").arg(code)));
-    run_->setText(ok ? QString("<b style='color:#43a047'>robot: %1 placed</b>").arg(variant_) :
+    const QString done = args_->text().contains("--hover-only") ? "hover done, check the cup position" : "placed";
+    run_->setText(ok ? QString("<b style='color:#43a047'>robot: %1 %2</b>").arg(variant_, done) :
       stopped ? QString("<b style='color:#e53935'>robot: %1 stopped.</b> If the cup still holds the board, "
       "release it: pixi run shell, then: release").arg(variant_) :
       QString("<b style='color:#e53935'>robot: %1 failed (exit %2), see log</b>").arg(variant_).arg(code));
