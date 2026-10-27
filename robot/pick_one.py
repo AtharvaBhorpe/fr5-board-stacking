@@ -7,7 +7,7 @@
 
 Sequence: park out of the overhead camera view (PARK), read vision, hover 10 cm above the board centre -> ENTER -> straight down to the board top -> grip -> lift 10 cm ->
 attach -> ENTER -> detach -> back down -> release -> lift. The board ends where it started. Ctrl+C any time = stop.
---place: after the lift, carry it to the destination template of its variant (vision `destinations`: tag 1 / 2 / 16
+--place: (wrist D405: first look at the template's stack height, empty-handed) after the lift, carry it to the destination template of its variant (vision `destinations`: tag 1 / 2 / 16
 + team offsets), ENTER, down onto the template (+ --stack boards already there), release, lift.
 --variant X covered by other boards (learned model only: vision `occluded`): the covering top board goes to the
 --temp spot first (stacked there), vision looks again, repeat (max MAX_CLEAR), then X is picked.
@@ -37,6 +37,7 @@ TEMP_CLEARANCE = 0.30  # m from any destination template centre (biggest board h
 MAX_CLEAR = 4          # boards moved to the temp spot before giving up
 PARK = (-0.233, -0.096, 0.243, 1.543)  # x, y, z, tool yaw: robot startup pose, arm clear of the overhead pick-area view
 TABLE_Z = -0.060       # table top, base_link (fr5-board-stacking obstacles.yaml, measured)
+SCAN_ABOVE = 0.13      # m above the empty template for the wrist camera look at its stack (D405 needs > 7 cm)
 WRIST_HIGHER = 0.06    # D405 board top accepted up to this much above one board on the table (stack of ~12) ...
 WRIST_LOWER = 0.01     # ... and this much below it; else the fixed height is used
 
@@ -48,7 +49,8 @@ ap.add_argument("--press", type=float, default=4.0,
                      "the board, but MoveIt's table (top -0.060, cup collision 5 mm short of tcp) refuses > ~4 mm. "
                      "Real fix: measure where the cup touches the table and correct table_top_z / tcp_z")
 ap.add_argument("--place", action="store_true", help="place on the destination template instead of putting back")
-ap.add_argument("--stack", type=int, default=0, help="--place: boards already lying on that template")
+ap.add_argument("--stack", type=int, default=0,
+                help="--place: boards already lying on that template (fallback: with the wrist D405 it is measured)")
 ap.add_argument("--temp", type=float, nargs=2, default=(-0.25, 0.10), metavar=("X", "Y"),
                 help="base_link x y (m) of the free spot for boards that cover the requested one (left table)")
 ap.add_argument("--speed", type=float, default=0.1, help="velocity_scaling, first runs <= 0.2")
@@ -298,12 +300,36 @@ for _ in range(MAX_CLEAR + 1):
     moved += 1
     msg = park_and_look()
 
+def template_top(d):
+    """Top of the stack on template d from the wrist D405, looked at BEFORE the pick (the held board hides the
+    template from the camera). None = no D405 / implausible: use --stack."""
+    if not wd:
+        return None
+    print(f"  looking at the {d['variant']} template with the wrist camera (boards already on it?)")
+    check("template look", act(move_to, MoveTo.Goal(x=d["x"], y=d["y"], z=d["support_z"] + SCAN_ABOVE,
+                                                    yaw=tool_yaw(d), velocity_scaling=args.speed)))
+    m = wd.measure(d["x"], d["y"])
+    if m is None:
+        print("  D405: no measurement at the template, using --stack")
+        return None
+    rel = m["top_z"] - m["table_z"]  # relative to the table in the same view: the absolute value reads 3-7 mm low
+    top = TABLE_Z + rel if abs(m["table_z"] - TABLE_Z) < 0.012 and rel > 0.002 else m["top_z"]
+    if not d["support_z"] - WRIST_LOWER <= top <= d["support_z"] + WRIST_HIGHER:
+        print(f"  D405: implausible stack top z={top:.4f} on the template, using --stack")
+        return None
+    print(f"  D405: template stack top z={top:.4f}, {1000 * (top - d['support_z']):.1f} mm above the empty template "
+          f"(~{max(0, round((top - d['support_z']) / BOARD_H))} board(s) on it)")
+    return top
+
+
 if args.place:
     d = dests[b["variant"]]
+    top = template_top(d)
+    pz = place_z(d) if top is None else top + BOARD_H  # cup tip = top of the board being placed
     print(f"  destination {d['variant']} (tag {d['tag_id']}) at x={d['x']:.4f} y={d['y']:.4f} "
-          f"yaw={math.degrees(d['yaw']):.1f} deg, place top z={place_z(d):.3f}, median of {d.get('frames', 1)} "
-          f"frames, seen {d['age']} s ago")
-    transfer(b, (d["x"], d["y"], place_z(d), tool_yaw(d)), "put it down on its template")
+          f"yaw={math.degrees(d['yaw']):.1f} deg, place top z={pz:.3f} ({'D405' if top is not None else '--stack'}), "
+          f"median of {d.get('frames', 1)} frames, seen {d['age']} s ago")
+    transfer(b, (d["x"], d["y"], pz, tool_yaw(d)), "put it down on its template")
 else:
     transfer(b)
 park()  # after the drop: out of the camera view, ready for the next pick
