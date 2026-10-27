@@ -23,5 +23,6 @@ gripper:                    # Schmalz vacuum gripper
   body_radius: 0.032
   body_length: 0.0734       # mount face -> start of cup
   cup_radius: 0.018
-  tcp_z: 0.1034             # mount face -> relaxed cup tip (flange -> tip = 0.1129)
+  tcp_z: 0.0979             # mount face -> relaxed cup tip (flange -> tip = 0.1074). Was 0.1034: real cup touched
+                            # 5.5 / 4.8 mm higher (jog contact tests on 1 and 2 boards, 2026-10-27)
   cup_collision_gap: 0.005  # cup collision stops this far short of tcp
