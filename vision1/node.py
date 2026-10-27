@@ -58,24 +58,9 @@ class Vision1(Node):
         self.use_model = bool(self.declare_parameter("model", False).value)  # learned segmenter (stacks, UNKWN)
         focus = int(self.declare_parameter("focus", 15).value)  # fixed focus as in the team calibration; -1 = leave as is
         self.still = cv2.imread(device) if os.path.isfile(device) else None
+        self.focus, self.fails = focus, 0
         if self.still is None:
-            index = int(device) if device.isdigit() else find_camera(device)
-            self.cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
-            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))  # 1080p at 30 fps (YUYV: ~5 fps)
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # latest frame, not a stale queue
-            if not self.cap.isOpened():
-                raise RuntimeError(f"cannot open camera {device!r}")
-            if focus >= 0:
-                self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
-                self.cap.set(cv2.CAP_PROP_FOCUS, focus)
-            ok, f = self.cap.read()
-            if not ok or f.shape[:2] != (1080, 1920):
-                raise RuntimeError(f"camera {device!r} gives {None if not ok else f.shape[1::-1]}, need 1920x1080 "
-                                   "(the calibration is for that size)")
-            self.get_logger().info(f"camera /dev/video{index}: 1920x1080, autofocus "
-                                   f"{self.cap.get(cv2.CAP_PROP_AUTOFOCUS):.0f}, focus {self.cap.get(cv2.CAP_PROP_FOCUS):.0f}")
+            self.open_camera(device)
         try:
             self.calib = table.load()
         except (OSError, ValueError) as e:
@@ -94,6 +79,27 @@ class Vision1(Node):
         self.create_timer(1.0 / rate, self.tick)
         self.get_logger().info(f"publishing /vision/boards at {rate} Hz from {device!r}")
 
+    def open_camera(self, device):
+        """(Re)open the camera by name: after a USB hub reset it comes back under a new /dev/video index."""
+        focus = self.focus
+        index = int(device) if device.isdigit() else find_camera(device)
+        self.cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))  # 1080p at 30 fps (YUYV: ~5 fps)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # latest frame, not a stale queue
+        if not self.cap.isOpened():
+            raise RuntimeError(f"cannot open camera {device!r}")
+        if focus >= 0:
+            self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+            self.cap.set(cv2.CAP_PROP_FOCUS, focus)
+        ok, f = self.cap.read()
+        if not ok or f.shape[:2] != (1080, 1920):
+            raise RuntimeError(f"camera {device!r} gives {None if not ok else f.shape[1::-1]}, need 1920x1080 "
+                               "(the calibration is for that size)")
+        self.get_logger().info(f"camera /dev/video{index}: 1920x1080, autofocus "
+                               f"{self.cap.get(cv2.CAP_PROP_AUTOFOCUS):.0f}, focus {self.cap.get(cv2.CAP_PROP_FOCUS):.0f}")
+
     def snapshot(self, _req, res):
         if self.still is None:
             self.cap.grab()  # drop the buffered frame so the answer is fresh
@@ -109,7 +115,16 @@ class Vision1(Node):
             ok, frame = self.cap.read()
             if not ok:
                 self.get_logger().warn("camera read failed", throttle_duration_sec=2.0)
+                self.fails += 1
+                if self.fails % 10 == 0:  # ~2 s of failures: USB re-enumerated? reopen by name
+                    try:
+                        self.cap.release()
+                        self.open_camera(self.device)
+                        self.get_logger().info("camera reopened")
+                    except RuntimeError as e:
+                        self.get_logger().warn(f"camera reopen failed: {e}")
                 return False
+            self.fails = 0
         rejected, tags, occluded = [], [], []
         boards = detect(frame, rejected, tags, use_model=self.use_model)
         if self.calib is not None:

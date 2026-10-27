@@ -144,7 +144,7 @@ public:
         if (!img.isNull()) {QMetaObject::invokeMethod(this, [this, img] {onImage(img);}, Qt::QueuedConnection);}
       });
     wrist_sub_ = node_->create_subscription<sensor_msgs::msg::Image>(
-      "/wrist/wrist_camera/color/image_rect_raw", rclcpp::SensorDataQoS(),
+      "/wrist/wrist_camera/color/image_raw", rclcpp::SensorDataQoS(),
       [this](sensor_msgs::msg::Image::ConstSharedPtr m) {
         QImage img = toQImage(*m);
         if (!img.isNull()) {QMetaObject::invokeMethod(this, [this, img] {onWrist(img);}, Qt::QueuedConnection);}

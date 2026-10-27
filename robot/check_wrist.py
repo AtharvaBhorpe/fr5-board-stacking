@@ -79,7 +79,7 @@ def main():
     tf = Buffer()
     TransformListener(tf, n)
     st = {"img": None, "info": None, "boards": None}
-    n.create_subscription(Image, f"{NS}/image_rect_raw", lambda m: st.update(img=m), qos_profile_sensor_data)
+    n.create_subscription(Image, f"{NS}/image_raw", lambda m: st.update(img=m), qos_profile_sensor_data)
     n.create_subscription(CameraInfo, f"{NS}/camera_info", lambda m: st.update(info=m), qos_profile_sensor_data)
     n.create_subscription(String, "/vision/boards", lambda m: st.update(boards=json.loads(m.data)), 1)
     pub = n.create_publisher(Image, "/wrist/check", 2)
