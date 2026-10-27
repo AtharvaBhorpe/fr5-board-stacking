@@ -1,0 +1,21 @@
+{
+  "variant": "VARc",
+  "chat": false,
+  "passed": true,
+  "seconds": 41.48,
+  "phases": [
+    "completed",
+    "running",
+    "waiting"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793114498.639,
+    "task_id": "ae7795a8-537e-4e59-ac22-00a4ae9fb36c",
+    "waiting": false
+  },
+  "conversation": []
+}

@@ -1,0 +1,21 @@
+{
+  "variant": "VARa",
+  "chat": false,
+  "passed": true,
+  "seconds": 22.28,
+  "phases": [
+    "running",
+    "waiting",
+    "completed"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793114725.322,
+    "task_id": "66f7d339-61a1-4ab2-ad77-fd3a1124321a",
+    "waiting": false
+  },
+  "conversation": []
+}

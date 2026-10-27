@@ -162,7 +162,7 @@ class Vision1(Node):
         zones = sorted((dict(z, yaw=round((z["yaw"] + math.pi / 2) % math.pi - math.pi / 2, 4))
                         for z in recall(self.zones, now)), key=lambda z: z["name"])
         msg = {"stamp": now, "destinations": dests, "zones": zones, "image_size": [frame.shape[1], frame.shape[0]],
-               "source": self.device, "calibrated": self.calib is not None, "boards": boards, "occluded": occluded, "rejected": rejected}
+               "source": self.device, "live": self.still is None, "calibrated": self.calib is not None, "boards": boards, "occluded": occluded, "rejected": rejected}
         self.last = json.dumps(msg)
         img = self.annotate(frame, boards, occluded, rejected, tags)
         if time.time() - getattr(self, "saved", 0) > 2.0:  # debug overlay for the lab, every 2 s

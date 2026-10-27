@@ -14,6 +14,8 @@ detect = "python vision1/detect.py"
 check = "python vision1/check_samples.py"
 eval = "python vision1/eval_dataset.py"
 listen = "python vision1/listen.py"
+conversation = "python conversation/bridge.py"
+conversation-check = "python -m unittest discover -s conversation/tests -v"
 # Wrist RealSense D405 -> /wrist/wrist_camera/... (color, depth, point cloud), placed on the robot model
 wrist = "ros2 launch vision1/wrist.launch.py"
 
@@ -45,6 +47,11 @@ platforms = ["linux-64-cuda"]
 
 [feature.gpu.dependencies]
 onnxruntime = { version = "*", build = "*cuda*" }
+
+[feature.train.pypi-dependencies]
+transformers = ">=4.57,<5"
+accelerate = ">=1,<2"
+faster-whisper = ">=1.1,<2"
 
 [environments]
 train = { features = ["train"], no-default-feature = true }

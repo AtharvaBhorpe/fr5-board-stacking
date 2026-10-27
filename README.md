@@ -1,3 +1,5 @@
+> **Conversation MVP1 on `feat/robot-conversation`:** [launch, interfaces, test evidence and hardware handoff](conversation/README.md).
+
 # Vision 1 (overhead cam) + Vision 2 (wrist cam): board detection, wrist depth and supervised pick / place (branch `feat/vision1-overhead`)
 
 This branch is a standalone pixi workspace (ROS 2 Humble, RoboStack) that runs **next to** the robot workspace

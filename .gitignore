@@ -9,3 +9,5 @@ label_real/
 build_panel/
 install_panel/
 log/
+
+.tools/

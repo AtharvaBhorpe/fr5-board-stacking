@@ -25,6 +25,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QSet>
+#include <QScrollArea>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <pluginlib/class_list_macros.hpp>
@@ -51,8 +52,15 @@ class PickPanel : public rviz_common::Panel
 public:
   explicit PickPanel(QWidget * parent = nullptr) : Panel(parent)
   {
-    auto * lay = new QVBoxLayout(this);
+    auto * outer = new QVBoxLayout(this);
+    auto * scroll = new QScrollArea;
+    auto * content = new QWidget;
+    auto * lay = new QVBoxLayout(content);
+    scroll->setWidget(content);
+    scroll->setWidgetResizable(true);
+    outer->addWidget(scroll);
     setMinimumWidth(560);
+    setStyleSheet("QLabel,QLineEdit,QPushButton {font-size:14px;} QPlainTextEdit {font-size:12px;}");
     status_ = new QLabel;  // live health of everything the demo needs (refresh())
     status_->setWordWrap(true);
     status_->setStyleSheet("font-size:13px");
@@ -76,12 +84,13 @@ public:
     lay->addWidget(wrist_, 3);
     vision_ = new QLabel("vision: waiting for /vision/boards (pixi run vision)");
     vision_->setWordWrap(true);
+    vision_->setMinimumHeight(60);
     lay->addWidget(vision_);
     lay->addWidget(new QLabel("<b>Click a variant (or a board in the image) to pick and place it:</b>"));
     auto * row = new QHBoxLayout;
     for (const auto & v : VARIANTS) {
       auto * b = new QPushButton(v);
-      b->setMinimumHeight(105);
+      b->setMinimumHeight(78);
       b->setEnabled(false);
       connect(b, &QPushButton::clicked, this, [this, v] {start(v, "button");});
       row->addWidget(b);
@@ -100,7 +109,7 @@ public:
     auto * ctl = new QHBoxLayout;
     confirm_ = new QPushButton("Confirm (ENTER)");
     stop_ = new QPushButton("Stop script");
-    stop_->setToolTip("Ctrl+C to pick_one. A motion already sent still finishes: the e-stop is on the pendant.");
+    stop_->setToolTip("Cancel the active pick action. This is not the emergency stop; use the pendant for emergencies.");
     for (auto * b : {confirm_, stop_}) {
       b->setEnabled(false);
       b->setMinimumHeight(50);
@@ -113,10 +122,47 @@ public:
     log_->setReadOnly(true);
     log_->setMaximumBlockCount(2000);
     log_->setFont(QFont("Monospace", 9));
+    log_->setMaximumHeight(110);
     lay->addWidget(log_, 1);
+    chat_ = new QPlainTextEdit;
+    chat_->setReadOnly(true);
+    chat_->setMaximumBlockCount(200);
+    chat_->setFixedHeight(110);
+    chat_->setPlaceholderText("Local assistant: start the conversation bridge and model server.");
+    outer->addWidget(chat_);
+    chat_status_ = new QLabel("Assistant: offline");
+    outer->addWidget(chat_status_);
+    auto * chat_row = new QHBoxLayout;
+    chat_input_ = new QLineEdit;
+    chat_input_->setPlaceholderText("Pick variant B / what do you see? / status / stop");
+    auto * send = new QPushButton("Send");
+    auto * talk = new QPushButton("Hold to talk");
+    auto * clear = new QPushButton("Clear chat");
+    chat_row->addWidget(chat_input_, 1);
+    chat_row->addWidget(send);
+    chat_row->addWidget(talk);
+    chat_row->addWidget(clear);
+    outer->addLayout(chat_row);
+    auto submit = [this] {
+        if (!chat_input_->text().trimmed().isEmpty() && chat_pub_) {
+          std_msgs::msg::String m; m.data = chat_input_->text().toStdString();
+          chat_pub_->publish(m); chat_input_->clear();
+        }
+      };
+    connect(send, &QPushButton::clicked, this, submit);
+    connect(chat_input_, &QLineEdit::returnPressed, this, submit);
+    connect(talk, &QPushButton::pressed, this, [this] {chatControl("ptt_start");});
+    connect(talk, &QPushButton::released, this, [this] {chatControl("ptt_stop");});
+    connect(clear, &QPushButton::clicked, this, [this] {chatControl("clear");});
+    if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {
+      args_->setText("--speed 0.3 --no-wrist-height");
+    }
     auto * t = new QTimer(this);
     connect(t, &QTimer::timeout, this, &PickPanel::refresh);
     t->start(500);
+    if (qEnvironmentVariableIsSet("CONVERSATION_SCREENSHOT")) {
+      QTimer::singleShot(8000, this, [this] {window()->grab().save(qEnvironmentVariable("CONVERSATION_SCREENSHOT"));});
+    }
   }
 
   ~PickPanel() override
@@ -170,6 +216,22 @@ public:
         QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->state)] {gripper_ = s;}, Qt::QueuedConnection);
       });
     log_pub_ = node_->create_publisher<std_msgs::msg::String>("/pick_panel/log", 50);
+    state_pub_ = node_->create_publisher<std_msgs::msg::String>("/pick_panel/state", 10);
+    chat_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/input", 10);
+    chat_control_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/control", 10);
+    chat_sub_ = node_->create_subscription<std_msgs::msg::String>("/conversation/output", 20,
+      [this](std_msgs::msg::String::ConstSharedPtr m) {
+        QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->data)] {
+          const auto o = QJsonDocument::fromJson(s.toUtf8()).object();
+          if (o["phase"].toString() == "clear") {chat_->clear();}
+          chat_->appendPlainText(o["role"].toString() + ": " + o["text"].toString());
+          chat_status_->setText("Assistant: " + o["phase"].toString());
+        }, Qt::QueuedConnection);
+      });
+    task_sub_ = node_->create_subscription<std_msgs::msg::String>("/conversation/task", 10,
+      [this](std_msgs::msg::String::ConstSharedPtr m) {
+        QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->data)] {onTask(s);}, Qt::QueuedConnection);
+      });
   }
 
   void save(rviz_common::Config config) const override
@@ -185,6 +247,7 @@ public:
     if (config.mapGetString("extra_args", &s)) {
       args_->setText(s);
     }
+    if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {args_->setText("--speed 0.3 --no-wrist-height");}
   }
 
 protected:
@@ -215,6 +278,39 @@ protected:
   }
 
 private:
+  void chatControl(const char * command)
+  {
+    if (chat_control_pub_) {std_msgs::msg::String m; m.data = command; chat_control_pub_->publish(m);}
+  }
+
+  void publishState()
+  {
+    if (!state_pub_) {return;}
+    const QJsonObject o{{"stamp", QDateTime::currentMSecsSinceEpoch() / 1000.0},
+      {"hardware", hw_kind_}, {"busy", running()}, {"waiting", waiting_},
+      {"task_id", task_id_}, {"phase", waiting_ ? QString("waiting") : phase_}, {"detail", detail_}};
+    std_msgs::msg::String m; m.data = QJsonDocument(o).toJson(QJsonDocument::Compact).toStdString();
+    state_pub_->publish(m);
+  }
+
+  void onTask(const QString & json)
+  {
+    const auto o = QJsonDocument::fromJson(json.toUtf8()).object();
+    const auto id = o["id"].toString();
+    const auto v = o["variant"].toString();
+    const double age = QDateTime::currentMSecsSinceEpoch()/1000.0 - o["stamp"].toDouble();
+    if (id.isEmpty() || seen_tasks_.contains(id)) {return;}
+    seen_tasks_.insert(id);
+    // Do not overwrite correlation for an active task with a rejected second request.
+    if (running()) {line("[panel] conversation task rejected: already running"); return;}
+    task_id_ = id;
+    detail_ = age < 0 || age > 2 ? "expired request" :
+      !VARIANTS.contains(v) ? "invalid variant" : blocked(v);
+    if (hw_kind_ != "SIMULATION" && hw_kind_ != "REAL FR5") {detail_ = "unknown robot hardware";}
+    if (!detail_.isEmpty()) {phase_ = "rejected"; publishState(); return;}
+    start(v, "conversation");
+  }
+
   static QImage toQImage(const sensor_msgs::msg::Image & m)
   {
     if (m.encoding != "bgr8" && m.encoding != "rgb8") {return {};}
@@ -272,6 +368,8 @@ private:
     }
     calibrated_ = o["calibrated"].toBool();
     source_ = o["source"].toString();
+    live_ = o["live"].toBool(false);
+    observed_ms_ = static_cast<qint64>(o["stamp"].toDouble() * 1000);
     last_ms_ = QDateTime::currentMSecsSinceEpoch();
     refresh();
   }
@@ -281,6 +379,9 @@ private:
   {
     const double age = (QDateTime::currentMSecsSinceEpoch() - last_ms_) / 1000.0;
     if (!last_ms_ || age > STALE_S) {return "no vision data";}
+    const auto observed_age = QDateTime::currentMSecsSinceEpoch() - observed_ms_;
+    if (!observed_ms_ || observed_age < 0 || observed_age > 2000) {return "stale observation timestamp";}
+    if (hw_kind_ != "SIMULATION" && !live_) {return "replay cannot command real hardware";}
     if (!calibrated_) {return "camera not calibrated";}
     if (free_.value(v) + under_.value(v) == 0) {return "none detected";}
     if (!dests_.contains(v)) {return "its template is not visible";}
@@ -333,6 +434,7 @@ private:
     stop_->setEnabled(running());
     confirm_->setEnabled(waiting_);
     confirm_->setStyleSheet(waiting_ ? "QPushButton{background:#f9a825;color:black;font-weight:bold}" : "");
+    publishState();
   }
 
   void onRequest(const QString & req)
@@ -363,7 +465,7 @@ private:
     connect(proc_, &QProcess::readyRead, this, &PickPanel::onOutput);
     connect(proc_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this, &PickPanel::onFinished);
     connect(proc_, &QProcess::errorOccurred, this, [this](QProcess::ProcessError e) {
-      if (e == QProcess::FailedToStart) {line("[panel] could not start python3: is RViz in the robot env?");}
+      if (e == QProcess::FailedToStart) {phase_ = "failed"; line("[panel] could not start python3: is RViz in the robot env?"); publishState();}
     });
     QStringList a = {"-u", PICK_ONE, "--place", "--variant", v};
     a += QProcess::splitCommand(args_->text());
@@ -373,6 +475,9 @@ private:
     variant_ = v;
     line(QString("[panel] %1 requested (%2): python3 %3").arg(v, src, a.join(' ')));
     run_->setText(QString("<b>robot: pick and place %1 running</b>").arg(v));
+    if (src != "conversation") {task_id_.clear();}
+    phase_ = "running";
+    detail_.clear();
     proc_->start("python3", a);
     refresh();
   }
@@ -401,7 +506,9 @@ private:
       return;
     }
     ::kill(proc_->processId(), SIGINT);
+    phase_ = "stopping";
     line("[panel] Ctrl+C sent to pick_one");
+    publishState();
     QTimer::singleShot(3000, this, [p = QPointer<QProcess>(proc_)] {
       if (p && p->state() != QProcess::NotRunning) {p->kill();}
     });
@@ -432,7 +539,9 @@ private:
     }
     waiting_ = false;
     const bool ok = status == QProcess::NormalExit && code == 0;
-    const bool stopped = status == QProcess::CrashExit;  // Ctrl+C: python re-raises SIGINT
+    phase_ = ok ? "completed" : "failed";
+    const bool stopped = status == QProcess::CrashExit || code == 130;  // Ctrl+C: python re-raises SIGINT
+    if (stopped) {phase_ = "stopped";}
     line(QString("[panel] pick_one finished, %1").arg(stopped ? "stopped" : QString("exit code %1").arg(code)));
     const QString done = args_->text().contains("--hover-only") ? "hover done, check the cup position" : "placed";
     run_->setText(ok ? QString("<b style='color:#43a047'>robot: %1 %2</b>").arg(variant_, done) :
@@ -455,6 +564,15 @@ private:
     }
   }
 
+  QPlainTextEdit * chat_;
+  QLineEdit * chat_input_;
+  QLabel * chat_status_;
+  QString task_id_, phase_ = "idle", detail_;
+  QSet<QString> seen_tasks_;
+  bool live_ = false;
+  qint64 observed_ms_ = 0;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state_pub_, chat_pub_, chat_control_pub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr chat_sub_, task_sub_;
   QLabel * cam_, * wrist_, * vision_, * run_;
   QImage img_, wrist_img_;
   qint64 wrist_ms_ = 0, joints_ms_ = 0;

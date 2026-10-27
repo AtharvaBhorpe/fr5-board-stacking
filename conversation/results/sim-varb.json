@@ -1,0 +1,21 @@
+{
+  "variant": "VARb",
+  "chat": false,
+  "passed": true,
+  "seconds": 37.1,
+  "phases": [
+    "running",
+    "waiting",
+    "completed"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793114407.662,
+    "task_id": "268b5cf1-f66f-4a37-bb40-d90d10a48240",
+    "waiting": false
+  },
+  "conversation": []
+}

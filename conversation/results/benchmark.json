@@ -1,0 +1,595 @@
+{
+  "summary": {
+    "vlm_turns": 30,
+    "vlm_complete_p95_s": 0.634515938099912,
+    "visual_agreement_passes": 20,
+    "visual_agreement_cases": 20,
+    "synthetic_asr_turns": 30,
+    "asr_p95_s": 0.3357851589998518,
+    "asr_intent_matches": 30,
+    "asr_wrong_actions": 0,
+    "limitations": "Synthetic speech, recorded scene. Not live microphone or full PTT-to-spoken-answer latency."
+  },
+  "cases": [
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5740062150007361,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5635322759999326
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.574840812999355,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5722137749999092
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.6023266709999007,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.5997316830007549
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5809303100004399,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5780466200003502
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5275199090001479,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5256861309999294
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.642124142999819,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6396141549994354
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5450692290005463,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5427965159997257
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5735760659999869,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5706382729995312
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.6176669989999937,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6150577229991541
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.563053064000087,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5606093509995844
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5691669079997155,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5663382999991882
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.624692524999773,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6213073720000466
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5624382989999503,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5599749689999953
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5527521799995156,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5510278599995218
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.6178121519997148,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6158134140005131
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5381301039997197,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5353067169999122
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.552708358000018,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.550047867000103
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.6198422880006547,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6168712629996662
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5593413369997506,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5570489479996468
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5536433059996853,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5511450999993031
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.6252170210000259,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6221353890005048
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5526381859999674,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5509689679993244
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5397763789997043,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5381880529994305
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.647352089999913,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6449633509992054
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5533213609996892,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5515773230008563
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.5472261029999572,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5444082160001926
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.615500265999799,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6129613429993697
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARb",
+      "seconds": 0.5632916029999251,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5608091869999043
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "pick VARc",
+      "seconds": 0.558039909999934,
+      "agreement": true,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "yes",
+        "seconds": 0.5560980810005276
+      }
+    },
+    {
+      "kind": "vlm",
+      "input": "Describe the visible scene in one short sentence.",
+      "seconds": 0.6186344770003416,
+      "agreement": null,
+      "result": {
+        "answer": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a robotic arm is in the center of the scene.",
+        "seconds": 0.6159016999999949
+      }
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant A.",
+      "transcript": "Pick variant A.",
+      "seconds": 0.3980735840004854,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant B.",
+      "transcript": "Pick variant B.",
+      "seconds": 0.30164814199997636,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant C.",
+      "transcript": "Pick variant C.",
+      "seconds": 0.29635447100008605,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Stop.",
+      "transcript": "Stop.",
+      "seconds": 0.2672668320001321,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Robot status.",
+      "transcript": "Robot status.",
+      "seconds": 0.26493848500012973,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Do not pick variant B.",
+      "transcript": "Do not pick variant B.",
+      "seconds": 0.288923132000491,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick two variant A boards.",
+      "transcript": "Pick variant Amords.",
+      "seconds": 0.2847502969998459,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick that white board.",
+      "transcript": "Pick net whiteboard.",
+      "seconds": 0.29729066000072635,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "What do you see?",
+      "transcript": "What do you see?",
+      "seconds": 0.2936001629996099,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Confirm descent.",
+      "transcript": "Confirm this end.",
+      "seconds": 0.2931155120004405,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant A.",
+      "transcript": "Pick variant A.",
+      "seconds": 0.336819547000232,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant B.",
+      "transcript": "Pick variant B.",
+      "seconds": 0.24377476100016793,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant C.",
+      "transcript": "Pick variant C.",
+      "seconds": 0.3198869679999916,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Stop.",
+      "transcript": "Stop.",
+      "seconds": 0.2669645739997577,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Robot status.",
+      "transcript": "Robot status.",
+      "seconds": 0.2728507780002474,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Do not pick variant B.",
+      "transcript": "Do not pick variant B.",
+      "seconds": 0.26406000400038465,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick two variant A boards.",
+      "transcript": "Pick variant Amords.",
+      "seconds": 0.3254679989995566,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick that white board.",
+      "transcript": "Pick net whiteboard.",
+      "seconds": 0.33431521999955294,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "What do you see?",
+      "transcript": "What do you see?",
+      "seconds": 0.29024557699995057,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Confirm descent.",
+      "transcript": "Confirm this end.",
+      "seconds": 0.31995416399968235,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant A.",
+      "transcript": "Pick variant A.",
+      "seconds": 0.28018044700002065,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant B.",
+      "transcript": "Pick variant B.",
+      "seconds": 0.3345209069993871,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick variant C.",
+      "transcript": "Pick variant C.",
+      "seconds": 0.2756727329997375,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Stop.",
+      "transcript": "Stop.",
+      "seconds": 0.24251730699961627,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Robot status.",
+      "transcript": "Robot status.",
+      "seconds": 0.2814093169999978,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Do not pick variant B.",
+      "transcript": "Do not pick variant B.",
+      "seconds": 0.2872999510000227,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick two variant A boards.",
+      "transcript": "Pick variant Amords.",
+      "seconds": 0.2848505260008096,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Pick that white board.",
+      "transcript": "Pick net whiteboard.",
+      "seconds": 0.28445455099972605,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "What do you see?",
+      "transcript": "What do you see?",
+      "seconds": 0.29267750899998646,
+      "intent_matches": true,
+      "wrong_action": false
+    },
+    {
+      "kind": "synthetic_asr",
+      "input": "Confirm descent.",
+      "transcript": "Confirm this end.",
+      "seconds": 0.28453227699992567,
+      "intent_matches": true,
+      "wrong_action": false
+    }
+  ]
+}
