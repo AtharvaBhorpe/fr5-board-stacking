@@ -12,8 +12,8 @@ zone_margin: 0.030             # CL-7: zone + margin reserved for processing / d
 max_stack: 10                  # drop-off / fault: FULL at this count
 fixed_zones:                   # CL-15 fallback, used only while Vision 1 does not detect that zone.
   # CL-39: the fault zone is a VOID (boards put there leave the world, no stack, never FULL, no scene box).
-  # PLACEHOLDER position (reachable, behind the table): TODO lab - measure the real spot (decision-log TM-O5)
-  - {name: fault, kind: fault, x: -0.30, y: 0.70, yaw: 0.0, length: 0.25, width: 0.20, z: -0.060}
+  # Measured 2026-10-27 (TM-29): hand-guided cup tip over the drop spot behind the base (read-only port 20004, tcp_z 0.1074)
+  - {name: fault, kind: fault, x: 0.4287, y: 0.7108, yaw: 0.0, length: 0.25, width: 0.20, z: -0.060}
 
 work_area:                     # obstacles inside (+ margin) stop / pause motion
   x: [-0.90, 0.15]

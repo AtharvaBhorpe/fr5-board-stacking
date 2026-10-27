@@ -61,9 +61,9 @@ def sep(a, b):
 pts = [p for r in zones[:-1] + boards for p in corners(r)]
 check("layout: every zone / board corner inside the calibrated area (x -0.66..0.09, y -0.86..0.84)",
       all(-0.66 <= x <= 0.09 and -0.86 <= y <= 0.84 for x, y in pts))
-check("layout: every zone / board centre 0.30-0.80 m from the base",
-      all(0.30 <= math.hypot(r["x"], r["y"]) <= 0.80 for r in zones + boards),
-      str([round(math.hypot(r["x"], r["y"]), 2) for r in zones + boards]))
+check("layout: every scenario zone / board centre 0.30-0.80 m from the base (the config fault zone is measured on the "
+      "robot, TM-29)", all(0.30 <= math.hypot(r["x"], r["y"]) <= 0.80 for r in zones[:len(SCN["zones"])] + boards),
+      str([round(math.hypot(r["x"], r["y"]), 2) for r in zones[:len(SCN["zones"])] + boards]))
 arm = [M.capsule((0.0, 0.0), tuple(MCFG["home_xy"]), 0.12)]
 check("layout: nothing under the arm at home (CL-34)", not any(M.hits(arm, corners(r)) for r in zones + boards))
 check("layout: centres >= 0.20 m off the y = 0 mounting profile", all(abs(r["y"]) >= 0.20 for r in zones + boards))

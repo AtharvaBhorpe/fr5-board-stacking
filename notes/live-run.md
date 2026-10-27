@@ -11,8 +11,7 @@ All terminals: the same `ROS_DOMAIN_ID` (unset = 0); `ROS_LOCALHOST_ONLY` unset 
 
 - [x] Vision 1 runs on THIS PC (C9), GPU env installed (TM-28). After the teammate pushes zone values:
       `cd ~/hackathon/wt/feat-vision1-overhead && git fetch origin && git checkout --detach origin/feat/vision1-overhead`.
-- [ ] **Fault zone position (TM-O5) BEFORE the first job:** the placeholder (-0.30, 0.70) overlaps the zone of tag 1
-      (drop_off_a placeholder at about (-0.34, 0.83)) -> boards there would be ignored as 'in the fault void'.
+- [x] Fault zone measured (TM-29): (+0.4287, +0.7108), fault_drop_z 0.194, behind the base (outside the camera view).
 - [ ] Vision 1 in model mode (C13, FROZEN TM-27).
 - [ ] Zone sheets placed (brown cardboard, tag beside the board area, inputs >= 3 cm outside every sheet).
 

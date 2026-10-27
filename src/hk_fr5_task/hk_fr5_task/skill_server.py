@@ -428,7 +428,8 @@ class SkillServer(Node):
         self._update_stacks()
         self._phase(gh, Place, "HOVER")
         try:
-            self._goto(gh, x, y, self.c["hover_z"], yaw, holding=True, what=f"carry to {target or 'the pose'}")
+            carry_z = max(self.c["hover_z"], tz) if void else self.c["hover_z"]   # fault zone: never below the drop
+            self._goto(gh, x, y, carry_z, yaw, holding=True, what=f"carry to {target or 'the pose'}")  # height (TM-29)
             self._phase(gh, Place, "DESCEND")
             self._vertical(gh, tz, self.c["approach_speed"], holding=True, what="down to place")
         except SkillError as e:
@@ -450,7 +451,8 @@ class SkillServer(Node):
         self._event(type="placed", board=held, zone=target, x=x, y=y, yaw=sm.wrap_pi(yaw),
                     variant=hb.variant if hb is not None else "")
         self._phase(gh, Place, "RETRACT")
-        self._vertical(gh, self.c["hover_z"], self.c["approach_speed"], what="retract")
+        self._vertical(gh, max(self.c["hover_z"], tz) if void else self.c["hover_z"], self.c["approach_speed"],
+                       what="retract")
         if not r.success:
             raise SkillError(C.SCENE_ERROR, f"placed, but detach_board failed: {r.message}")
         if void:                                         # nothing to confirm: the world forgets boards in the void
