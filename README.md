@@ -47,7 +47,7 @@ the visible part, `covered_by` = ids of the boards on top (fallback: touching bo
 `destinations`: one per visible template tag (DICT_5X5_100, ids 1 / 2 / 16 = VARa / VARb / VARc), anywhere in the
 image: `variant`, `tag_id`, `x`, `y`, `yaw` (target board pose, base_link, team offsets from
 `feat/fr5-demo-integration` `config/perception_geometry.yaml`), `support_z` (template top, -0.055), `age` (s since
-the tag was last seen; kept 10 s because small tags are missed in ~10 % of frames).
+the tag was last seen; kept 60 s: small tags are missed in ~10 % of frames and the arm covers them while placing).
 
 Board +X is the long edge for VARa and the short edge for VARb / VARc (team geometry handoff).
 
