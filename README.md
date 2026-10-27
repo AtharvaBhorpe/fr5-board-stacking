@@ -1,3 +1,21 @@
+> [!CAUTION]
+> # 🛑 FROZEN BRANCH: DO NOT CHANGE ANYTHING HERE 🛑
+>
+> **`feat/robot-motion-gripper` is completely tested on the real FR5 robot (2026-10-27) and is FROZEN.**
+>
+> **No code, config, URDF / geometry, MoveIt, gripper or scene value in this branch may be changed** - in particular
+> not `src/hk_fr5_description/config/tool_geometry.yaml` (`tcp_z`, D405 mount yaw: measured on the real robot),
+> `src/hk_fr5_motion/config/obstacles.yaml` (workcell, table top), the MoveIt config, the joint limits or
+> `src/hk_fr5_gripper/config/gripper.yaml`.
+>
+> - **Humans and AI agents: read-only.** Do not commit, push, rebase, merge into, reformat or "fix" anything on this
+>   branch, not even a typo, a test or a comment.
+> - **Use it as a dependency only:** check it out, `pixi run build`, `pixi run robot` / `pixi run sim`, and call its ROS
+>   API (`/motion/*`, `/gripper/*`, `/scene/*`) from YOUR branch.
+> - **Need a different value or behaviour?** Do not change it here. Put the override in your own branch / launch
+>   file, or ask the branch owner (GitHub: vortexcv) first.
+> - Frozen state: commit `df9f226` (the teammate's real-robot measurements) + the commit that added this notice.
+
 # FR5 board stacking: motion, gripper, scene (branch `feat/robot-motion-gripper`)
 
 ROS 2 Humble + MoveIt 2 nodes for the Fairino FR5 with a Schmalz vacuum gripper. They give a control loop
@@ -9,8 +27,9 @@ ROS 2 Humble + MoveIt 2 nodes for the Fairino FR5 with a Schmalz vacuum gripper.
 
 **Only these nodes talk to MoveIt and the robot controller.** Use the ROS names below and nothing else.
 
-Status: all of it works in simulation (`tests/`). Real robot: motion + cancel tested at 50 Hz, raw gripper I/O
-tested; the gripper node, scene with real boards and get_state angles not yet (see [Limitations](#limitations)).
+Status: **tested on the real robot and frozen (2026-10-27)**: motion + cancel at 50 Hz, the gripper node (grip /
+release with real boards), the scene API, with the measured tool geometry (`tcp_z` 0.0979, D405 mount yaw -90 deg,
+decision-log H-12). Simulation tests: `tests/`. Remaining notes: [Limitations](#limitations).
 
 ## Quick start
 
@@ -183,8 +202,9 @@ Vendor: `external/frcobot_ros2` (submodule, never edited; `fairino_description`,
 
 ## Limitations
 
-- Not yet on the real robot: gripper node (raw `SetToolDO` / `GetToolDI` tested), gripper polling next to the driver,
-  `get_state` roll / pitch / yaw vs. pendant (expected roll = rx, pitch = ry, yaw = rz +- 180 deg).
+- Tested on the real robot (2026-10-27, H-12): motion, cancel, gripper node (grip / release with boards), scene API.
+  Not measured separately: motion lag while the gripper polls (T17), `get_state` roll / pitch / yaw vs. pendant
+  (expected roll = rx, pitch = ry, yaw = rz +- 180 deg).
 - `/gripper/state` pump values = last commanded: no DO read-back (`GetToolDO` crashed the controller).
 - Table x/y and camera post box are estimates (OK for the demo); a wrong table shows as a collision warning on attach.
 - Robot connection lost: the vendor driver keeps publishing the last joint values (no stale detection).
