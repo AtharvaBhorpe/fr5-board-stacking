@@ -13,6 +13,7 @@ the robot changed it (e.g. a just-picked board still lying there).
 import json
 import math
 import os
+import signal
 
 import rclpy
 import tf2_ros
@@ -28,6 +29,7 @@ from hk_fr5_task import mask, vision1
 from hk_fr5_task.world_core import World
 from hk_fr5_task_interfaces.msg import Board, Obstacle, World as WorldMsg, Zone
 
+VERBOSE = os.environ.get("HK_VERBOSE", "0") == "1"       # TM-27: tools/live_env.sh debug -> every step logged
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
 
@@ -80,8 +82,9 @@ class WorldModel(Node):
             stamp = now
         if stamp < self.last_event_t:
             self.dropped_frames += 1                                     # captured before the robot changed the table
-            self.get_logger().info(f"Vision 1 frame dropped: captured {self.last_event_t - stamp:.2f} s before the last "
-                                   f"robot event ({self.dropped_frames} so far)")
+            if VERBOSE:
+                self.get_logger().info(f"Vision 1 frame dropped: captured {self.last_event_t - stamp:.2f} s before the "
+                                       f"last robot event ({self.dropped_frames} so far)")
             return
         self.core.update(now, dets, self._mask())
         self._log_notes()
@@ -91,7 +94,7 @@ class WorldModel(Node):
         """TM-26: every new world_core note (zone states, new / lost boards, variant changes, events) once in /rosout."""
         n = getattr(self.core, "note_count", 0)
         new = min(n - self.notes_logged, len(self.core.log))
-        for t, text in self.core.log[len(self.core.log) - new:] if new > 0 else []:
+        for t, text in self.core.log[len(self.core.log) - new:] if new > 0 and VERBOSE else []:
             self.get_logger().info(f"world: {text}")
         self.notes_logged = n
 
@@ -121,7 +124,8 @@ class WorldModel(Node):
         except (ValueError, KeyError, TypeError) as e:
             self.get_logger().error(f"bad event {msg.data!r}: {e}")
             return
-        self.get_logger().info(f"event applied: {msg.data}")
+        if VERBOSE:
+            self.get_logger().info(f"event applied: {msg.data}")
         self._log_notes()
         self._publish()
 
@@ -151,6 +155,7 @@ def main():
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)   # TM-27: a 2nd Ctrl+C (terminal + pixi) must not break the shutdown
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

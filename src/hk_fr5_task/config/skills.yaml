@@ -33,5 +33,4 @@ shadow_radius: 0.12            # CL-20: arm shadow half-width on the table
 stack_box_margin: 0.002        # W13: stack box top this far below the real stack top (the cup may touch the top board)
 stack_box_pad: 0.005           # W13: stack box footprint = largest board on it + this per side
 stack_box_default: [0.15, 0.10]   # W13: footprint when the world has no board size for that stack
-verbose: true                  # TM-26: one log line per skill step (motion goals, grip, scene, events) -> /rosout
 fault_drop_z: 0.090           # CL-39: tcp z for releasing over the fault zone (a void: no descent; default = hover_z)

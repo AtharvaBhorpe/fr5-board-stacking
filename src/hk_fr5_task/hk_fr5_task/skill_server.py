@@ -14,6 +14,7 @@ LOST_IN_TRANSIT; cancel -> smooth stop, CANCELLED.
 import json
 import math
 import os
+import signal
 import threading
 import time
 
@@ -35,6 +36,7 @@ from hk_fr5_task import skill_math as sm
 from hk_fr5_task_interfaces.action import Home, Pick, Place, ReleaseSafe, WaitClear
 from hk_fr5_task_interfaces.msg import SkillCode, World
 
+VERBOSE = os.environ.get("HK_VERBOSE", "0") == "1"       # TM-27: tools/live_env.sh debug -> every step logged
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 C = SkillCode
 EXEC_ERRORS = (-4, -6, -7)          # MoveItErrorCodes CONTROL_FAILED, TIMED_OUT, PREEMPTED -> MOTION_FAILED
@@ -82,7 +84,7 @@ class SkillServer(Node):
     # ---------- plumbing ----------
     def _step(self, text):
         """TM-26: one INFO line per step of a skill (motion goal, gripper, scene, world event, phase) -> /rosout."""
-        if self.c.get("verbose", True):
+        if VERBOSE:
             self.get_logger().info(f"[{self.busy or '-'}] {text}")
 
     def _step_warn(self, text):
@@ -530,6 +532,7 @@ def main():
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)   # TM-27: a 2nd Ctrl+C (terminal + pixi) must not break the shutdown
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

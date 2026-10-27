@@ -1,21 +1,25 @@
 """Live monitor for real runs (TM-O8, TM-26): extreme logging of the whole pipeline + a readable live view.
 
-    pixi run python3 tools/live_monitor.py [--dir DIR] [--quiet]     (default DIR ~/hackathon/live_logs, outside the repo)
+    source tools/live_env.sh [new]        (session folder, TM-27)
+    pixi run python3 tools/live_monitor.py [--verbose] [--dir DIR]
 
-Read-only (sends nothing). One directory per run, run_<date>_<time>/:
+Read-only (sends nothing). Files always complete, in DIR (default: the session's monitor/ folder $HK_LIVE_DIR/monitor;
+without a session: a new ~/hackathon/live_logs/session_<date>_<time>/monitor):
     main.jsonl        everything with a kind: status (full), task events, world summary on change, gripper, tcp (10 Hz),
                       skill action status + feedback, motion action status, vision stats (10 s), rosout (all nodes)
     vision_raw.jsonl  every /vision/boards frame as received (+ arrival time, gap, now - stamp, parse problems)
     world_raw.jsonl   every /task/world message, all fields
     joints.jsonl      every /joint_states message
     rosout.log        all node log lines as text (time, level, node, message)
-Console: controller / job / alert / world changes, gripper, our nodes' log lines (task.*), every WARN / ERROR of any
-node, vision stats. --quiet: only WARN / ERROR + vision stats.
+Console (default, quiet): every WARN / ERROR of any node, job changes, warn / error alerts, slow / refused frames,
+vision stats every 10 s. --verbose: also controller / world / gripper changes, skill actions, our nodes' log lines.
 """
 import argparse
+import glob
 import json
 import math
 import os
+import re
 import time
 
 import rclpy
@@ -35,13 +39,19 @@ from hk_fr5_task_interfaces.msg import World
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 SKILLS = {"pick": Pick, "place": Place, "home": Home, "wait_clear": WaitClear, "release_safe": ReleaseSafe}
 LEVEL = {10: "DEBUG", 20: "INFO", 30: "WARN", 40: "ERROR", 50: "FATAL"}
+BENIGN = (("scene.scene_manager", "remove_box: unknown box"),          # first stack clean-up after a start (W13)
+          ("motion.motion_controller", "PREEMPTED: stopped"))         # contact search stopped by the seal
+ROS_DIR = os.environ.get("ROS_LOG_DIR", "")
+NODE_RE = re.compile(r"\] \[([^\]]+)\]: ")
 STATUS = {0: "UNKNOWN", 1: "ACCEPTED", 2: "EXECUTING", 3: "CANCELING", 4: "SUCCEEDED", 5: "CANCELED", 6: "ABORTED"}
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--dir", default=os.path.expanduser("~/hackathon/live_logs"))
-ap.add_argument("--quiet", action="store_true")
+ap.add_argument("--dir", default="")
+ap.add_argument("--verbose", action="store_true", help="full console view (the files are always complete)")
 args = ap.parse_args()
-RUN = os.path.join(args.dir, time.strftime("run_%Y%m%d_%H%M%S"))
+args.quiet = not args.verbose
+RUN = args.dir or (os.path.join(os.environ["HK_LIVE_DIR"], "monitor") if os.environ.get("HK_LIVE_DIR") else
+                   os.path.join(os.path.expanduser("~/hackathon/live_logs"), time.strftime("session_%Y%m%d_%H%M%S"), "monitor"))
 os.makedirs(RUN, exist_ok=True)
 F = {k: open(os.path.join(RUN, k), "a", buffering=1) for k in
      ("main.jsonl", "vision_raw.jsonl", "world_raw.jsonl", "joints.jsonl", "rosout.log")}
@@ -91,7 +101,7 @@ def on_status(m):
              for j in old.get("jobs", [])}
     for jid, v in jobs.items():
         if ojobs.get(jid) != v:
-            say(f"JOB  {jid} {v[0]} delivered {v[1]} to_fault {v[2]} lost {v[3]} skipped {v[4]} | {v[5]}")
+            say(f"JOB  {jid} {v[0]} delivered {v[1]} to_fault {v[2]} lost {v[3]} skipped {v[4]} | {v[5]}", important=True)
     if st.get("problem_boards") != old.get("problem_boards"):
         say(f"PROB problem boards {st.get('problem_boards')}")
     for e in st.get("events", []):
@@ -165,7 +175,8 @@ def on_rosout(m):
     F["rosout.log"].write(line + "\n")
     log("rosout", {"level": lvl, "node": m.name, "msg": m.msg, "file": m.file, "line": m.line})
     if m.level >= 30:
-        say(f"LOG  {lvl} [{m.name}] {m.msg}", important=True)
+        benign = any(m.name == node and text in m.msg for node, text in BENIGN)
+        say(f"LOG  {lvl} [{m.name}] {m.msg}", important=not benign)
     elif m.name.startswith("task.") and m.name != "task.live_monitor":
         say(f"LOG  [{m.name}] {m.msg}")
 
@@ -203,6 +214,39 @@ def feedback_cb(name):
     return cb
 
 
+def index_ros(final=False):
+    """ROS names each node's log file after the executable (python3.14_<pid>_...): ros/by_node/<node>.log links +
+    ros/INDEX.txt (file -> nodes, lines, WARN / ERROR counts at the end) so every node's file is easy to find."""
+    if not ROS_DIR or not os.path.isdir(ROS_DIR):
+        return
+    os.makedirs(os.path.join(ROS_DIR, "by_node"), exist_ok=True)
+    rows = []
+    for f in sorted(glob.glob(os.path.join(ROS_DIR, "**", "*.log"), recursive=True)):
+        if "by_node" in f:
+            continue
+        nodes, n, warn, err = [], 0, 0, 0
+        with open(f, errors="replace") as fh:
+            for line in fh:
+                n += 1
+                if n <= 400 or final:
+                    m = NODE_RE.search(line)
+                    if m and m.group(1) not in nodes:
+                        nodes.append(m.group(1))
+                if final:
+                    warn += line.startswith("[WARN]") or "] [WARN]" in line
+                    err += line.startswith("[ERROR]") or "] [ERROR]" in line
+                elif n > 400:
+                    break
+        for node in nodes[:3]:
+            link = os.path.join(ROS_DIR, "by_node", f"{node}.log")
+            if not os.path.lexists(link):
+                os.symlink(os.path.relpath(f, os.path.dirname(link)), link)
+        rows.append(f"{os.path.relpath(f, ROS_DIR)}  nodes {', '.join(nodes) or '?'}" +
+                    (f"  lines {n}  WARN {warn}  ERROR {err}" if final else ""))
+    with open(os.path.join(ROS_DIR, "INDEX.txt"), "w") as fh:
+        fh.write("\n".join(rows) + "\n")
+
+
 def main():
     rclpy.init()
     n = rclpy.create_node("live_monitor", namespace="task")
@@ -229,6 +273,7 @@ def main():
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             pass
     n.create_timer(0.1, tcp)
+    n.create_timer(30.0, index_ros)
     say(f"live monitor: logging everything to {RUN}", important=True)
     try:
         rclpy.spin(n)
@@ -240,6 +285,10 @@ def main():
             rclpy.shutdown()
         for f in F.values():
             f.close()
+        try:
+            index_ros(final=True)
+        except OSError as e:
+            print(f"log index failed: {e}")
 
 
 if __name__ == "__main__":

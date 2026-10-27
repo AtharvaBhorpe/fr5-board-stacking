@@ -37,6 +37,7 @@ from hk_fr5_task_interfaces.action import Home, Pick, Place, ReleaseSafe, WaitCl
 from hk_fr5_task_interfaces.msg import Job, SkillCode, World
 from hk_fr5_task_interfaces.srv import AddJob, Control, ListJobs
 
+VERBOSE = os.environ.get("HK_VERBOSE", "0") == "1"       # TM-27: tools/live_env.sh debug -> every step logged
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 SKILLS = {"pick": Pick, "place": Place, "home": Home, "wait_clear": WaitClear, "release_safe": ReleaseSafe}
 CODE_NAMES = {getattr(SkillCode, n): n for n in dir(type(SkillCode))
@@ -272,12 +273,13 @@ class MainController(Node):
         self._publish()
         if a is None:
             return
-        self.get_logger().info(f"ACTION start {a} (tcp {[round(v, 4) for v in tcp]})")          # TM-26: verbose trace
+        if VERBOSE:                                  # TM-26 / TM-27: step trace only in debug sessions
+            self.get_logger().info(f"ACTION start {a} (tcp {[round(v, 4) for v in tcp]})")
         t0 = time.monotonic()
         code, msg = self._run(a)
-        if code == "SUCCESS":                        # one call site per severity (rclpy logger trap)
+        if VERBOSE and code == "SUCCESS":            # one call site per severity (rclpy logger trap)
             self.get_logger().info(f"ACTION result {a.get('skill')} {code} in {time.monotonic() - t0:.1f} s: {msg}")
-        else:
+        elif VERBOSE:
             self.get_logger().warn(f"ACTION result {a.get('skill')} {code} in {time.monotonic() - t0:.1f} s: {msg}")
         self.tcp_dirty = True                        # the robot may have moved
         with self.lock:
@@ -285,7 +287,8 @@ class MainController(Node):
             self.core.on_result(a, code, msg, self.now())
             evs = self.core.take_world_events()
         for ev in evs:
-            self.get_logger().info(f"world event from the core: {ev}")
+            if VERBOSE:
+                self.get_logger().info(f"world event from the core: {ev}")
             self.events_pub.publish(String(data=json.dumps(ev)))
         self._publish()
 

@@ -6,6 +6,7 @@ yaml, reacts to /task/events (picked / placed / dropped), simulates the operator
 """
 import json
 import os
+import signal
 
 import rclpy
 import tf2_ros
@@ -113,6 +114,7 @@ def main():
         if rclpy.ok():                           # (seen in main_ros_check, TM-25); only then a clean exit
             raise
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)   # TM-27: a 2nd Ctrl+C (terminal + pixi) must not break the shutdown
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
