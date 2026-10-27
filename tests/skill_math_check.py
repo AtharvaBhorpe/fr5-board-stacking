@@ -40,10 +40,10 @@ check("search end = table - press", abs(sm.search_end_z(C) - (C["table_z"] - C["
 pz = {"kind": "processing", "x": -0.5, "y": 0.45, "yaw": 0.1, "state": "EMPTY", "stack_count": 0, "stack_top_z": -0.06, "base_z": -0.06}
 dz = {"kind": "drop_off", "x": -0.15, "y": -0.55, "yaw": 0.0, "state": "OK", "stack_count": 2, "stack_top_z": -0.048, "base_z": -0.06}
 x, y, yaw, z = sm.place_target(C, pz, 0.006)
-check("place in processing: on the table, tcp z = table + thickness + gap", (x, y, yaw) == (-0.5, 0.45, 0.1)
-      and abs(z - (C["table_z"] + 0.006 + C["place_gap"])) < 1e-12)
+check("place in processing: on the table, tcp z = table + thickness - place_press", (x, y, yaw) == (-0.5, 0.45, 0.1)
+      and abs(z - (C["table_z"] + 0.006 - C["place_press"])) < 1e-12)
 x, y, yaw, z = sm.place_target(C, dz, 0.006)
-check("place on a drop-off stack of 2: tcp z = stack top + thickness + gap", abs(z - (-0.048 + 0.006 + C["place_gap"])) < 1e-12)
+check("place on a drop-off stack of 2: tcp z = stack top + thickness - place_press", abs(z - (-0.048 + 0.006 - C["place_press"])) < 1e-12)
 check("zone_accepts: processing EMPTY ok, LOADED occupied; drop-off ok, FULL / count >= max full",
       sm.zone_accepts(C, pz) == "" and sm.zone_accepts(C, dict(pz, state="LOADED")) == "TARGET_OCCUPIED"
       and sm.zone_accepts(C, dz) == "" and sm.zone_accepts(C, dict(dz, state="FULL")) == "STACK_FULL"
@@ -72,7 +72,7 @@ check("fault zone (void, CL-39): always accepts, released from fault_drop_z, no 
 # V4: zone sheet (base_z above the table)
 SH = C["table_z"] + 0.005
 x, y, yaw, z = sm.place_target(C, dict(pz, base_z=SH, stack_top_z=SH), 0.005)
-check("V4 place in processing on a sheet: tcp z = base_z + thickness + gap", abs(z - (SH + 0.005 + C["place_gap"])) < 1e-12, str(z))
+check("V4 place in processing on a sheet: tcp z = base_z + thickness - place_press", abs(z - (SH + 0.005 - C["place_press"])) < 1e-12, str(z))
 ZS = dict(Z, base_z=SH, stack_top_z=SH + 0.012)
 bx = sm.stack_box(C, ZS, B)
 check("V4 stack box on a sheet: stands on the table, top = stack top - margin (covers the sheet too)",

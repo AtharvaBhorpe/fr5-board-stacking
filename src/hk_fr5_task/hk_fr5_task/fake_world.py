@@ -109,6 +109,9 @@ def main():
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except RuntimeError:                         # Ctrl+C during a message take: rclpy raises a pybind RuntimeError
+        if rclpy.ok():                           # (seen in main_ros_check, TM-25); only then a clean exit
+            raise
     finally:
         node.destroy_node()
         if rclpy.ok():

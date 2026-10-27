@@ -57,7 +57,7 @@ for _z in ZONES:
     _z["top_z"] = WCFG["table_z"]  # logic tests: no sheet (V2 / V4 sheet heights: world_core_check / skill_math_check)
 # the fault zone is never a Vision 1 zone: world.yaml fixed_zones (CL-15 / CL-39)
 BOARDS = [{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2}, {"variant": "red", "x": -0.62, "y": 0.20, "yaw": 0.0},
-          {"variant": "white_small", "x": -0.25, "y": -0.25, "yaw": -0.1, "count": 3}]
+          {"variant": "white_small", "x": -0.30, "y": -0.30, "yaw": -0.1, "count": 3}]   # clear of the park-pose arm band (TM-25)
 OPERATOR = {"take_after": 1.5, "return_after": 3.0}
 JOB_STATES = ("QUEUED", "RUNNING", "WAITING", "PAUSED", "DONE", "CANCELLED")      # Job.msg
 FINAL_ITEMS = ("delivered", "fault", "lost", "skipped")

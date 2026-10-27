@@ -42,12 +42,12 @@ def search_end_z(cfg):
 
 def place_target(cfg, zone, thickness):
     """(x, y, zone_yaw, tcp_z) for placing a board of this thickness on a zone (dict like Zone.msg).
-    processing: on the zone sheet (base_z, V4); drop_off: on top of the stack. tcp z = board top + gap (released just above).
+    processing: on the zone sheet (base_z, V4); drop_off: on top of the stack. tcp z = board top - place_press (TM-25).
     fault zone (CL-39, a void): released from the fixed height fault_drop_z (no descent, the pile does not matter)."""
     if zone["kind"] == "fault":
         return zone["x"], zone["y"], zone["yaw"], cfg["fault_drop_z"]
     surface = zone["base_z"] if zone["kind"] == "processing" else zone["stack_top_z"]
-    return zone["x"], zone["y"], zone["yaw"], surface + thickness + cfg["place_gap"]
+    return zone["x"], zone["y"], zone["yaw"], surface + thickness - cfg["place_press"]
 
 
 def stack_box(cfg, zone, boards, skip=""):

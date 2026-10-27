@@ -365,7 +365,7 @@ class SkillServer(Node):
             void = zd["kind"] == "fault"                 # CL-39: drop from fault_drop_z, the board leaves the world
         else:
             x, y, zyaw = req.x, req.y, req.yaw
-            tz, void = self.c["table_z"] + thick + self.c["place_gap"], False
+            tz, void = self.c["table_z"] + thick - self.c["place_press"], False
         yaw = sm.tcp_yaw_for(zyaw, self.c["ref_yaw"])
         self._update_stacks()
         self._phase(gh, Place, "HOVER")
@@ -378,11 +378,11 @@ class SkillServer(Node):
                 self._lost(held)
             raise
         self._phase(gh, Place, "RELEASE")
-        rfut = self.release.send_goal_async(Release.Goal())
+        rfut = self.release.send_goal_async(Release.Goal(blow_off_time=float(self.c["blow_off_time"])))
         if not self._wait_future(rfut, 3.0) or not rfut.result().accepted:
             raise SkillError(C.RELEASE_FAILED, "release goal not accepted")
         rres = rfut.result().get_result_async()
-        if not self._wait_future(rres, 5.0) or not rres.result().result.success:
+        if not self._wait_future(rres, self.c["blow_off_time"] + 5.0) or not rres.result().result.success:
             raise SkillError(C.RELEASE_FAILED, "release failed")
         self._phase(gh, Place, "DETACH")
         r = self._call(self.detach, DetachBoard.Request(keep_as_obstacle=False), "detach_board")   # W13: stack box instead
@@ -413,7 +413,12 @@ class SkillServer(Node):
         return f"placed {held} in {target or 'the pose'}"
 
     def _home_move(self, gh):
-        g = MoveTo.Goal(named_target="ready", velocity_scaling=float(self.c["speed"]))
+        hp = self.c.get("home_pose") or []                # TM-25: park pose (arm out of the overhead view), [] -> 'ready'
+        if hp:
+            g = MoveTo.Goal(x=float(hp[0]), y=float(hp[1]), z=float(hp[2]), yaw=float(hp[3]),
+                            mode=MoveTo.Goal.MODE_DOWN_YAW, velocity_scaling=float(self.c["speed"]))
+        else:
+            g = MoveTo.Goal(named_target="ready", velocity_scaling=float(self.c["speed"]))
         return self._motion(self.move_to, g, gh, holding=self._holding(), what="home", timeout=self.c["move_timeout"])
 
     def _home(self, gh, res):

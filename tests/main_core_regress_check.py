@@ -298,8 +298,9 @@ def a3():
 
 @case("A4/CL-30")
 def a4():
-    bs = [{"variant": "red", "x": -0.49, "y": 0.18, "yaw": 0.0},          # both input boards, both seen with the arm
-          {"variant": "white_small", "x": -0.319, "y": 0.117, "yaw": 0.0}]  # at home; the white one lies under the arm
+    bs = [{"variant": "red", "x": -0.30, "y": 0.30, "yaw": 0.0},          # both input boards, both seen with the arm
+          {"variant": "white_small", "x": -0.17, "y": 0.17, "yaw": 0.0}]    # at home (above the profile, TM-25); the
+    #                                                                       white one lies on the base -> red line: under the arm
     #                                                                       while it hovers over the red
     sim = Sim(boards=bs)
     _, _, ar = sim.add(type="transfer", select_variant="red", to="drop_off_1", count=1, priority=10)

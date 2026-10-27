@@ -8,7 +8,7 @@ motion_retries: 1         # PLAN_FAILED / MOTION_FAILED on a pick: retries (afte
 halt_after: 3             # motion / system failures in a row -> HALTED (resume by command)
 fault_zone: fault         # where boards with problems go (CL-11 / CL-15)
 place_when_paused: true   # pause with a board on the cup: place it first, then hold
-home_xy: [-0.497, -0.102] # CL-26 fallback for 'nearest board' when /motion/get_state fails
+home_xy: [-0.233, 0.0]    # = skills.yaml home_pose x, y (above the aluminium profile, TM-25); CL-26 fallback for 'nearest board' when /motion/get_state fails
 world_wait: 1.0           # CL-23: max wait for a world message newer than the last skill result
 tick: 0.2                 # decision loop period when idle
 max_place_fail: 3         # D5: failed puts-down of a held board into the fault zone before HALTED
