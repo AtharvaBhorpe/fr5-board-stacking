@@ -36,8 +36,7 @@ TEMP_TOP_Z = -0.055   # top of a board lying on the table (temp spot)
 TEMP_CLEARANCE = 0.30  # m from any destination template centre (biggest board half-diagonal + template)
 MAX_CLEAR = 4          # boards moved to the temp spot before giving up
 PARK = (-0.233, -0.096, 0.243, 1.543)  # x, y, z, tool yaw: robot startup pose, arm clear of the overhead pick-area view
-CUP_SHORT = 0.0028     # real cup touches 2.8 mm below the model tcp at the D405 board top (jog test 2026-10-27:
-                       # D405 top -52.0 mm, contact at tcp -54.8 mm). Added to the D405 descent only.
+TABLE_Z = -0.060       # table top, base_link (fr5-board-stacking obstacles.yaml, measured)
 WRIST_HIGHER = 0.06    # D405 board top accepted up to this much above one board on the table (stack of ~12) ...
 WRIST_LOWER = 0.01     # ... and this much below it; else the fixed height is used
 
@@ -118,7 +117,9 @@ elif gstate[-1].vacuum_on or gstate[-1].state in ("GRIPPING", "HOLDING", "PART_L
 # Wrist D405 depth for the pick height (stacks, thick boards): only if its point cloud is published
 wd = None
 if not args.no_wrist_height:
-    time.sleep(0.5)
+    t0 = time.time()
+    while not node.count_publishers(WRIST_TOPIC) and time.time() - t0 < 3.0:  # DDS discovery takes 1-2 s
+        rclpy.spin_once(node, timeout_sec=0.1)
     if node.count_publishers(WRIST_TOPIC):
         wd = WristDepth(node)
     print(f"pick height: {'wrist D405 depth' if wd else 'fixed one-board height (no ' + WRIST_TOPIC + ')'}")
@@ -181,12 +182,18 @@ def transfer(b, to=None, what="put it back down"):
     down = HOVER + PRESS
     if wd:  # measured board top instead of the fixed one-board height
         m = wd.measure(b["x"], b["y"])
-        gap = None if m is None else (b["z"] + HOVER) - m["top_z"]
+        top = None
+        if m is not None:
+            # D405 absolute height reads 3-7 mm low (real robot 2026-10-27), board-above-table in one view is good
+            # to ~1.5 mm: use it on the known table height. No table in view (big stack): absolute value.
+            rel = m["top_z"] - m["table_z"]
+            top = TABLE_Z + rel if abs(m["table_z"] - TABLE_Z) < 0.012 and rel > 0.002 else m["top_z"]
+        gap = None if top is None else (b["z"] + HOVER) - top
         if gap is not None and HOVER - WRIST_HIGHER <= gap <= HOVER + WRIST_LOWER:
-            down = gap + CUP_SHORT + PRESS
-            print(f"  D405: board top z={m['top_z']:.4f} ({1000 * (m['top_z'] - b['z']):+.1f} mm vs one board), "
-                  f"cup -> board {1000 * (gap + CUP_SHORT):.1f} mm, then {args.press:.0f} mm press; "
-                  f"table z={m['table_z']:.4f}")
+            down = gap + PRESS
+            print(f"  D405: board top z={top:.4f} ({1000 * (top - b['z']):+.1f} mm vs one board; "
+                  f"{1000 * (m['top_z'] - m['table_z']):.1f} mm above the table), cup -> board {1000 * gap:.1f} mm, "
+                  f"then {args.press:.0f} mm press")
         else:
             print(f"  D405: {'no measurement' if m is None else f'implausible gap {1000 * gap:.0f} mm'}, "
                   "using the fixed height")
