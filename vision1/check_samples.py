@@ -13,6 +13,7 @@ root = os.path.join(os.path.dirname(__file__), "..", "samples")
 for name, want in EXPECTED.items():
     rejected = []
     boards = table.pickable(CALIB, detect(cv2.imread(os.path.join(root, name + ".jpg")), rejected), rejected)
+    boards = [b for b in boards if b["zone"] == "pick"]  # left table: white templates, see README Limits
     got = [b["variant"] for b in boards]
     assert got == want, f"{name}.jpg: got {got}, want {want}"
     assert all(-90 <= b["yaw_deg"] < 90 for b in boards)
@@ -22,4 +23,17 @@ for name, want in EXPECTED.items():
 rej = []
 table.pickable(CALIB, detect(cv2.imread(os.path.join(root, "06.jpg")), rej), rej)
 assert any(r["u"] < 1300 for r in rej), rej  # arm rejected (any reason), never published
+# zones: centre = template board pose (same offsets as DEST for the placeholders), yaw = long side, mod pi
+import math
+tags = []
+detect(cv2.imread(os.path.join(root, "composite_vara_dest.png")), None, tags)
+zs = {z["tag_id"]: z for z in (table.zone(CALIB, t) for t in tags) if z}
+ds = {d["tag_id"]: d for d in (table.destination(CALIB, t) for t in tags) if d}
+assert sorted(zs) == [1, 2, 16], zs
+for i, z in zs.items():
+    assert (z["x"], z["y"]) == (ds[i]["x"], ds[i]["y"]), (z, ds[i])
+    long_is_x = table.SIZES_MM[ds[i]["variant"]][0] > table.SIZES_MM[ds[i]["variant"]][1]
+    d = (z["yaw"] - ds[i]["yaw"] - (0 if long_is_x else math.pi / 2)) % math.pi
+    assert min(d, math.pi - d) < 1e-3, (z, ds[i])
+    assert z["size"][0] >= z["size"][1]
 print("ok")

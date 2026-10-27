@@ -43,6 +43,16 @@ def median_dest(hist):
                 y=round(float(np.median([d["y"] for d in ds])), 4), yaw=round(yaw, 4), frames=len(ds))
 
 
+def remember(store, key, now, item):
+    store.setdefault(key, deque(maxlen=DEST_FRAMES)).append((now, item))
+
+
+def recall(store, now):
+    """Median pose + age of every key seen within DEST_MEMORY."""
+    return [dict(median_dest([h for h in hist if now - h[0] < DEST_MEMORY]), age=round(now - hist[-1][0], 1))
+            for hist in store.values() if now - hist[-1][0] < DEST_MEMORY]
+
+
 def find_camera(name):
     """/dev/video index of the first capture device whose name contains `name` (e.g. 'C920')."""
     for i in range(16):
@@ -72,7 +82,7 @@ class Vision1(Node):
             self.calib = None
             self.get_logger().warn(f"no calibration ({e}): publishing pixels only")
         self.last = "{}"
-        self.dest = {}
+        self.dest, self.zones = {}, {}  # tag memory: by variant (pick_one.py), by zone name (main controller)
         self.create_service(Trigger, "/vision/detect", self.snapshot)
         time.sleep(1.5)  # DDS discovery
         if self.count_publishers("/vision/boards"):
@@ -116,6 +126,7 @@ class Vision1(Node):
         if self.still is not None:  # replay: re-read so a test can swap the file (scene changed)
             frame = cv2.imread(self.device)
             frame = self.still if frame is None else frame
+            stamp = time.time()
         else:
             ok, frame = self.cap.read()
             if not ok:
@@ -129,6 +140,7 @@ class Vision1(Node):
                     except RuntimeError as e:
                         self.get_logger().warn(f"camera reopen failed: {e}")
                 return False
+            stamp = time.time()  # capture time (C9): detection below takes up to ~1 s on the CPU
             self.fails = 0
         rejected, tags, occluded = [], [], []
         boards = detect(frame, rejected, tags, use_model=self.use_model)
@@ -137,15 +149,19 @@ class Vision1(Node):
         else:
             for b in boards:
                 b.pop("area_px")
-        now = time.time()
+        now = stamp
         if self.calib is not None:
             for t in tags:  # templates don't move: remember each tag, small tags are missed in ~10 % of frames
-                d = table.destination(self.calib, t)
+                d, z = table.destination(self.calib, t), table.zone(self.calib, t)
                 if d:
-                    self.dest.setdefault(d["variant"], deque(maxlen=DEST_FRAMES)).append((now, d))
-        dests = [dict(median_dest([h for h in hist if now - h[0] < DEST_MEMORY]), age=round(now - hist[-1][0], 1))
-                 for hist in self.dest.values() if now - hist[-1][0] < DEST_MEMORY]
-        msg = {"stamp": now, "destinations": dests, "image_size": [frame.shape[1], frame.shape[0]],
+                    remember(self.dest, d["variant"], now, d)
+                if z:
+                    remember(self.zones, z["name"], now, z)
+        dests = recall(self.dest, now)
+        # zone yaw = long side, modulo pi (median above on the unambiguous tag yaw, then folded)
+        zones = sorted((dict(z, yaw=round((z["yaw"] + math.pi / 2) % math.pi - math.pi / 2, 4))
+                        for z in recall(self.zones, now)), key=lambda z: z["name"])
+        msg = {"stamp": now, "destinations": dests, "zones": zones, "image_size": [frame.shape[1], frame.shape[0]],
                "source": self.device, "calibrated": self.calib is not None, "boards": boards, "occluded": occluded, "rejected": rejected}
         self.last = json.dumps(msg)
         img = self.annotate(frame, boards, occluded, rejected, tags)
@@ -170,7 +186,8 @@ class Vision1(Node):
         for t in tags:
             c = np.int32(t["corners"])
             cv2.polylines(img, [c], True, (0, 0, 255), 3)
-            name = table.DEST[t["id"]][0] if t["id"] in table.DEST else f"tag {t['id']}"  # template of that variant
+            name = (table.ZONES[t["id"]][0] if t["id"] in table.ZONES else
+                    table.DEST[t["id"]][0] if t["id"] in table.DEST else f"tag {t['id']}")
             cv2.putText(img, name, (int(c[:, 0].min()) - 40, int(c[:, 1].max()) + 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5,
                         (0, 0, 255), 4)
         n = {}

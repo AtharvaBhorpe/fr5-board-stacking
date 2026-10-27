@@ -14,6 +14,10 @@ import seg
 # --- Lab knobs (pixel values are for the 1920x1080 overhead image) -------------------------------
 # Where to look: pick area (right table), normalized [x, y] in image, perimeter order.
 ROI = [[0.57, 0.15], [0.985, 0.15], [0.985, 0.97], [0.57, 0.97]]  # A/B on 755 frames: +34 boards, 0 lost
+# Left table (drop-off / processing zones). Whole table = both (vision1-changes.md C1); the robot rail between them
+# holds no boards. The model runs once per ROI crop: same scale as its training crop (the right one).
+ROI_DROP = [[0.02, 0.15], [0.485, 0.15], [0.485, 0.97], [0.02, 0.97]]
+ROIS = [ROI_DROP, ROI]
 WHITE = ((0, 0, 100), (179, 80, 255))         # HSV lo, hi. Picked by A/B on 190 lab frames (eval_dataset.py)
 RED = [((0, 110, 80), (12, 255, 255)), ((165, 110, 80), (179, 255, 255))]  # V<80 merges red with tape / shadows
 MIN_AREA = 12000                               # px^2, smaller blobs are ignored
@@ -75,9 +79,9 @@ def _quad(contour):
     return None
 
 
-def roi_px(w, h):
-    """ROI bounding box in pixels (x0, y0, x1, y1): the crop the model was trained on."""
-    return (round(ROI[0][0] * (w - 1)), round(ROI[0][1] * (h - 1)), round(ROI[1][0] * (w - 1)), round(ROI[2][1] * (h - 1)))
+def roi_px(w, h, roi=ROI):
+    """ROI bounding box in pixels (x0, y0, x1, y1). Default: the crop the model was trained on."""
+    return (round(roi[0][0] * (w - 1)), round(roi[0][1] * (h - 1)), round(roi[1][0] * (w - 1)), round(roi[2][1] * (h - 1)))
 
 
 UNKWN_CONF = 0.6   # model class confidence below this -> variant "UNKWN" (any unclear board)
@@ -85,10 +89,10 @@ TOUCH_PX = 9       # px grown around a board mask before testing overlap
 COVER_PX = 800     # px of board j inside occluded board i's hull -> j covers i
 
 
-def _from_model(bgr, roi_px, tag_centres, reject):
+def _from_model(bgr, rois, tag_centres, reject):
     """Model masks -> boards. Full rectangle = on top (pickable). Partial = occluded: 'top': False, 'covered_by'."""
     out, masks = [], []
-    for inst in seg.segment(bgr, roi_px):
+    for inst in (i for r in rois for i in seg.segment(bgr, r)):
         cs, _ = cv2.findContours(inst["mask"], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not cs:
             continue
@@ -143,7 +147,7 @@ def detect(bgr, rejected=None, tags=None, use_model=False):
 
     h, w = bgr.shape[:2]
     roi = np.zeros((h, w), np.uint8)
-    cv2.fillPoly(roi, [np.int32(np.array(ROI) * [w - 1, h - 1])], 255)
+    cv2.fillPoly(roi, [np.int32(np.array(r) * [w - 1, h - 1]) for r in ROIS], 255)
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
     found = _markers(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
     tag_centres = [c.mean(0) for c in found.values()]
@@ -151,7 +155,7 @@ def detect(bgr, rejected=None, tags=None, use_model=False):
         tags += [{"id": i, "corners": c.tolist()} for i, c in found.items()]
 
     if use_model and seg.available():
-        return _from_model(bgr, roi_px(w, h), tag_centres, reject)
+        return _from_model(bgr, [roi_px(w, h, r) for r in ROIS], tag_centres, reject)
     boards = []
     for colour, ranges, close in (("white", [WHITE], 9), ("red", RED, RED_CLOSE)):
         contours, _ = cv2.findContours(_mask(hsv, ranges, roi, close), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -186,7 +190,7 @@ def detect(bgr, rejected=None, tags=None, use_model=False):
 def draw(bgr, boards, font=1.0):
     out = bgr.copy()
     h, w = out.shape[:2]
-    cv2.polylines(out, [np.int32(np.array(ROI) * [w - 1, h - 1])], True, (255, 255, 0), 2)
+    cv2.polylines(out, [np.int32(np.array(r) * [w - 1, h - 1]) for r in ROIS], True, (255, 255, 0), 2)
     for b in boards:
         col = (0, 255, 0) if b.get("top", True) else (0, 165, 255)  # orange = occluded
         cv2.polylines(out, [np.int32(b["corners"])], True, col, 3)

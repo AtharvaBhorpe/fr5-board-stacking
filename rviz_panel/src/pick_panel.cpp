@@ -256,11 +256,13 @@ private:
         polys_.push_back({b["variant"].toString(), q});
       };
     for (const auto & b : o["boards"].toArray()) {
+      if (b.toObject()["zone"].toString() != "pick") {continue;}  // drop-off table: shown, never picked
       const auto v = b.toObject()["variant"].toString();
       v == "UNKWN" ? ++unknown_ : ++free_[v];
       poly(b.toObject());
     }
     for (const auto & b : o["occluded"].toArray()) {
+      if (b.toObject()["zone"].toString() != "pick") {continue;}
       ++under_[b.toObject()["variant"].toString()];
       poly(b.toObject());
     }

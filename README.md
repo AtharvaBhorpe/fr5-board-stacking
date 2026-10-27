@@ -266,14 +266,15 @@ msg = json.loads(string_msg.data)
 
 | Key | Type | Meaning |
 |---|---|---|
-| `stamp` | float | Unix time of the frame (s). `pick_one` refuses messages older than 2 s |
+| `stamp` | float | Unix time the frame was **captured** (s; taken right after the camera read, detection runs after). `pick_one` refuses messages older than 2 s |
 | `source` | str | `device` parameter (`C920` or the replayed file) |
 | `calibrated` | bool | false = no `config/calib.yaml`: pixels only, no `x`/`y`/`z`. Never move the robot then |
 | `image_size` | [w, h] | camera image size in pixels (1920, 1080) |
-| `boards` | list | **boards the robot can pick now** (see 5.2) |
+| `boards` | list | **top boards on the whole table** (pick table and drop-off / processing zones, see 5.2); `zone` tells which table |
 | `occluded` | list | model mode only: boards partly under other boards (see 5.3) |
 | `rejected` | list | blobs that are not pickable boards (see 5.4) |
-| `destinations` | list | templates seen (see 5.5) |
+| `destinations` | list | templates seen, keyed by variant, for `pick_one.py` (see 5.5) |
+| `zones` | list | drop-off / processing zones seen, keyed by name, for the main controller (see 5.6) |
 
 ### 5.2 `boards[]`
 
@@ -289,7 +290,7 @@ msg = json.loads(string_msg.data)
 | `yaw` | rad | board +X about +Z in `base_link`, modulo pi (the rectangle is symmetric) |
 | `size_mm` | [short, long] | measured sides |
 | `size_ok` | bool | both sides within 10 mm of the variant |
-| `zone` | str | `pick` (y < 0) or `drop` |
+| `zone` | str | `pick` (y < 0, right table) or `drop` (left table). `pick_one.py` and the panel pick only `pick` boards |
 | `inside_calibration` | bool | false = outside the calibration tags' hull: extrapolated, less accurate |
 | `corners_xy` | m | 4 corners in `base_link` |
 | `conf`, `model_class`, `top` | | model mode: class confidence, the model's class (also for `UNKWN`), `true` = full rectangle visible |
@@ -310,7 +311,7 @@ the **visible part**, `top: false`, plus `covered_by`: ids of the boards lying o
 | `too_big` | blob larger than any board: merged / stacked boards (classic) |
 | `not_rectangular` | blob not a rectangle: hand, arm, overlapping boards (classic) |
 | `no_4_corners` | outline does not reduce to 4 corners (classic) |
-| `has_tag` | contains an ArUco tag: a template, not a board |
+| `has_tag` | contains an ArUco tag: a template / zone sheet, not a board. A board lying **on** a sheet does not contain the tag and is reported in `boards` (model mode) |
 | `size_mismatch` | metric size fits no board (partly hidden, e.g. under the arm) |
 
 Each entry has `u`, `v` (px) and, where known, `colour`, `area_px`, `size_mm`, `variant_guess`.
@@ -328,7 +329,30 @@ One per template tag seen (ArUco `DICT_5X5_100`; ids 1 / 2 / 16 = VARa / VARb / 
 | `frames` | number of recent detections in the median (up to 15; single frames jitter ~2.5 mm / 1 deg) |
 | `age` | s since the tag was last seen; kept 60 s (small tags are missed in ~10 % of frames, the arm covers them while placing) |
 
-### 5.6 Example (live, real robot, shortened)
+### 5.6 `zones[]` (main controller)
+
+One per zone tag seen; the zone table is `ZONES` in `vision1/table.py` (tag id -> name, kind, offset, rotation, size,
+top_z). Same median / 60 s memory as `destinations`, but one entry per zone **name**. Geometry comes from the tag +
+config only (no sheet detection). **Today the values are placeholders** = the three templates (tags 1 / 2 / 16 ->
+`drop_off_a` / `drop_off_b` / `drop_off_c`); replace with the measured cardboard sheets and add `processing_1`, ...
+
+| Field | Type | Meaning |
+|---|---|---|
+| `name` | str | unique, the same every run (`drop_off_a`, `processing_1`, ...) |
+| `kind` | str | `drop_off` or `processing` |
+| `x`, `y` | m, `base_link` | centre of the board area (tag pose + per-tag offset) |
+| `yaw` | rad, `base_link` | direction of the sheet's **long side**, modulo pi, in [-pi/2, pi/2) |
+| `size` | [m, m] | board area [long, short] along / across `yaw` (config) |
+| `top_z` | m, `base_link` | top of the zone sheet (config) |
+| `age` | s | since the tag was last seen; the zone leaves the list after 60 s |
+| `frames`, `tag_id` | | detections in the median (up to 15), the defining tag |
+
+```json
+"zones": [{"name": "drop_off_a", "kind": "drop_off", "x": -0.3433, "y": 0.8315, "yaw": 1.5217, "size": [0.295, 0.21],
+           "top_z": -0.055, "tag_id": 1, "frames": 15, "age": 0.0}]
+```
+
+### 5.7 Example (live, real robot, shortened)
 
 ```json
 {
@@ -564,8 +588,8 @@ place descent, and check `/gripper/state` before a new pick.
 | `config/calib.yaml` | overhead camera -> table homography + lens term (copied from `feat/vision-transform`, calibration app) | after every recalibration; the camera must not move. rms ~1.4 mm |
 | `config/d405.yaml` | D405 driver settings | |
 | `config/99-realsense-d405.rules` | USB access (from `feat/perception-geometric-detector`) | once per PC |
-| `vision1/detect.py` (top) | ROI (pick area), colour thresholds, area limits, `UNKWN_CONF` | lab lighting / new boards |
-| `vision1/table.py` (top) | board sizes, size tolerance, template offsets (`DEST`), `BOARD_TOP_Z` | geometry changes |
+| `vision1/detect.py` (top) | `ROI` (pick table) + `ROI_DROP` (left table) = `ROIS` (whole table), colour thresholds, area limits, `UNKWN_CONF` | lab lighting / new boards / camera moved |
+| `vision1/table.py` (top) | board sizes, size tolerance, template offsets (`DEST`), zone table (`ZONES`), `BOARD_TOP_Z` | geometry changes, new zone sheets / tags |
 | `vision1/node.py` (top) | `DEST_MEMORY` (60 s), `DEST_FRAMES` (15) | |
 | `robot/pick_one.py` (top) | `PARK` pose, `HOVER`, `TABLE_Z`, temp-spot clearance, D405 acceptance window | workcell changes |
 | `fr5-board-stacking` `src/hk_fr5_description/config/tool_geometry.yaml` | cup length `tcp_z`, D405 mount `yaw` (measured, section 14) | tool changes |
@@ -667,7 +691,11 @@ moved aside when they cover a requested board.*
 
 ## 16. Limits
 
-- The overhead camera looks only at the pick area (`ROI` in `vision1/detect.py`) for boards; templates anywhere.
+- Boards are detected on both tables (`ROIS` in `vision1/detect.py`); the model runs once per table crop (it was
+  trained on the right one; left-table boards measured 207x292 / 154x207 mm on 450 frames). Tags anywhere.
+- Board on a zone sheet (model mode, synthetic test on the white templates): 8 / 9 found, 1-3 mm; a red VARc rotated
+  8 deg merged with its white sheet (`UNKWN`). Classic mode merges white boards with white sheets and reports the
+  empty yellow-framed VARa template as a board: use model mode with zones.
 - Classic mode: boards must not touch or overlap. Model mode handles touching boards and stacks, but stacked white
   boards can still be misread (a 2-VARa stack once read as VARb): check the hover before confirming.
 - `z` in `/vision/boards` is always one board on the table; real heights come from the D405.

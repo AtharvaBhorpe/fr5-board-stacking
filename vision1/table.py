@@ -72,11 +72,21 @@ TAG_SIDE = 0.039
 # ponytail: tag corners mapped on the table plane (-0.060), tags lie 5 mm higher -> ~2 mm parallax; fine for now.
 
 
-def destination(c, tag):
-    """One detected tag -> place pose for its variant, or None (unknown id, wrong metric size = bad detection)."""
-    if tag["id"] not in DEST:
-        return None
-    variant, (ox, oy), dyaw = DEST[tag["id"]]
+# Zones for the main controller (vision1-changes.md C2 / C3 / C7 / C15): tag id -> name (unique), kind (drop_off /
+# processing), offset (tag centre -> centre of the board area, marker frame, m), rotation (zone long side relative to
+# marker +X), size [long, short] (m), top_z (sheet top, base_link, m).
+# ponytail: PLACEHOLDERS = today's templates (tags 1 / 2 / 16, same offsets as DEST). Replace with the cardboard sheets
+# (ids, offsets, sizes, top_z) measured in the lab; add processing_1, ... the same way.
+ZONES = {
+    1: ("drop_off_a", "drop_off", (-0.150, 0.0), math.pi / 2, (0.295, 0.210), -0.055),
+    2: ("drop_off_b", "drop_off", (-0.150, 0.0), math.pi, (0.210, 0.150), -0.055),
+    16: ("drop_off_c", "drop_off", (0.140, 0.0), 0.0, (0.210, 0.135), -0.055),
+}
+
+
+def tag_place(c, tag, offset, dyaw):
+    """Tag + offset / rotation in its marker frame -> (x, y, yaw in [-pi, pi), tag side m), or None when the tag's
+    metric size is wrong (bad detection)."""
     xy = to_base(c, tag["corners"])
     e = np.roll(xy, -1, axis=0) - xy
     side = np.linalg.norm(e, axis=1)
@@ -85,11 +95,29 @@ def destination(c, tag):
     xa = e[0] / side[0] - e[2] / side[2]          # average the two edges pointing corner 0 -> 1
     xa /= np.linalg.norm(xa)
     ya = np.array([-xa[1], xa[0]])
-    cx, cy = xy.mean(0) + ox * xa + oy * ya
+    cx, cy = xy.mean(0) + offset[0] * xa + offset[1] * ya
     yaw = math.atan2(xa[1], xa[0]) + dyaw
-    return {"variant": variant, "tag_id": tag["id"], "x": round(float(cx), 4), "y": round(float(cy), 4),
-            "yaw": round(math.atan2(math.sin(yaw), math.cos(yaw)), 4), "support_z": DEST_SUPPORT_Z,
-            "tag_side_mm": round(float(side.mean()) * 1000, 1)}
+    return round(float(cx), 4), round(float(cy), 4), round(math.atan2(math.sin(yaw), math.cos(yaw)), 4), side.mean()
+
+
+def destination(c, tag):
+    """One detected tag -> place pose for its variant, or None (unknown id, wrong metric size = bad detection)."""
+    if tag["id"] not in DEST:
+        return None
+    variant, offset, dyaw = DEST[tag["id"]]
+    p = tag_place(c, tag, offset, dyaw)
+    return p and {"variant": variant, "tag_id": tag["id"], "x": p[0], "y": p[1], "yaw": p[2],
+                  "support_z": DEST_SUPPORT_Z, "tag_side_mm": round(float(p[3]) * 1000, 1)}
+
+
+def zone(c, tag):
+    """One detected tag -> its zone (centre of the board area, yaw of the long side, not yet modulo pi), or None."""
+    if tag["id"] not in ZONES:
+        return None
+    name, kind, offset, dyaw, size, top_z = ZONES[tag["id"]]
+    p = tag_place(c, tag, offset, dyaw)
+    return p and {"name": name, "kind": kind, "x": p[0], "y": p[1], "yaw": p[2], "size": list(size),
+                  "top_z": top_z, "tag_id": tag["id"]}
 
 
 PLAUSIBLE_MM = ((100, 230), (180, 320))  # short, long side of anything board-like (top board of unknown variant)

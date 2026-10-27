@@ -260,7 +260,8 @@ place_z = lambda d: d["support_z"] + (args.stack + 1) * BOARD_H  # cup tip = top
 msg = park_and_look()
 moved = 0  # boards put on the temp spot in this run (stacked there)
 for _ in range(MAX_CLEAR + 1):
-    boards = [b for b in msg["boards"] if args.variant in (None, b["variant"])]
+    # pick table only: vision also reports boards on the drop-off zones (whole table), never re-pick those
+    boards = [b for b in msg["boards"] if args.variant in (None, b["variant"]) and b.get("zone") == "pick"]
     dests = {d["variant"]: d for d in msg.get("destinations", [])}
     if args.place:
         print(f"destinations seen: {sorted(dests) or 'none'}")
@@ -273,7 +274,8 @@ for _ in range(MAX_CLEAR + 1):
               (not args.place or reachable(dests[b["variant"]], place_z(dests[b["variant"]])))), None)
     if b is not None:
         break
-    hidden = [o for o in msg.get("occluded", []) if args.variant and o["variant"] == args.variant]
+    hidden = [o for o in msg.get("occluded", []) if args.variant and o["variant"] == args.variant
+              and o.get("zone") == "pick"]
     if not hidden:
         if boards:
             raise SystemExit("no reachable board (and destination): move one closer to the robot")
