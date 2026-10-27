@@ -52,6 +52,10 @@ ap.add_argument("--stack", type=int, default=0, help="--place: boards already ly
 ap.add_argument("--temp", type=float, nargs=2, default=(-0.25, 0.10), metavar=("X", "Y"),
                 help="base_link x y (m) of the free spot for boards that cover the requested one (left table)")
 ap.add_argument("--speed", type=float, default=0.1, help="velocity_scaling, first runs <= 0.2")
+ap.add_argument("--place-press", type=float, default=1.0,
+                help="mm the cup goes past the placed board's top when releasing (4 = like the pick: the squashed cup "
+                     "sprang back and sucked the light board up again, real robot 2026-10-27)")
+ap.add_argument("--blow", type=float, default=2.0, help="s blow-off at release (gripper.yaml default 1.0 left boards stuck)")
 ap.add_argument("--no-wrist-height", action="store_true",
                 help="pick descent from the fixed one-board height, not from the wrist D405 depth")
 args = ap.parse_args()
@@ -222,9 +226,9 @@ def transfer(b, to=None, what="put it back down"):
     # Detach the board MODEL first (the vacuum still holds it): with --press it would end inside the table and
     # MoveIt refuses the descent. Straight down, only the carry above needed it.
     call(detach, DetachBoard.Request(keep_as_obstacle=False))
-    drop = HOVER + PRESS if to else down  # put back: same height it came from; place: computed target height
+    drop = HOVER + args.place_press / 1000 if to else down  # put back: same height it came from
     check("down again", lin(-drop))
-    r = act(release, Release.Goal())
+    r = act(release, Release.Goal(blow_off_time=args.blow))
     print(f"  release: success={r.success} {r.message}")
     check("lift empty", lin(drop))
     return time.time()
