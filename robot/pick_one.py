@@ -5,7 +5,7 @@
 
     cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py --place        # pick -> template
 
-Sequence: hover 10 cm above the board centre -> ENTER -> straight down to the board top -> grip -> lift 10 cm ->
+Sequence: park out of the overhead camera view (PARK), read vision, hover 10 cm above the board centre -> ENTER -> straight down to the board top -> grip -> lift 10 cm ->
 attach -> ENTER -> detach -> back down -> release -> lift. The board ends where it started. Ctrl+C any time = stop.
 --place: after the lift, carry it to the destination template of its variant (vision `destinations`: tag 1 / 2 / 16
 + team offsets), ENTER, down onto the template (+ --stack boards already there), release, lift.
@@ -35,6 +35,7 @@ HOVER = 0.10  # m above the board top
 TEMP_TOP_Z = -0.055   # top of a board lying on the table (temp spot)
 TEMP_CLEARANCE = 0.30  # m from any destination template centre (biggest board half-diagonal + template)
 MAX_CLEAR = 4          # boards moved to the temp spot before giving up
+PARK = (-0.233, -0.096, 0.243, 1.543)  # x, y, z, tool yaw: robot startup pose, arm clear of the overhead pick-area view
 WRIST_HIGHER = 0.06    # D405 board top accepted up to this much above one board on the table (stack of ~12) ...
 WRIST_LOWER = 0.01     # ... and this much below it; else the fixed height is used
 
@@ -141,6 +142,15 @@ def fresh_vision(after=0.0):
     return msg
 
 
+def park_and_look():
+    """The arm hides boards from the overhead camera when it is above them (e.g. after --hover-only): park it out of
+    the view, then use a frame taken after the park."""
+    print("parking the arm out of the overhead camera view")
+    check("park", act(move_to, MoveTo.Goal(x=PARK[0], y=PARK[1], z=PARK[2], yaw=PARK[3],
+                                           velocity_scaling=args.speed)))
+    return fresh_vision(after=time.time() + 0.5)
+
+
 def tool_yaw(b):
     # Suction cup is round: board yaw or +pi, whichever is closest to home yaw +pi/2 -> least wrist rotation
     return min((b["yaw"], b["yaw"] + math.pi), key=lambda a: abs(math.remainder(a - math.pi / 2, 2 * math.pi)))
@@ -227,7 +237,7 @@ def blocker(msg, target):
 
 
 place_z = lambda d: d["support_z"] + (args.stack + 1) * BOARD_H  # cup tip = top of the placed board
-msg = fresh_vision()
+msg = park_and_look()
 moved = 0  # boards put on the temp spot in this run (stacked there)
 for _ in range(MAX_CLEAR + 1):
     boards = [b for b in msg["boards"] if args.variant in (None, b["variant"])]
@@ -266,9 +276,9 @@ for _ in range(MAX_CLEAR + 1):
         raise SystemExit(f"cannot clear: covering board {top['variant']} (id {top['id']}) or temp spot unreachable")
     print(f"--- {t['variant']} (id {t['id']}) is under {top['variant']} (id {top['id']}): moving it to the temp spot "
           f"{args.temp} (board {moved + 1} there)")
-    done_at = transfer(top, (spot["x"], spot["y"], tz, tool_yaw(top)), "put it on the temp spot")
+    transfer(top, (spot["x"], spot["y"], tz, tool_yaw(top)), "put it on the temp spot")
     moved += 1
-    msg = fresh_vision(after=done_at + 1.0)
+    msg = park_and_look()
 
 if args.place:
     d = dests[b["variant"]]
