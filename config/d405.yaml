@@ -1,0 +1,12 @@
+# Wrist D405, realsense2_camera rs_launch.py config_file (flat parameter mapping). Base: team branch
+# feat/perception-geometric-detector config/d405_ros.yaml. Point cloud on (decimated 2x) for the RViz 3D view.
+enable_color: true
+enable_depth: true
+depth_module.depth_profile: "848,480,15"
+depth_module.color_profile: "848,480,15"
+align_depth.enable: false
+enable_sync: true
+pointcloud.enable: true
+decimation_filter.enable: true
+hole_filling_filter.enable: false
+wait_for_device_timeout: 10.0

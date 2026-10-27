@@ -71,6 +71,13 @@ poses) and the **Pick** panel:
 - `/pick_panel/request` (`std_msgs/String`: `VARa` / `VARb` / `VARc` / `confirm` / `stop`) does the same from a
   script; `confirm` from the topic is refused unless the robot is MOCK. `/pick_panel/log`: every output line
 
+**Wrist camera (RealSense D405)**: `pixi run wrist` (4th terminal) starts `realsense2_camera` with
+`config/d405.yaml`: `/wrist/wrist_camera/color/image_rect_raw` (shown in the panel under the overhead view while it
+publishes) and `/wrist/wrist_camera/depth/color/points` (RViz 3D, on the gripper). The driver's frames hang on the
+URDF's `d405_camera_link` (CAD pose, mount yaw not measured: a few mm / deg off). USB access once per PC:
+`sudo cp config/99-realsense-d405.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger`
+(user in group `plugdev`), then re-plug the camera.
+
 `pick_one` refuses to start while the gripper reports vacuum on (a stopped run can leave a board on the cup):
 take it off or `pixi run shell`, then `release`.
 

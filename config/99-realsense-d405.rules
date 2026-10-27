@@ -1,0 +1,5 @@
+# Copied from team branch feat/perception-geometric-detector. Install: see README (wrist camera).
+# D405 USB access for plugdev members. Based on the vendor's D405 USB rule:
+# https://github.com/realsenseai/librealsense/blob/v2.57.7/config/99-realsense-libusb.rules
+# Restrict access to the device group rather than granting world write access.
+SUBSYSTEM=="usb", ATTR{idVendor}=="8086", ATTR{idProduct}=="0b5b", MODE="0660", GROUP="plugdev"

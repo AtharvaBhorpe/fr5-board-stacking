@@ -36,6 +36,19 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Wrist D405 depth
+      Enabled: true
+      Topic:
+        Value: /wrist/wrist_camera/depth/color/points
+        Depth: 2
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: RGB8
+      Decay Time: 0
   Global Options:
     Fixed Frame: base_link
     Background Color: 48; 48; 48

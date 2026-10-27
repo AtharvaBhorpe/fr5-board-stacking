@@ -1,5 +1,6 @@
 // RViz panel: overhead camera with detections (/vision/image) and the board variants that can be picked now
 // (/vision/boards). Click a variant button, or a board in the camera image = supervised pick and place.
+// Wrist D405 color image (pixi run wrist) appears below the overhead view while it publishes.
 //
 // Runs robot/pick_one.py --place --variant X as a child process, so RViz must run in the robot workspace env
 // (robot/rviz.sh does that). Its output is shown here; its ENTER prompts become the Confirm button.
@@ -57,6 +58,15 @@ public:
     cam_->setToolTip("click a board = pick and place it");
     cam_->installEventFilter(this);
     lay->addWidget(cam_, 3);
+    wrist_ = new QLabel;
+    wrist_->setAlignment(Qt::AlignCenter);
+    wrist_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    wrist_->setMinimumSize(320, 180);
+    wrist_->setStyleSheet("background:black");
+    wrist_->setToolTip("wrist camera (D405)");
+    wrist_->installEventFilter(this);
+    wrist_->hide();  // shown while wrist images arrive
+    lay->addWidget(wrist_, 3);
     vision_ = new QLabel("vision: waiting for /vision/boards (pixi run vision)");
     vision_->setWordWrap(true);
     lay->addWidget(vision_);
@@ -127,11 +137,17 @@ public:
         QMetaObject::invokeMethod(
           this, [this, s = QString::fromStdString(m->data).trimmed()] {onRequest(s);}, Qt::QueuedConnection);
       });
+    // best effort: matches reliable and best-effort publishers (the RealSense driver's default differs by version)
     image_sub_ = node_->create_subscription<sensor_msgs::msg::Image>(
-      "/vision/image", 2, [this](sensor_msgs::msg::Image::ConstSharedPtr m) {
-        if (m->encoding != "bgr8") {return;}
-        QImage img = QImage(m->data.data(), m->width, m->height, m->step, QImage::Format_RGB888).rgbSwapped();
-        QMetaObject::invokeMethod(this, [this, img] {onImage(img);}, Qt::QueuedConnection);
+      "/vision/image", rclcpp::SensorDataQoS(), [this](sensor_msgs::msg::Image::ConstSharedPtr m) {
+        QImage img = toQImage(*m);
+        if (!img.isNull()) {QMetaObject::invokeMethod(this, [this, img] {onImage(img);}, Qt::QueuedConnection);}
+      });
+    wrist_sub_ = node_->create_subscription<sensor_msgs::msg::Image>(
+      "/wrist/wrist_camera/color/image_rect_raw", rclcpp::SensorDataQoS(),
+      [this](sensor_msgs::msg::Image::ConstSharedPtr m) {
+        QImage img = toQImage(*m);
+        if (!img.isNull()) {QMetaObject::invokeMethod(this, [this, img] {onWrist(img);}, Qt::QueuedConnection);}
       });
     log_pub_ = node_->create_publisher<std_msgs::msg::String>("/pick_panel/log", 50);
   }
@@ -157,6 +173,9 @@ protected:
     if (obj == cam_ && e->type() == QEvent::Resize && !img_.isNull()) {
       onImage(img_);
     }
+    if (obj == wrist_ && e->type() == QEvent::Resize && !wrist_img_.isNull()) {
+      onWrist(wrist_img_);
+    }
     if (obj == cam_ && e->type() == QEvent::MouseButtonPress && !shown_.isEmpty()) {
       // label -> pixmap (centred) -> full camera pixels (the board corners)
       const QPointF off((cam_->width() - shown_.width()) / 2.0, (cam_->height() - shown_.height()) / 2.0);
@@ -176,6 +195,21 @@ protected:
   }
 
 private:
+  static QImage toQImage(const sensor_msgs::msg::Image & m)
+  {
+    if (m.encoding != "bgr8" && m.encoding != "rgb8") {return {};}
+    QImage img(m.data.data(), m.width, m.height, m.step, QImage::Format_RGB888);
+    return m.encoding == "bgr8" ? img.rgbSwapped() : img.copy();  // copy: m.data dies with the message
+  }
+
+  void onWrist(const QImage & img)
+  {
+    wrist_img_ = img;
+    wrist_ms_ = QDateTime::currentMSecsSinceEpoch();
+    wrist_->show();
+    wrist_->setPixmap(QPixmap::fromImage(img).scaled(wrist_->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  }
+
   void onImage(const QImage & img)
   {
     img_ = img;
@@ -255,6 +289,9 @@ private:
       b->setEnabled(why.isEmpty());
       b->setToolTip(why.isEmpty() ? "pick and place this variant (you confirm each descent)" : why);
       b->setStyleSheet(why.isEmpty() ? "QPushButton{background:#2e7d32;color:white;font-weight:bold}" : "");
+    }
+    if (wrist_->isVisible() && QDateTime::currentMSecsSinceEpoch() - wrist_ms_ > 3000) {
+      wrist_->hide();  // wrist camera stopped
     }
     stop_->setEnabled(running());
     confirm_->setEnabled(waiting_);
@@ -381,8 +418,9 @@ private:
     }
   }
 
-  QLabel * cam_, * vision_, * run_;
-  QImage img_;
+  QLabel * cam_, * wrist_, * vision_, * run_;
+  QImage img_, wrist_img_;
+  qint64 wrist_ms_ = 0;
   QSize shown_;  // size of the scaled camera pixmap in cam_
   double full_w_ = 1920;  // camera width in px (board corners)
   std::vector<std::pair<QString, QPolygonF>> polys_;
@@ -399,7 +437,7 @@ private:
   QProcess * proc_ = nullptr;
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr boards_sub_, request_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_, wrist_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr log_pub_;
 };
 }  // namespace vision1_rviz

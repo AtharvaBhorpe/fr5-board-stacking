@@ -14,12 +14,15 @@ detect = "python vision1/detect.py"
 check = "python vision1/check_samples.py"
 eval = "python vision1/eval_dataset.py"
 listen = "python vision1/listen.py"
+# Wrist RealSense D405 -> /wrist/wrist_camera/... (color, depth, point cloud), placed on the robot model
+wrist = "ros2 launch vision1/wrist.launch.py"
 
 [dependencies]
 ros-humble-ros-base = ">=0.10.0,<0.11"
 py-opencv = ">=4.10,<5"
 numpy = "*"
 onnxruntime = "*"   # runs the exported model in the ROS node (CPU, no torch needed)
+ros-humble-realsense2-camera = ">=4.57.7,<5"
 
 # Training only (GPU): pixi run -e train ...  Kept out of the ROS env: torch is ~3 GB and needs an NVIDIA driver.
 [feature.train]
