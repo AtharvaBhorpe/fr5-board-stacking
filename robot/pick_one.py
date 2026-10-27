@@ -36,6 +36,8 @@ TEMP_TOP_Z = -0.055   # top of a board lying on the table (temp spot)
 TEMP_CLEARANCE = 0.30  # m from any destination template centre (biggest board half-diagonal + template)
 MAX_CLEAR = 4          # boards moved to the temp spot before giving up
 PARK = (-0.233, -0.096, 0.243, 1.543)  # x, y, z, tool yaw: robot startup pose, arm clear of the overhead pick-area view
+CUP_SHORT = 0.0028     # real cup touches 2.8 mm below the model tcp at the D405 board top (jog test 2026-10-27:
+                       # D405 top -52.0 mm, contact at tcp -54.8 mm). Added to the D405 descent only.
 WRIST_HIGHER = 0.06    # D405 board top accepted up to this much above one board on the table (stack of ~12) ...
 WRIST_LOWER = 0.01     # ... and this much below it; else the fixed height is used
 
@@ -181,9 +183,10 @@ def transfer(b, to=None, what="put it back down"):
         m = wd.measure(b["x"], b["y"])
         gap = None if m is None else (b["z"] + HOVER) - m["top_z"]
         if gap is not None and HOVER - WRIST_HIGHER <= gap <= HOVER + WRIST_LOWER:
-            down = gap + PRESS
+            down = gap + CUP_SHORT + PRESS
             print(f"  D405: board top z={m['top_z']:.4f} ({1000 * (m['top_z'] - b['z']):+.1f} mm vs one board), "
-                  f"cup tip -> board {1000 * gap:.1f} mm, table z={m['table_z']:.4f}")
+                  f"cup -> board {1000 * (gap + CUP_SHORT):.1f} mm, then {args.press:.0f} mm press; "
+                  f"table z={m['table_z']:.4f}")
         else:
             print(f"  D405: {'no measurement' if m is None else f'implausible gap {1000 * gap:.0f} mm'}, "
                   "using the fixed height")
