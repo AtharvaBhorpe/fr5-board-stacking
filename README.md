@@ -78,6 +78,13 @@ URDF's `d405_camera_link` (CAD pose, mount yaw not measured: a few mm / deg off)
 `sudo cp config/99-realsense-d405.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger`
 (user in group `plugdev`), then re-plug the camera.
 
+Is the D405 on the model where it is on the robot? `pixi run python robot/check_wrist.py` (robot + vision + wrist
+running, cup hovering above a board: `pick_one.py --hover-only`) draws the model's prediction into the wrist image
+(`/wrist/check`, `/tmp/wrist_check.png`): green = boards from the overhead camera, red = templates, yellow = TCP
+(per the model it is outside the image, top edge: the gripper is at the top of the wrist image). Outlines on the
+real boards = mount right. Shifted / rotated: fix `mount.yaw` in `fr5-board-stacking`
+`src/hk_fr5_description/config/tool_geometry.yaml` (camera position around the tool), rebuild, check again.
+
 `pick_one` refuses to start while the gripper reports vacuum on (a stopped run can leave a board on the cup):
 take it off or `pixi run shell`, then `release`.
 

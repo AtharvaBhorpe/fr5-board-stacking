@@ -9,4 +9,4 @@ enable_sync: true
 pointcloud.enable: true
 decimation_filter.enable: true
 hole_filling_filter.enable: false
-wait_for_device_timeout: 10.0
+wait_for_device_timeout: -1.0   # wait until the D405 is plugged in (10 s: driver exits)
