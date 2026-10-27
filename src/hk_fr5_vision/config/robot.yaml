@@ -17,4 +17,5 @@ chain:
   - {xyz: [0.0, 0.0, 0.1021], rpy: [1.5708, 0.0, 0.0]}     # j5 wrist1_link -> wrist2_link
   - {xyz: [0.0, 0.0, 0.102], rpy: [-1.5708, 0.0, 0.0]}     # j6 wrist2_link -> wrist3_link
 flange_z: 0.100              # wrist3_link -> flange face (hk_fr5_description tool_geometry.yaml flange.z)
-tcp_z: 0.1129                # flange face -> relaxed cup tip (plate 0.0095 + gripper tcp_z 0.1034), along flange z
+tcp_z: 0.1074                # flange face -> relaxed cup tip (plate 0.0095 + gripper tcp_z 0.0979), along flange z
+                             #   (V-27: motion branch df9f226 / H-12, real-robot contact tests; was 0.1129)
