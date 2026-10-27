@@ -5,7 +5,8 @@ flange:
   z: 0.100                  # wrist3_link -> flange face (FR5 DH d6)
 
 mount:                      # 3D-printed D405 plate between flange and gripper
-  yaw: 0.0                  # camera arm direction about tool z. TODO: measure on robot
+  yaw: -1.5708              # camera arm direction about tool z. Measured 2026-10-27: real D405 sits on base -X of the
+                            # tool (away from the robot base) with joint 6 at the startup pose; 0.0 put it on base +Y
   plate_thickness: 0.0095   # flange face -> gripper mount face
   ring_radius: 0.0375
   arm_size: [0.060, 0.042, 0.006]
