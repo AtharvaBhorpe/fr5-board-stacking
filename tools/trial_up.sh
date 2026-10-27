@@ -17,6 +17,7 @@ MW=~/hackathon/wt/feat-robot-motion-gripper
 VW=~/hackathon/wt/feat-vision1-overhead
 PX=~/.pixi/bin/pixi
 TMUX_BIN=~/.pixi/bin/tmux
+export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/usr/share/terminfo:/lib/terminfo"   # pixi tmux: system terminfo
 S=trial
 MODE=debug; SIM=0; RVIZ=false; GUI=1
 for a in "$@"; do
@@ -58,6 +59,7 @@ pub() { ros topic info "$1" | grep -q "Publisher count: [1-9]"; }
 
 echo "starting tmux session '$S' ($MODE$( [ $SIM = 1 ] && echo ', SIM'))"
 win 0 monitor $WT "$PX run python3 tools/live_monitor.py"
+if ! $TMUX_BIN has-session -t $S 2>/dev/null; then echo "ERROR: tmux did not start (see the message above)"; exit 1; fi
 if [ $SIM = 1 ]; then
   win 1 motion $MW "$PX run sim use_rviz:=$RVIZ"
 else

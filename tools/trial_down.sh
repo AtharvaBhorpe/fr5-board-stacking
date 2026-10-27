@@ -3,6 +3,7 @@
 # motion, monitor last - it writes the log index at exit), wait, then close the session.
 #   tools/trial_down.sh
 TMUX_BIN=~/.pixi/bin/tmux
+export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/usr/share/terminfo:/lib/terminfo"   # pixi tmux: system terminfo
 S=trial
 if ! $TMUX_BIN has-session -t $S 2>/dev/null; then echo "no tmux session '$S'"; exit 0; fi
 for w in ctrl skills world vision fake motion monitor; do
