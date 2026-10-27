@@ -6,14 +6,18 @@ ROS tests: use a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82`).
 
 | Script | Needs | Checks | Time | Last result |
 |---|---|---|---|---|
-| `world_core_check.py` | nothing (simulated time) | geometry, variants + size check, tracking under noise, zones + margin, processing-zone state machine (CL-4 / CL-19), stacks + FULL, obstacles, stale vision, fixed fault zone, events, robot mask (CL-31: geometry, held board ignored, arm explains absence only, any part counts, zones frozen vs. running), reset_zone removes the zone's boards (CL-36) | < 1 s | 57/57 |
-| `fake_world_check.py` | nothing | camera model vs the real calibration (`calib.apply` as reference), bbox round trip, scenario -> pixels -> world, noise, input stack, simulated operator (same / non-variant board back), hands | ~1 s | 17/17 |
-| `world_ros_check.py` | ROS | real wiring: `fake_world` -> `world_model` -> real `vision_transform` -> `/task/world`; scripted pick -> processing -> DONE -> drop-off; stale vision; clean Ctrl+C; bad parameter | ~8 s | 13/13 |
-| `skill_math_check.py` | nothing | tcp yaw choice, pick / place heights, zone acceptance, board lookup (arm mask moved to `world_core_check`) | < 1 s | 10/10 |
+| `world_core_check.py` | nothing (simulated time) | geometry, variants + size check, tracking under noise, zones + margin, processing-zone state machine (CL-4 / CL-19), stacks + FULL, obstacles, stale vision, fixed fault zone, events, robot mask (CL-31: geometry, held board ignored, arm explains absence only, any part counts, zones frozen vs. running), reset_zone removes the zone's boards (CL-36), fault zone = void + fallback position (CL-39) | < 1 s | 60/60 |
+| `fake_world_check.py` | nothing | demo layout rules (calibrated area, reach, arm at home, profile, zone / input gaps), scenario -> Vision 1 JSON frame -> `vision1.parse` -> world, 1 mm noise, input stack, place on a sheet, simulated operator (same / UNKWN), hands as `obstacles[]`, contact-sim surfaces on sheets; real `world.yaml` | ~1 s | 17/17 |
+| `world_ros_check.py` | ROS | real wiring: `fake_world` (`/vision/boards` JSON) -> `world_model` -> `/task/world`; zone `base_z` from `top_z`; scripted pick -> processing -> DONE -> drop-off sheet; a zone without `size` -> loud ERROR; stale vision; clean Ctrl+C | ~8 s | 13/13 |
+| `skill_math_check.py` | nothing | tcp yaw choice, pick / place heights, zone acceptance, board lookup, stack box from the world (CL-38), fault zone rules (CL-39) | < 1 s | 14/14 |
 | `main_core_check.py` | nothing (simulated clock, `main_sim.py`) | main controller core: the user's scheduling example (exact order), priority change, nearest board, every failure policy, pause / stop / cancel while holding, per-job pause, CL-23 / CL-24, claims, counters (CL-27), validation; invariants after every step | ~30 s | 47/47 |
 | `main_core_regress_check.py` | nothing (`main_sim.py`) | one scenario per review bug (TM-16: D3..R6, A1..A9, CL-28..CL-36), each built to fail on the core before its fix (`MAIN_CORE=<old main_core.py>`); invariants | ~40 s | 34/34 |
 | `main_core_fuzz_check.py` | nothing (`main_sim.py`) | seeded fuzz: random layouts (CL-34), jobs, failure codes, commands, flicker, camera dropouts, world lag, disturbances while holding; an operator who reacts only to alerts / PAUSED / HALTED; every seed must keep the invariants and settle (`--seeds N`, `--seed S -v` for one trace) | ~2.5 min (20 seeds) | 40/40 seeds |
-| `skills_ros_check.py` | ROS + the motion worktree (bringup started from there, headless) | every skill + failure code in the full sim stack (motion + vision + fake world with contact sim + world model + skills) | ~3 min | 26/26 |
+| `vision1_check.py` | nothing | Vision 1 JSON adapter (V3): boards / zones -> detections, bad entries skipped, frames refused, real world.yaml effect (base_z, zone boards, UNKWN), UNKWN candidate rule | ~1 s | 19/19 |
+| `main_node_check.py` | nothing (messages only) | controller node, pure parts: World.msg -> core dict (the core decides the same as on the snapshot), Job.msg <-> core job, SkillCode names, result rule (status + success + code agree), skill goals, config | ~2 s | 14/14 |
+| `main_node_ros_check.py` | ROS (in-process fakes, no motion stack) | the controller node against scripted fake skill servers / get_state / world: timeouts, rejected / late-accepted goals, default-filled results, stop during a skill and before its goal is accepted, loop exception -> HALT, world outage, vanished skill server, tcp + status rate, status size, service exceptions, second controller, Ctrl+C and SIGTERM (separate process), Ctrl+C while a goal's accept is on its way | ~50 s | 22/22 |
+| `main_ros_check.py` | ROS + the motion worktree (headless) | the controller in the FULL sim stack via its API only: the user's scheduling example (exact order, counters, stacks), no vacuum -> skip, hand -> wait_clear, pause / stop / cancel while holding, invalid job, list_jobs, Ctrl+C during a skill | ~4 min | 17/17 |
+| `skills_ros_check.py` | ROS + the motion worktree (bringup started from there, headless) | every skill + failure code in the full sim stack (motion + vision + fake world with contact sim + world model + skills), incl. picking off a drop-off stack and placing back (scene box removed, S-11) | ~3 min | 27/27 |
 
 `main_sim.py` (shared simulation, not a test): real `world_core` + `fake_core` on a simulated clock; skills refuse like
 `skill_server`; robot mask + occlusion; held board seen by the camera; checker: invariants, loop + progress detector.
@@ -22,3 +26,11 @@ Helpers: `HK_SPEED` (skills test move speed, default 1.0), `HK_TEST_LOG_DIR` (no
 Rule TM-13: start nodes with their output going to a log file, never an unread `stdout=PIPE` (a full 64 KB pipe
 freezes a chatty node such as move_group). `skills_ros_check.py` writes `skills_check_<node>.log` and, if a
 skill reports 'motion stack hung?', a gdb backtrace of move_group (needs `kernel.yama.ptrace_scope=0`).
+
+Timers: waits in the tests follow `world.yaml` (gone / back / unknown_after) and the scenario's operator times (CL-40),
+so tuning them at the lab does not break the tests.
+
+Variants: the core logic tests (`world_core`, `main_core*`, `main_sim`) use the PLACEHOLDER variants of
+`tests/test_variants.yaml` (white_small / white_large / red), merged over `world.yaml`, which holds the real Vision 1
+variants VARa / VARb / VARc (TM-20). `fake_world_check`, `vision1_check` and the ROS / sim-stack tests run the real
+variants and `scenario_demo.yaml` (V5, TM-24). Vision frames: ~5 Hz everywhere (fake_world `rate` 5, main_sim step 0.2 s).

@@ -1,13 +1,14 @@
-"""world_model node (T3, control-loop.md sections 2-3): Vision 1 detections -> base_link facts -> /task/world.
+"""world_model node (T3, control-loop.md sections 2-3): Vision 1 frames -> base_link facts -> /task/world.
 
-    /vision1/detections  vision_msgs/Detection2DArray (Vision 1 contract, project-plan P-1..P-3)
+    /vision/boards       std_msgs/String JSON from Vision 1 (schema: notes/vision1-changes.md, parsed by vision1.py;
+                         boards / zones already in base_link). V3 (TM-22): replaced /vision1/detections (pixels).
     /task/events         std_msgs/String JSON from the skills: picked {board, x, y} | placed {board, zone, x, y, yaw,
                          variant} | dropped {board} | reset_zone {zone}
     /gripper/state       hk_fr5_interfaces/GripperState
     -> /task/world       hk_fr5_task_interfaces/World (latched; on every frame + 2 Hz)
 
-Pixels -> table: /vision/pixel_to_table (pixel_source: service, the real API) or the same calibration maths in-process
-(pixel_source: local, for fast tests).
+Frames captured (Vision 1 `stamp`, C9) before the last /task/events message are dropped: they show the table before
+the robot changed it (e.g. a just-picked board still lying there).
 """
 import json
 import math
@@ -21,14 +22,11 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from std_msgs.msg import String
-from vision_msgs.msg import Detection2DArray
 
 from hk_fr5_interfaces.msg import GripperState
-from hk_fr5_task.fake_core import Camera, bbox_corners
-from hk_fr5_task import mask
+from hk_fr5_task import mask, vision1
 from hk_fr5_task.world_core import World
 from hk_fr5_task_interfaces.msg import Board, Obstacle, World as WorldMsg, Zone
-from hk_fr5_vision_interfaces.srv import PixelToTable
 
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
@@ -38,82 +36,51 @@ class WorldModel(Node):
         super().__init__("world_model", namespace="task")
         share = get_package_share_directory("hk_fr5_task")
         self.declare_parameter("config", os.path.join(share, "config", "world.yaml"))
-        self.declare_parameter("pixel_source", "service")      # service | local
-        self.declare_parameter("calib_file", "")               # local: "" -> hk_fr5_vision share config/calib.yaml
+        self.declare_parameter("max_clock_skew", 5.0)          # |now - stamp| above this: Vision 1 clock wrong -> arrival time
         cfg_path = self.get_parameter("config").value
         with open(cfg_path) as f:
             self.core = World(yaml.safe_load(f))
-        self.source = self.get_parameter("pixel_source").value
-        if self.source not in ("service", "local"):
-            raise RuntimeError(f"pixel_source must be 'service' or 'local', got '{self.source}'")
-        self.cam, self.cli, self.pending = None, None, False
-        if self.source == "local":
-            from hk_fr5_vision import calib
-            p = self.get_parameter("calib_file").value or os.path.join(
-                get_package_share_directory("hk_fr5_vision"), "config", "calib.yaml")
-            self.cam = Camera(calib.load(p))
-        else:
-            self.cli = self.create_client(PixelToTable, "/vision/pixel_to_table")
         self.declare_parameter("shadow_radius", 0.12)          # CL-20 B band base -> tcp half-width (0 = no mask)
         self.declare_parameter("mask_extra", 0.03)             # CL-31 extra margin on the held-board area
         self.declare_parameter("tcp_frame", "tcp")
         self.shadow_radius = float(self.get_parameter("shadow_radius").value)
         self.tf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf, self)
-        self.gripper_state, self.dropped_frames = "", 0
+        self.gripper_state, self.dropped_frames, self.last_event_t = "", 0, 0.0
         self.pub = self.create_publisher(WorldMsg, "world", LATCHED)
-        self.create_subscription(Detection2DArray, "/vision1/detections", self._detections, 5)
+        self.create_subscription(String, "/vision/boards", self._frame, 5)
         self.create_subscription(String, "events", self._event, 50)
         self.create_subscription(GripperState, "/gripper/state", lambda m: setattr(self, "gripper_state", m.state), LATCHED)
         self.create_timer(0.5, self._publish)
-        self.get_logger().info(f"world model: {cfg_path}, pixels -> table via {self.source}")
+        self.get_logger().info(f"world model: {cfg_path}, Vision 1 frames from /vision/boards")
 
     def now(self):
         return self.get_clock().now().nanoseconds * 1e-9
 
-    def _detections(self, msg):
-        items = []
-        for d in msg.detections:
-            if not d.results:
-                continue
-            h = d.results[0].hypothesis
-            c = d.bbox.center
-            items.append((h.class_id, d.id, h.score, bbox_corners(c.position.x, c.position.y, c.theta, d.bbox.size_x,
-                                                                  d.bbox.size_y), (c.position.x, c.position.y)))
-        pts = [p for it in items for p in it[3] + [list(it[4])]]          # 4 corners + centre per detection
-        if self.source == "local":
-            xy = [self.cam.to_table(u, v) for u, v in pts]
-            self._apply(items, xy, [True] * len(pts))
-            return
-        if self.pending:
-            self.dropped_frames += 1                                     # never queue frames behind a slow call
-            return
-        if not self.cli.service_is_ready():
-            self.get_logger().warn("/vision/pixel_to_table not available", throttle_duration_sec=5.0)
-            return
-        self.pending = True
-        req = PixelToTable.Request(u=[float(p[0]) for p in pts], v=[float(p[1]) for p in pts])
-        fut = self.cli.call_async(req)
-        fut.add_done_callback(lambda f: self._service_done(f, items))
-
-    def _service_done(self, fut, items):
-        self.pending = False
+    def _frame(self, msg):
+        now = self.now()
         try:
-            r = fut.result()
-        except Exception as e:
-            self.get_logger().error(f"pixel_to_table failed: {e}", throttle_duration_sec=5.0)
+            stamp, dets, problems = vision1.parse(json.loads(msg.data))
+        except ValueError as e:                                          # json.JSONDecodeError is a ValueError too
+            self.get_logger().warn(f"Vision 1 frame ignored: {e}", throttle_duration_sec=5.0)
             return
-        if not r.success:
-            self.get_logger().warn(f"pixel_to_table: {r.message}", throttle_duration_sec=5.0)
+        zone_probs = [p for p in problems if p.startswith("zone ")]
+        board_probs = [p for p in problems if not p.startswith("zone ")]
+        if zone_probs:                                                   # TM-22 A: no defaults, so say it loudly
+            self.get_logger().error(f"Vision 1 zone(s) SKIPPED: {'; '.join(zone_probs)} - Vision 1 interface "
+                                    "incomplete (vision1-changes.md C2 / C3 / C15 / C18). Such a zone does not exist "
+                                    "for us: no place there, boards lying on it count as input boards",
+                                    throttle_duration_sec=5.0)
+        if board_probs:
+            self.get_logger().warn(f"Vision 1 board / obstacle entries skipped: {'; '.join(board_probs)}", throttle_duration_sec=5.0)
+        if abs(now - stamp) > self.get_parameter("max_clock_skew").value:
+            self.get_logger().error(f"Vision 1 stamp {now - stamp:+.1f} s off this clock (same PC? C9) - using the "
+                                    "arrival time", throttle_duration_sec=10.0)
+            stamp = now
+        if stamp < self.last_event_t:
+            self.dropped_frames += 1                                     # captured before the robot changed the table
             return
-        self._apply(items, list(zip(r.x, r.y)), list(r.inside))
-
-    def _apply(self, items, xy, inside):
-        dets = []
-        for k, (cls, tid, score, _, _) in enumerate(items):
-            dets.append({"cls": cls, "id": tid, "score": score, "corners": [list(p) for p in xy[5 * k:5 * k + 4]],
-                         "inside": bool(inside[5 * k + 4])})
-        self.core.update(self.now(), dets, self._mask())
+        self.core.update(now, dets, self._mask())
         self._publish()
 
     def _mask(self):
@@ -136,8 +103,9 @@ class WorldModel(Node):
         return mask.band(tcp, self.shadow_radius, r)
 
     def _event(self, msg):
+        self.last_event_t = self.now()
         try:
-            self.core.event(self.now(), json.loads(msg.data))
+            self.core.event(self.last_event_t, json.loads(msg.data))
         except (ValueError, KeyError, TypeError) as e:
             self.get_logger().error(f"bad event {msg.data!r}: {e}")
             return

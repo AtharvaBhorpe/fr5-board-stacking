@@ -1,5 +1,5 @@
 # Main controller (T5, control-loop.md CL-21..CL-32, review fixes TM-16, failure policies section 6). Seconds.
-fresh: 1.0                # boards / zones seen longer ago are not chosen
+fresh: 1.5                # boards / zones seen longer ago are not chosen
 end_wait: 3.0             # CL-24: count 0 (all) ends after this long without a candidate
 partial_after: 30.0       # count n: give up waiting for more matching boards after this long
 lookup_retries: 2         # BOARD_NOT_FOUND / BOARD_MOVED / VISION_STALE: retries before the board is skipped;
@@ -17,3 +17,11 @@ hold_alert_after: 10.0    # CL-28: holding, target cannot take the board this lo
 hold_fault_after: 10.0    # CL-28: ... this long more -> board to the fault zone (FULL / not seen: job paused too)
 loaded_alert_after: 30.0  # CL-29: processing zone LOADED this long (not taken for processing) -> alert
 home_tol: 0.05            # CL-30: m, tcp this close to home_xy counts as at home
+skill_timeout:            # CL-37: node-side safety net, s (well above the skills' own limits, skills.yaml):
+  pick: 240.0             #   no result in time -> goal cancelled, INTERNAL_ERROR (home + streak -> HALT)
+  place: 240.0
+  home: 90.0
+  wait_clear: 45.0        #   skills.yaml clear_timeout 30 s + margin
+  release_safe: 300.0
+world_timeout: 2.0        # CL-37 N3: no /task/world this long -> no decisions + error (world model running?)
+tcp_period: 2.0           # CL-37 N6: tcp from /motion/get_state after each skill, else at most this often

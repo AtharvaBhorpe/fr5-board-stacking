@@ -42,15 +42,46 @@ def search_end_z(cfg):
 
 def place_target(cfg, zone, thickness):
     """(x, y, zone_yaw, tcp_z) for placing a board of this thickness on a zone (dict like Zone.msg).
-    processing: on the table; drop_off / fault: on top of the stack. tcp z = board top + gap (released just above)."""
-    surface = cfg["table_z"] if zone["kind"] == "processing" else zone["stack_top_z"]
+    processing: on the zone sheet (base_z, V4); drop_off: on top of the stack. tcp z = board top + gap (released just above).
+    fault zone (CL-39, a void): released from the fixed height fault_drop_z (no descent, the pile does not matter)."""
+    if zone["kind"] == "fault":
+        return zone["x"], zone["y"], zone["yaw"], cfg["fault_drop_z"]
+    surface = zone["base_z"] if zone["kind"] == "processing" else zone["stack_top_z"]
     return zone["x"], zone["y"], zone["yaw"], surface + thickness + cfg["place_gap"]
+
+
+def stack_box(cfg, zone, boards, skip=""):
+    """W13 / CL-38: ONE collision box per drop-off / fault stack, rebuilt from the world (no per-board bookkeeping).
+    zone: dict like Zone.msg; boards: dicts like Board.msg. Height = stack top (world: count x variant thickness) minus
+    the board being picked (`skip`) minus stack_box_margin (the cup may touch the top board); footprint = the largest
+    board on it + stack_box_pad per side, aligned with the zone (boards are placed along the zone yaw). The box stands on
+    the table (it covers the zone sheet too); no boards above the sheet (base_z, V4) -> no box.
+    Returns {"size": [x, y, z], "position": [x, y, z], "yaw"} or None (no box: processing / fault zone, empty stack)."""
+    if zone["kind"] != "drop_off":                   # fault zone: a void, no box (CL-39)
+        return None
+    on = [b for b in boards if b["location"] == "zone" and b["zone"] == zone["name"]]
+    top = zone["stack_top_z"]
+    sk = next((b for b in on if b["id"] == skip), None)
+    if sk is not None:
+        top -= sk["thickness"] if sk["thickness"] == sk["thickness"] else cfg["default_thickness"]   # NaN-safe
+    if top - zone["base_z"] <= 0.001:                # no board left on the sheet
+        return None
+    h = top - cfg["table_z"] - cfg["stack_box_margin"]
+    if h <= 0.001:
+        return None
+    l = max([b["length"] for b in on if b["id"] != skip] or [cfg["stack_box_default"][0]])
+    w = max([b["width"] for b in on if b["id"] != skip] or [cfg["stack_box_default"][1]])
+    pad = cfg["stack_box_pad"]
+    return {"size": [l + 2 * pad, w + 2 * pad, h], "position": [zone["x"], zone["y"], cfg["table_z"] + h / 2],
+            "yaw": zone["yaw"]}
 
 
 def zone_accepts(cfg, zone):
     """'' if a board may be placed in this zone now, else the SkillCode name of the reason."""
     if zone["kind"] == "processing":
         return "" if zone["state"] == "EMPTY" else "TARGET_OCCUPIED"
+    if zone["kind"] == "fault":
+        return ""                                    # CL-39: a void, never full
     if zone["state"] == "FULL" or zone["stack_count"] >= cfg["max_stack"]:
         return "STACK_FULL"
     return ""

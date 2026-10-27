@@ -20,7 +20,10 @@ def check(name, cond, extra=""):
     ok += bool(cond); bad += not cond
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CFG = yaml.safe_load(open(os.path.join(HERE, "..", "src", "hk_fr5_task", "config", "world.yaml")))
+CFG_FILE = yaml.safe_load(open(os.path.join(HERE, "..", "src", "hk_fr5_task", "config", "world.yaml")))
+CFG_FILE.update(yaml.safe_load(open(os.path.join(HERE, "test_variants.yaml"))))   # placeholder test variants (V1, TM-20)
+CFG = dict(CFG_FILE, fixed_zones=[])           # sections 1-8: zones only from the detections (section 9: the file)
+GA, BA, UA = CFG["gone_after"], CFG["back_after"], CFG["unknown_after"]   # waits below follow the config (CL-40)
 V = CFG["variants"]
 rng = np.random.default_rng(1)
 
@@ -80,8 +83,9 @@ w.update(0.1, [det("board/red", -0.6, 0.002), det("board/red", -0.6, 0.157)])
 check("two boards side by side (155 mm apart) stay two ids", sorted(boards(w, 0.1)) == ["b1", "b2"])
 w.update(0.2, [det("board/red", -0.6, 0.100), det("board/red", -0.6, 0.157)])
 check("a board jumping 98 mm -> new id (old one waits for lost_after)", sorted(boards(w, 0.2)) == ["b1", "b2", "b3"])
-w.update(0.2 + CFG["lost_after"] + 0.05, [det("board/red", -0.6, 0.100), det("board/red", -0.6, 0.157)])
-check("input board unseen > lost_after -> removed", sorted(boards(w, 1.5)) == ["b2", "b3"], str(sorted(boards(w, 1.5))))
+t = 0.2 + CFG["lost_after"] + 0.05
+w.update(t, [det("board/red", -0.6, 0.100), det("board/red", -0.6, 0.157)])
+check("input board unseen > lost_after -> removed", sorted(boards(w, t)) == ["b2", "b3"], str(sorted(boards(w, t))))
 w = World(CFG)
 w.update(0.0, [det("board/red", -0.6, 0.0, score=0.1), det("board/red", -0.6, 0.3, score=0.5)])
 check("score below min_score ignored", list(boards(w, 0.0)) == ["b1"] and boards(w, 0.0)["b1"]["y"] > 0.2)
@@ -139,7 +143,7 @@ for back, want in (("board/other", "DONE"), ("board/red", "FAULT")):
     w = World(c); t = 0.0
     run([det("board/red", -0.6, 0.0)], 0.3); w.event(t, {"type": "picked", "board": "b1"})
     w.event(t, {"type": "placed", "board": "b1", "zone": "processing_2", "x": -0.45, "y": -0.45, "yaw": 0.0})
-    run([det("board/red", -0.45, -0.45)], 0.3); run([], 1.2); run([det(back, -0.45, -0.45, l=0.15, w=0.10)], 1.2)
+    run([det("board/red", -0.45, -0.45)], 0.3); run([], GA + 0.2); run([det(back, -0.45, -0.45, l=0.15, w=0.10)], BA + 0.2)
     z = zone(w, "processing_2")
     b1 = boards(w, t)["b1"]
     check(f"expanded detection on: '{back.split('/')[1]}' board back -> {want}, processed {want == 'DONE'}, variant still red",
@@ -261,10 +265,10 @@ w.event(t, {"type": "picked", "board": "b1"}); w.event(t, {"type": "placed", "bo
 for k in range(30):                                     # zone covered, nothing seen 3 s
     t = round(t + 0.1, 6); w.update(t, ZONES, ZM)
 check("zone covered, nothing seen 3 s: stays LOADED (state frozen)", zone(w, "processing_1")["state"] == "LOADED")
-for k in range(15):
+for k in range(int((GA + 0.5) * 10)):
     t = round(t + 0.1, 6); w.update(t, ZONES)
 check("mask gone, zone empty >= gone_after -> PROCESSING (operator took it)", zone(w, "processing_1")["state"] == "PROCESSING")
-for k in range(15):                                     # operator returns it while the arm covers the zone, full view
+for k in range(int((BA + 0.5) * 10)):                   # operator returns it while the arm covers the zone, full view
     t = round(t + 0.1, 6); w.update(t, ZONES + [det("board/red", -0.452, 0.448, 0.05)], ZM)
 check("zone covered but the returned board fully seen: the state machine runs -> DONE, same board id",
       zone(w, "processing_1")["state"] == "DONE" and zone(w, "processing_1")["board_id"] == "b1", str(zone(w, "processing_1")))
@@ -277,10 +281,81 @@ run([det("board/red", -0.45, 0.45)], 0.5)
 w.event(t, {"type": "reset_zone", "zone": "processing_1"})              # the operator emptied it
 check("reset_zone: the zone's board is removed from the world (no ghost), zone EMPTY", "b1" not in boards(w, t)
       and zone(w, "processing_1")["state"] == "EMPTY" and zone(w, "processing_1")["board_id"] == "", str(sorted(boards(w, t))))
-run([det("board/white_small", -0.452, 0.448)], 1.5)                    # someone puts another board there
+run([det("board/white_small", -0.452, 0.448)], UA + 0.5)               # someone puts another board there
 check("... a board appearing there later gets a NEW id (not the old one) and is flagged as unknown (FAULT)",
       "b1" not in boards(w, t) and zone(w, "processing_1")["state"] == "FAULT" and zone(w, "processing_1")["board_id"] not in ("", "b1"),
       str(zone(w, "processing_1")))
+
+# 8b mixed stack: picking the top board removes exactly ITS thickness (was: count x the picked board's thickness)
+c = copy.deepcopy(CFG); c["variants"]["white_small"]["thickness"] = 0.004      # make the variants differ
+w = World(c); t = 0.0
+run([det("board/red", -0.6, 0.0), det("board/white_small", -0.6, 0.25)], 0.3)
+ids = {b["variant"]: b["id"] for b in boards(w, t).values()}
+for v in ("red", "white_small"):                                              # red (6 mm) first, white_small (4 mm) on top
+    w.event(t, {"type": "picked", "board": ids[v]})
+    w.event(t, {"type": "placed", "board": ids[v], "zone": "drop_off_1", "x": -0.20, "y": 0.55})
+z1 = zone(w, "drop_off_1")
+check("mixed stack: red 6 mm + white_small 4 mm -> stack top = table + 10 mm, count 2",
+      z1["stack_count"] == 2 and abs(z1["stack_top_z"] - (c["table_z"] + 0.010)) < 1e-9, str(z1["stack_top_z"]))
+w.event(t, {"type": "picked", "board": ids["white_small"]})
+z1 = zone(w, "drop_off_1")
+check("pick the white_small off it -> table + 6 mm (the red's thickness left), count 1", z1["stack_count"] == 1
+      and abs(z1["stack_top_z"] - (c["table_z"] + 0.006)) < 1e-9, str(z1["stack_top_z"] - c["table_z"]))
+w.event(t, {"type": "placed", "board": ids["white_small"], "zone": "drop_off_2", "x": -0.20, "y": -0.55})
+w.event(t, {"type": "picked", "board": ids["red"]})
+check("last board off -> stack top exactly the table, count 0", zone(w, "drop_off_1")["stack_count"] == 0
+      and zone(w, "drop_off_1")["stack_top_z"] == c["table_z"])
+
+# 9 fault zone = void (CL-39) + configured fallback position (the real world.yaml)
+w = World(CFG_FILE); t = 0.0
+run([det("board/red", -0.6, 0.0)], 0.3)                                 # ZONES has no fault zone -> config fallback
+fz = zone(w, "fault")
+check("fault zone not detected by Vision 1 -> the configured fallback (fixed) is used", fz["fixed"] and fz["kind"] == "fault",
+      str({k: fz[k] for k in ("x", "y", "fixed")}))
+w.event(t, {"type": "picked", "board": "b1"}); w.event(t, {"type": "placed", "board": "b1", "zone": "fault", "x": fz["x"], "y": fz["y"]})
+check("a board put into the fault zone leaves the world (void): not in boards, nothing held, no stack, zone OK",
+      "b1" not in boards(w, t) and w.snapshot(t)["held_board_id"] == "" and zone(w, "fault")["stack_count"] == 0
+      and zone(w, "fault")["state"] == "OK")
+run([det("board/red", fz["x"] + 0.01, fz["y"])], 1.0)
+check("a board the camera sees inside the fault zone is ignored (no new board)", not boards(w, t), str(sorted(boards(w, t))))
+
+# 10 zone base height (V2): stacks and processing boards start on the zone sheet (Vision 1 top_z -> detection z)
+SH = 0.005                                                                    # sheet thickness in this test
+ZS = [dict(d, z=CFG["table_z"] + SH) for d in ZONES]
+w = World(CFG); t = 0.0
+def run_s(dets, secs, step=0.1, zones=None):
+    global t
+    end = t + secs
+    while t < end - 1e-9:
+        t = round(t + step, 6); w.update(t, (zones or ZS) + dets)
+run_s([det("board/red", -0.6, 0.0)], 0.3)
+z1 = zone(w, "drop_off_1"); base = CFG["table_z"] + SH
+check("V2 zone base_z = detection z (sheet top); empty stack top = base_z", abs(z1["base_z"] - base) < 1e-12
+      and abs(z1["stack_top_z"] - base) < 1e-12, str((z1["base_z"], z1["stack_top_z"])))
+th = V["red"]["thickness"]
+w.event(t, {"type": "picked", "board": "b1"}); w.event(t, {"type": "placed", "board": "b1", "zone": "drop_off_1", "x": -0.20, "y": 0.55})
+run_s([det("board/red", -0.20, 0.55)], 0.3)
+check("V2 one board on the sheet: stack top = base_z + thickness, the board's top_z too",
+      abs(zone(w, "drop_off_1")["stack_top_z"] - (base + th)) < 1e-12 and abs(boards(w, t)["b1"]["top_z"] - (base + th)) < 1e-12,
+      str(zone(w, "drop_off_1")["stack_top_z"]))
+w.event(t, {"type": "picked", "board": "b1"})
+check("V2 last board off -> stack top exactly base_z (not the table)", zone(w, "drop_off_1")["stack_top_z"] == base)
+w.event(t, {"type": "placed", "board": "b1", "zone": "processing_1", "x": -0.45, "y": 0.45})
+check("V2 processing zone: the board's top_z = base_z + thickness", abs(boards(w, t)["b1"]["top_z"] - (base + th)) < 1e-12,
+      str(boards(w, t)["b1"]["top_z"]))
+w.event(t, {"type": "reset_zone", "zone": "drop_off_2"})
+check("V2 reset_zone -> stack top = base_z", zone(w, "drop_off_2")["stack_top_z"] == base)
+run_s([], 0.2, zones=[dict(d, z=CFG["table_z"] + 0.010) if d["id"] == "drop_off_2" else d for d in ZS])
+check("V2 base_z changes (new value from Vision 1) -> the stack top moves with it",
+      abs(zone(w, "drop_off_2")["base_z"] - (CFG["table_z"] + 0.010)) < 1e-12
+      and abs(zone(w, "drop_off_2")["stack_top_z"] - (CFG["table_z"] + 0.010)) < 1e-12)
+w = World(CFG); t = 0.0
+run([det("board/red", -0.6, 0.0)], 0.2)
+check("V2 zone detection without z -> base_z = table_z (old behaviour)", zone(w, "drop_off_1")["base_z"] == CFG["table_z"])
+c = dict(CFG_FILE, fixed_zones=[dict(CFG_FILE["fixed_zones"][0], z=CFG["table_z"] + 0.002)])
+w = World(c); t = 0.0
+run([], 0.2)
+check("V2 fixed zone: base_z from its config z", abs(zone(w, "fault")["base_z"] - (CFG["table_z"] + 0.002)) < 1e-12)
 
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

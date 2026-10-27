@@ -21,13 +21,12 @@ import importlib.util
 import os
 
 import yaml
-from ament_index_python.packages import get_package_share_directory
 
 from hk_fr5_task import mask as M
-from hk_fr5_task.fake_core import Camera, FakeWorld, bbox_corners
+from hk_fr5_task import vision1
+from hk_fr5_task.fake_core import FakeWorld
 from hk_fr5_task.skill_math import zone_accepts
 from hk_fr5_task.world_core import World, rect_corners
-from hk_fr5_vision import calib
 
 if os.environ.get("MAIN_CORE"):
     _spec = importlib.util.spec_from_file_location("main_core_under_test", os.environ["MAIN_CORE"])
@@ -39,11 +38,12 @@ else:
 HERE = os.path.dirname(os.path.abspath(__file__))
 CD = os.path.join(HERE, "..", "src", "hk_fr5_task", "config")
 WCFG = yaml.safe_load(open(os.path.join(CD, "world.yaml")))
+WCFG.update(yaml.safe_load(open(os.path.join(HERE, "test_variants.yaml"))))   # placeholder test variants (V1, TM-20)
 MCFG = yaml.safe_load(open(os.path.join(CD, "main.yaml")))
 MCFG["variants"] = list(WCFG["variants"])
 SCFG = yaml.safe_load(open(os.path.join(CD, "skills.yaml")))
-CAM = Camera(calib.load(os.path.join(get_package_share_directory("hk_fr5_vision"), "config", "calib.yaml")))
 DUR = {"pick": 6.0, "place": 8.0, "home": 3.0, "wait_clear": 2.0, "release_safe": 10.0}
+VISION_PERIOD = 0.2              # s: one Vision 1 frame per sim step (~5 Hz like the real Vision 1, user)
 REFUSE = 0.2                     # s: a skill refusing before it moves
 PRECHECK = ("BOARD_NOT_FOUND", "BOARD_MOVED", "VISION_STALE", "ALREADY_HOLDING", "TARGET_UNKNOWN", "TARGET_OCCUPIED",
             "STACK_FULL")      # injected: skill_server raises these before it moves (no tcp change). An injected
@@ -52,8 +52,10 @@ FINAL = ("DONE", "CANCELLED")
 ZONES = [{"name": "processing_1", "kind": "processing", "x": -0.50, "y": 0.45, "yaw": 0.0, "length": 0.20, "width": 0.16},
          {"name": "processing_2", "kind": "processing", "x": -0.50, "y": -0.45, "yaw": 0.0, "length": 0.20, "width": 0.16},
          {"name": "drop_off_1", "kind": "drop_off", "x": -0.15, "y": 0.55, "yaw": 0.0, "length": 0.24, "width": 0.20},
-         {"name": "drop_off_2", "kind": "drop_off", "x": -0.15, "y": -0.55, "yaw": 0.0, "length": 0.24, "width": 0.20},
-         {"name": "fault", "kind": "fault", "x": -0.25, "y": 0.28, "yaw": 0.0, "length": 0.20, "width": 0.16}]
+         {"name": "drop_off_2", "kind": "drop_off", "x": -0.15, "y": -0.55, "yaw": 0.0, "length": 0.24, "width": 0.20}]
+for _z in ZONES:
+    _z["top_z"] = WCFG["table_z"]  # logic tests: no sheet (V2 / V4 sheet heights: world_core_check / skill_math_check)
+# the fault zone is never a Vision 1 zone: world.yaml fixed_zones (CL-15 / CL-39)
 BOARDS = [{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2}, {"variant": "red", "x": -0.62, "y": 0.20, "yaw": 0.0},
           {"variant": "white_small", "x": -0.25, "y": -0.25, "yaw": -0.1, "count": 3}]
 OPERATOR = {"take_after": 1.5, "return_after": 3.0}
@@ -146,7 +148,7 @@ class Sim:
 
     def __init__(self, boards=BOARDS, wcfg=None, mcfg=None, return_variant="same", lag=0.0, operator=None, mask=True):
         op = {**OPERATOR, **(operator or {}), "return_variant": return_variant}
-        scn = {"zones": ZONES, "boards": copy.deepcopy(boards), "noise_px": 0.0, "operator": op}
+        scn = {"zones": ZONES, "boards": copy.deepcopy(boards), "noise_xy": 0.0, "operator": op}
         home_arm = [M.capsule((0.0, 0.0), tuple(MCFG["home_xy"]), ARM_R)]          # CL-34 layout rule
         for bd in boards:
             v = WCFG["variants"][bd["variant"]]
@@ -155,7 +157,7 @@ class Sim:
         for z in ZONES:
             if M.hits(home_arm, rect_corners(z["x"], z["y"], z["yaw"], z["length"], z["width"])):
                 raise ValueError(f"layout: zone {z['name']} lies under the arm at home (CL-34)")
-        self.fake = FakeWorld(scn, CAM, WCFG["variants"])
+        self.fake = FakeWorld(scn, WCFG["variants"])
         self.world = World(wcfg or WCFG)
         self.core = MainCore(mcfg or MCFG)
         self.t, self.tcp = 0.0, tuple(MCFG["home_xy"])
@@ -176,6 +178,7 @@ class Sim:
         self.old_release_safe = False  # True: release_safe as before CL-32 (SUCCESS 'nothing held' with an empty cup)
         self.expect_bad = False        # True: this scenario shows a violation on purpose (left out of the summary)
         self.chaos = None              # fuzz: fn(action) -> failure code to inject, or None
+        self.fault_drops = 0           # boards put into the fault zone (a void: the world forgets them, CL-39)
         ALL.append(self)
         self.frames(0.5)
 
@@ -183,23 +186,23 @@ class Sim:
     def frames(self, secs):
         end = self.t + secs
         while self.t < end - 1e-9:
-            self.t = round(self.t + 0.1, 6)
+            self.t = round(self.t + VISION_PERIOD, 6)
             for item in [x for x in self.timeline if x[0] <= self.t]:
                 self.timeline.remove(item); item[1](self)
             for item in [x for x in self.later if x[0] <= self.t]:
                 self.later.remove(item); self.world.event(self.t, item[1])
-            raw = self.fake.detections(self.t)               # always: the operator keeps going
+            frame = self.fake.frame(self.t, self.t)          # always: the operator keeps going
             if self.blind:
                 continue
+            frame["zones"] = [z for z in frame["zones"] if z["name"] not in self.hide]
+            _, raw, problems = vision1.parse(frame)          # the real adapter path (V3 / V5)
+            assert not problems, problems
             arm = [M.capsule((0.0, 0.0), self.tcp, OCCLUDE_R)]
             dets = []
             for d in raw:
-                if d["cls"].startswith("zone/") and d["id"] in self.hide:
-                    continue
-                corners = [CAM.to_table(*p) for p in bbox_corners(d["u"], d["v"], d["theta"], d["sx"], d["sy"])]
-                if self.mask and d["cls"].startswith("board/") and M.hits(arm, corners):
+                if self.mask and d["cls"].startswith("board/") and M.hits(arm, d["corners"]):
                     continue                                 # under the real arm: the camera cannot see it
-                dets.append({"cls": d["cls"], "id": d["id"], "score": d["score"], "corners": corners})
+                dets.append(d)
             if self.mask and self.cup and self.cup in self.world.boards:   # the overhead camera sees the held board
                 v = WCFG["variants"].get(self.world.boards[self.cup].get("variant", ""), {"length": 0.1, "width": 0.07})
                 dets.append({"cls": f"board/{self.world.boards[self.cup].get('variant', 'red')}", "id": "held",
@@ -331,6 +334,8 @@ class Sim:
             self.fake.event(self.t, {"type": "placed", "x": z["x"], "y": z["y"], "yaw": z["yaw"], "variant": variant})
             self.wev({"type": "placed", "board": hb, "zone": target, "x": z["x"], "y": z["y"], "yaw": z["yaw"]}, delay)
             self.cup = ""
+            if z["kind"] == "fault":
+                self.fault_drops += 1
         if skill in ("place", "release_safe"):
             self.frames(min(1.0, DUR[skill] - pre))         # release + lift, then the skill's home move
             self.tcp = tuple(MCFG["home_xy"])

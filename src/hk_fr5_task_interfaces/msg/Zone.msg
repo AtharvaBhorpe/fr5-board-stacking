@@ -9,7 +9,8 @@ float64 length
 float64 width
 string board_id             # processing: the board that belongs to this zone ("" when EMPTY)
 int32 stack_count           # drop_off / fault: boards placed (by us)
-float64 stack_top_z         # top surface z of the stack (table top when empty)
+float64 stack_top_z         # top surface z of the stack (base_z when empty)
+float64 base_z              # zone surface z: top of the zone sheet (Vision 1 top_z / config z; default table top)
 bool fixed                  # true = from config (CL-15 fallback), false = detected by Vision 1
 float64 age                 # seconds since last seen (fixed: 0)
 float64 state_age           # seconds in the current state

@@ -30,7 +30,7 @@ from std_msgs.msg import String
 
 from hk_fr5_interfaces.action import Grip, MoveDelta, MoveTo, Release
 from hk_fr5_interfaces.msg import GripperState
-from hk_fr5_interfaces.srv import AttachBoard, DetachBoard
+from hk_fr5_interfaces.srv import AddBox, AttachBoard, DetachBoard, RemoveBox
 from hk_fr5_task import skill_math as sm
 from hk_fr5_task_interfaces.action import Home, Pick, Place, ReleaseSafe, WaitClear
 from hk_fr5_task_interfaces.msg import SkillCode, World
@@ -60,6 +60,9 @@ class SkillServer(Node):
         self.release = ActionClient(self, Release, "/gripper/release", callback_group=cb)
         self.attach = self.create_client(AttachBoard, "/scene/attach_board", callback_group=cb)
         self.detach = self.create_client(DetachBoard, "/scene/detach_board", callback_group=cb)
+        self.add_box = self.create_client(AddBox, "/scene/add_box", callback_group=cb)
+        self.remove = self.create_client(RemoveBox, "/scene/remove_box", callback_group=cb)
+        self.boxes = None                                # W13: zones with a stack box now (None = unknown at start)
         self.world, self.world_t, self.gripper = None, 0.0, None
         self.create_subscription(World, "world", self._on_world, LATCHED, callback_group=cb)
         self.create_subscription(GripperState, "/gripper/state", lambda m: setattr(self, "gripper", m), LATCHED,
@@ -163,6 +166,30 @@ class SkillServer(Node):
             raise SkillError(C.SCENE_ERROR, f"{what}: no answer")
         return fut.result()
 
+    # ---------- stack boxes in the scene (W13 / CL-38) ----------
+    def _update_stacks(self, skip=""):
+        """One box 'stack_<zone>' per drop-off / fault stack, sized from the world (sm.stack_box); `skip` = the board
+        about to be picked (not part of its stack any more, motion rule S-11). add_box replaces a box of the same name;
+        a zone without a stack loses its box. Rebuilt from the world each time: right after a restart too."""
+        w = self.world
+        if w is None:
+            return
+        boards = [{k: getattr(b, k) for k in ("id", "location", "zone", "length", "width", "thickness")} for b in w.boards]
+        now = set()
+        for z in w.zones:
+            zd = {k: getattr(z, k) for k in ("name", "kind", "x", "y", "yaw", "stack_top_z", "base_z")}
+            box = sm.stack_box(self.c, zd, boards, skip)
+            name = f"stack_{z.name}"
+            if box is not None:
+                r = self._call(self.add_box, AddBox.Request(name=name, size=box["size"], position=box["position"],
+                                                            yaw=float(box["yaw"])), "add_box")
+                if not r.success:
+                    raise SkillError(C.SCENE_ERROR, f"add_box {name}: {r.message}")
+                now.add(z.name)
+            elif z.kind != "processing" and (self.boxes is None or z.name in self.boxes):
+                self._call(self.remove, RemoveBox.Request(name=name), "remove_box")     # absent at start: fine
+        self.boxes = now
+
     # ---------- watched motion ----------
     def _motion(self, client, goal, gh, holding=False, stop_when=None, what="move", timeout=None):
         """Run one motion goal, watch it. Returns 'done' or 'stopped' (stop_when became true). Raises SkillError.
@@ -240,6 +267,7 @@ class SkillServer(Node):
         hover, end, search = sm.pick_heights(self.c, board)
         search = search or req.contact_search
         speed = req.velocity_scaling or self.c["approach_speed"]
+        self._update_stacks(skip=b.id)                   # S-11: the picked board is not part of its stack box
         self._phase(gh, Pick, "HOVER")
         self._goto(gh, b.x, b.y, hover, yaw, what="hover over the board")
         gripped = False
@@ -329,16 +357,17 @@ class SkillServer(Node):
             z = next((z for z in w.zones if z.name == target), None)
             if z is None or (not z.fixed and z.age > self.c["fresh"]):
                 raise SkillError(C.TARGET_UNKNOWN, f"zone '{target}' not known / not seen recently")
-            zd = {k: getattr(z, k) for k in ("kind", "x", "y", "yaw", "state", "stack_count", "stack_top_z")}
+            zd = {k: getattr(z, k) for k in ("kind", "x", "y", "yaw", "state", "stack_count", "stack_top_z", "base_z")}
             why = sm.zone_accepts(self.c, zd)
             if why:
                 raise SkillError(getattr(C, why), f"zone {target} cannot take a board now ({z.state})")
             x, y, zyaw, tz = sm.place_target(self.c, zd, thick)
-            keep = zd["kind"] != "processing"
+            void = zd["kind"] == "fault"                 # CL-39: drop from fault_drop_z, the board leaves the world
         else:
             x, y, zyaw = req.x, req.y, req.yaw
-            tz, keep = self.c["table_z"] + thick + self.c["place_gap"], False
+            tz, void = self.c["table_z"] + thick + self.c["place_gap"], False
         yaw = sm.tcp_yaw_for(zyaw, self.c["ref_yaw"])
+        self._update_stacks()
         self._phase(gh, Place, "HOVER")
         try:
             self._goto(gh, x, y, self.c["hover_z"], yaw, holding=True, what=f"carry to {target or 'the pose'}")
@@ -356,13 +385,17 @@ class SkillServer(Node):
         if not self._wait_future(rres, 5.0) or not rres.result().result.success:
             raise SkillError(C.RELEASE_FAILED, "release failed")
         self._phase(gh, Place, "DETACH")
-        r = self._call(self.detach, DetachBoard.Request(keep_as_obstacle=keep), "detach_board")
+        r = self._call(self.detach, DetachBoard.Request(keep_as_obstacle=False), "detach_board")   # W13: stack box instead
         self._event(type="placed", board=held, zone=target, x=x, y=y, yaw=sm.wrap_pi(yaw),
                     variant=hb.variant if hb is not None else "")
         self._phase(gh, Place, "RETRACT")
         self._vertical(gh, self.c["hover_z"], self.c["approach_speed"], what="retract")
         if not r.success:
             raise SkillError(C.SCENE_ERROR, f"placed, but detach_board failed: {r.message}")
+        if void:                                         # nothing to confirm: the world forgets boards in the void
+            self._home_move(gh)
+            res.target, res.stack_count = target, 0
+            return f"dropped {held} into the fault zone {target} (void)"
         self._phase(gh, Place, "VERIFY")
         self._home_move(gh)                              # out of the camera's way (CL-20 settle check)
         t_end, t_placed = time.monotonic() + self.c["verify_timeout"], time.monotonic()
@@ -374,6 +407,7 @@ class SkillServer(Node):
             time.sleep(0.05)
         z = next((z for z in self.world.zones if z.name == target), None) if target else None
         res.target, res.stack_count = target, z.stack_count if z is not None else 0
+        self._update_stacks()                            # the stack now includes this board
         if not seen:
             raise SkillError(C.NOT_VERIFIED, f"placed {held}, but the camera does not confirm it at the target")
         return f"placed {held} in {target or 'the pose'}"
@@ -383,6 +417,7 @@ class SkillServer(Node):
         return self._motion(self.move_to, g, gh, holding=self._holding(), what="home", timeout=self.c["move_timeout"])
 
     def _home(self, gh, res):
+        self._update_stacks()                            # W13: correct stack boxes also right after a restart
         self._phase(gh, Home, "MOVING")
         self._home_move(gh)
         return "at home"

@@ -96,10 +96,10 @@ def e3():
 
 @case("D5")
 def d5():
-    sim = Sim(); a = red_transfer(sim, 1)
+    sim = Sim(wcfg=dict(WCFG, fixed_zones=[])); a = red_transfer(sim, 1)    # no configured fault zone fallback
     sim.loop(until=held)
     sim.hide = {"drop_off_1", "fault"}                      # target AND fault zone not seen
-    sim.frames(1.5)
+    sim.frames(MCFG["fresh"] + 0.5)                          # older than 'fresh'
     sim.loop(max_t=sim.t + 120, max_actions=60)
     check("D5 holding, target and fault zone unknown: 3 tries at the target, 3 at the fault zone, then HALTED (no loop)",
           sim.core.halted != "" and fails(sim, "TARGET_UNKNOWN") <= 6 and held(sim),
@@ -111,13 +111,13 @@ def p():
     sim = Sim(); a = red_transfer(sim, 1)
     sim.loop(until=held)
     sim.hide = {"drop_off_1"}                               # zone flicker: back 1 s later
-    sim.frames(1.5)
+    sim.frames(MCFG["fresh"] + 0.5)                          # older than 'fresh'
     sim.timeline.append((sim.t + 1.0, lambda s: s.hide.clear()))
     sim.loop(max_t=sim.t + 120)
     J = jobs(sim)[a]
     check("P target briefly not seen (flicker): the core waits (no place try), then delivers there, job not paused",
           fails(sim, "TARGET_UNKNOWN") == 0 and J["state"] == "DONE" and sim.zone("drop_off_1")["stack_count"] == 1
-          and sim.zone("fault")["stack_count"] == 0, f"{codes(sim)} {J['state']}")
+          and sim.fault_drops == 0, f"{codes(sim)} {J['state']}")
     sim = Sim(); a = red_transfer(sim, 1)
     sim.inject = [("place", None, "TARGET_UNKNOWN")]         # skill and core disagree once
     sim.loop(max_t=120)
@@ -135,7 +135,7 @@ def p_r1():
     J = jobs(sim)[a]
     check("P/R1 skill refuses the target 3x: job PAUSED, board into the fault zone (fresh tries there, not HALTED)",
           fails(sim, "TARGET_UNKNOWN") == 3 and J["state"] == "PAUSED" and not sim.core.halted
-          and sim.zone("fault")["stack_count"] == 1 and not held(sim),
+          and sim.fault_drops == 1 and not held(sim),
           f"TARGET_UNKNOWN x{fails(sim, 'TARGET_UNKNOWN')}, {J['state']}, halted '{sim.core.halted}'")
 
 
@@ -144,7 +144,7 @@ def hold_unseen():
     sim = Sim(); a = red_transfer(sim, 1)
     sim.loop(until=held)
     sim.hide = {"drop_off_1"}                               # target gone for good while holding, fault zone seen
-    sim.frames(1.5)                                          # older than 'fresh' -> the core sees it as not seen
+    sim.frames(MCFG["fresh"] + 0.5)                          # older than 'fresh' -> the core sees it as not seen
     t_held = sim.t
     sim.loop(max_t=sim.t + 120, until=lambda s: not held(s) or s.core.halted)
     J, al = jobs(sim)[a], events(sim, "holding board")
@@ -152,7 +152,7 @@ def hold_unseen():
     check("CL-28 holding, target not seen: no place try there, alert after 10 s, fault zone after 10 s more, job PAUSED",
           fails(sim, "TARGET_UNKNOWN") == 0 and len(al) == 1 and al[0][0] - t_held >= MCFG["hold_alert_after"]
           and t_place is not None and t_place - t_held >= MCFG["hold_alert_after"] + MCFG["hold_fault_after"]
-          and J["state"] == "PAUSED" and not sim.core.halted and sim.zone("fault")["stack_count"] == 1 and not held(sim),
+          and J["state"] == "PAUSED" and not sim.core.halted and sim.fault_drops == 1 and not held(sim),
           f"{codes(sim)}, {len(al)} alerts, place at +{(t_place or 0) - t_held:.1f} s, {J['state']}")
 
 
@@ -274,7 +274,7 @@ def a2():
     sim.loop()
     J = jobs(sim)[a]
     check("A2 pick fails after the board is on the cup: its job takes it over and places it at the target (not the fault zone)",
-          sim.zone("drop_off_1")["stack_count"] == 1 and sim.zone("fault")["stack_count"] == 0 and cnt(J, "delivered") == 1
+          sim.zone("drop_off_1")["stack_count"] == 1 and sim.fault_drops == 0 and cnt(J, "delivered") == 1
           and J["attempts"] == 1, f"{codes(sim)}, {J['message']}")
 
 
@@ -322,7 +322,7 @@ def a5():
     J = jobs(sim)[a]
     check("A5/CL-28 processed board DONE, drop-off FULL: not picked out, job PAUSED, the board stays in the zone",
           J["state"] == "PAUSED" and "FULL" in J["message"] and sim.zone("processing_1")["state"] == "DONE"
-          and sim.zone("fault")["stack_count"] == 0 and not any(tg == "to_out" for s, j, b, tg, c in sim.seq),
+          and sim.fault_drops == 0 and not any(tg == "to_out" for s, j, b, tg, c in sim.seq),
           f"{codes(sim)}, {J['state']} '{J['message']}'")
     sim = Sim(operator={"take_after": 10.0, "return_after": 3.0})
     a = process_job(sim)
@@ -333,7 +333,7 @@ def a5():
     J = jobs(sim)[a]
     al = events(sim, "drop_off_1 not seen")
     check("A5/CL-28 drop-off not seen when the board is DONE: waits (alert after 10 s), picks it out once seen, delivered",
-          len(al) == 1 and cnt(J, "delivered") == 1 and sim.zone("fault")["stack_count"] == 0, f"{codes(sim)}, {len(al)} alerts")
+          len(al) == 1 and cnt(J, "delivered") == 1 and sim.fault_drops == 0, f"{codes(sim)}, {len(al)} alerts")
 
 
 @case("A6")
@@ -378,14 +378,14 @@ def a9():
     a = process_job(sim)
     sim.loop(until=held)
     sim.fake._add("white_small", -0.50, 0.45, 0.0)            # someone puts a board into processing_1 during the carry
-    sim.frames(2.0)                                          # (the carry takes time: unknown_after -> FAULT)
+    sim.frames(WCFG["unknown_after"] + 0.5)                                          # (the carry takes time: unknown_after -> FAULT)
     t0 = sim.t
     sim.loop(max_t=sim.t + 60, until=lambda s: not held(s))
     J, al = jobs(sim)[a], events(sim, "holding board")
     t_place = next((x[0] for x in sim.starts if x[1] == "place"), None)
     check("A9/CL-28 holding for a processing zone that turns busy (FAULT): alert, fault zone after 20 s, job NOT paused",
           len(al) == 1 and t_place is not None and t_place - t0 >= MCFG["hold_alert_after"] + MCFG["hold_fault_after"]
-          and sim.zone("fault")["stack_count"] == 1 and J["state"] != "PAUSED" and not held(sim),
+          and sim.fault_drops == 1 and J["state"] != "PAUSED" and not held(sim),
           f"{codes(sim)}, {len(al)} alerts, place at +{(t_place or 0) - t0:.1f} s, {J['state']}")
 
 
@@ -419,14 +419,14 @@ def park():
     a = process_job(sim)
     sim.loop(until=held)                                     # arm at hover over the picked board
     sim.fake._add("white_small", -0.50, 0.45, 0.0)            # processing_1 turns busy during the carry
-    sim.frames(2.0)
+    sim.frames(WCFG["unknown_after"] + 0.5)
     sim.loop(max_t=sim.t + 60, until=lambda s: not held(s))
     after = [(s, c) for s, j, b, tg, c in sim.seq][1:3]
     t_home = next((x[0] for x in sim.starts if x[1] == "home"), None)
     t_place = next((x[0] for x in sim.starts if x[1] == "place"), None)
     check("CL-35 holding, target busy, arm away from home: park at home first, then the hold timer (fault zone 20 s later)",
           after == [("home", "SUCCESS"), ("place", "SUCCESS")] and t_home is not None and t_place is not None
-          and t_place - t_home >= MCFG["hold_alert_after"] + MCFG["hold_fault_after"] and sim.zone("fault")["stack_count"] == 1,
+          and t_place - t_home >= MCFG["hold_alert_after"] + MCFG["hold_fault_after"] and sim.fault_drops == 1,
           f"{codes(sim)}, home at {t_home}, place at {t_place}")
 
 

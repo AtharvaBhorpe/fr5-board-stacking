@@ -1,9 +1,10 @@
 """World model core (control-loop.md sections 2-3, 6; decision-log TM-8). No ROS: time is passed in, so the logic is
 tested with simulated time (tests/world_core_check.py).
 
-Input per Vision 1 frame: detections already in base_link (the node converts the pixel corners via
-/vision/pixel_to_table):  {"cls": "board/red" | "zone/processing" | "zone/drop_off" | "zone/fault" |
-"obstacle/hand" | ..., "id": track id / zone name, "score": 0..1, "corners": [[x, y] x4]}.
+Input per Vision 1 frame: detections in base_link (hk_fr5_task.vision1 parses the /vision/boards JSON, V3 TM-22):
+{"cls": "board/<variant>" | "zone/processing" | "zone/drop_off" | "obstacle/<label>", "id": "" / zone name,
+"score": 0..1, "corners": [[x, y] x4], zones also "z" (sheet top -> base_z, V2)}. Zone kind "fault" only from the
+config (fixed_zones).
 Input from the skills: events {"type": "picked" | "placed" | "dropped" | "reset_zone", ...}.
 Output: snapshot() -> plain dict with the World message layout.
 """
@@ -73,6 +74,11 @@ class World:
         v = self._variant(variant)
         return v["thickness"] if v else NAN
 
+    def _stack_thickness(self, variant):
+        """Thickness a board adds to / removes from a stack: its variant's, else default_thickness (never NaN)."""
+        th = self._thickness(variant)
+        return th if th == th else self.c["default_thickness"]
+
     def _size_ok(self, variant, length, width):
         v = self._variant(variant)
         if not v:
@@ -85,9 +91,17 @@ class World:
         if z is None:
             z = self.zones[name] = {"name": name, "kind": kind, "state": "EMPTY" if kind == "processing" else "OK",
                                     "x": 0.0, "y": 0.0, "yaw": 0.0, "length": 0.0, "width": 0.0, "board_id": "",
-                                    "stack_count": 0, "stack_top_z": self.c["table_z"], "fixed": fixed, "seen": t,
-                                    "since": t, "message": "", "occ_since": None, "empty_since": None}
+                                    "stack_count": 0, "stack_top_z": self.c["table_z"], "base_z": self.c["table_z"],
+                                    "fixed": fixed, "seen": t, "since": t, "message": "", "occ_since": None,
+                                    "empty_since": None}
         return z
+
+    @staticmethod
+    def _set_base(z, base):
+        """V2: zone surface = sheet top (Vision 1 top_z / config z). The stack moves with it."""
+        if base != z["base_z"]:
+            z["stack_top_z"] += base - z["base_z"]
+            z["base_z"] = base
 
     def _set_state(self, z, state, t, message=""):
         if z["state"] != state or z["message"] != message:
@@ -126,11 +140,13 @@ class World:
             z = self._zone(name, kind, t)
             z["x"], z["y"], z["yaw"], z["length"], z["width"] = rect_from_corners(d["corners"])
             z["seen"], z["fixed"] = t, False
+            self._set_base(z, float(d.get("z", c["table_z"])))
             seen_zones.add(name)
         for f in c.get("fixed_zones") or []:
             if f["name"] not in seen_zones and (f["name"] not in self.zones or self.zones[f["name"]]["fixed"]):
                 z = self._zone(f["name"], f["kind"], t, fixed=True)
                 z.update({k: f[k] for k in ("x", "y", "yaw", "length", "width")}, seen=t, fixed=True)
+                self._set_base(z, float(f.get("z", c["table_z"])))
         # obstacles
         self.obstacles = []
         w = c["work_area"]
@@ -150,6 +166,9 @@ class World:
             x, y, yaw, l, wd = rect_from_corners(d["corners"])
             if M.hits(self.mask.get("tool"), d["corners"]):
                 continue                                     # the robot's own board / gripper (CL-31)
+            zf = self.zone_of(x, y)
+            if zf and self.zones[zf]["kind"] == "fault":
+                continue                                     # CL-39: the fault zone is a void - boards there do not exist
             under_arm = M.hits(self.mask.get("arm"), d["corners"])
             label = d["cls"].split("/", 1)[1]
             best, bd = None, None
@@ -192,7 +211,7 @@ class World:
                 del self.boards[i]
         self._processing(t, matched)
         for z in self.zones.values():
-            if z["kind"] != "processing":
+            if z["kind"] == "drop_off":                      # fault zone: always OK (CL-39, never FULL)
                 self._set_state(z, "FULL" if z["stack_count"] >= c["max_stack"] else "OK", t)
 
     def _masked(self, corners):
@@ -270,9 +289,10 @@ class World:
             if z and z["kind"] == "processing":
                 z["board_id"] = ""
                 self._set_state(z, "EMPTY", t)
-            elif z:
+            elif z:                                          # exactly THIS board off the stack (mixed variants)
                 z["stack_count"] = max(0, z["stack_count"] - 1)
-                z["stack_top_z"] = self.c["table_z"] + z["stack_count"] * self._thickness(b["variant"])
+                z["stack_top_z"] = (z["base_z"] if z["stack_count"] == 0 else
+                                    max(z["base_z"], z["stack_top_z"] - self._stack_thickness(b["variant"])))
             b.update(location="held", zone="")
             self.held = i
             self._note(t, f"picked {i}")
@@ -281,12 +301,17 @@ class World:
             if b is None:
                 raise ValueError(f"placed: unknown board '{i}'")
             zn = ev.get("zone", "")
+            z = self.zones.get(zn)
+            if z and z["kind"] == "fault":                   # CL-39: void - the board leaves the world
+                del self.boards[i]
+                self.held = ""
+                self._note(t, f"placed {i} in {zn} (fault zone: removed from the world)")
+                return
             b.update(location="zone" if zn else "input", zone=zn, placed=t)   # 'seen' only from the camera
             for k in ("x", "y", "yaw"):
                 if k in ev:
                     b[k] = float(ev[k])
             self.held = ""
-            z = self.zones.get(zn)
             if z and z["kind"] == "processing":
                 z["board_id"] = i
                 z["occ_since"], z["empty_since"] = t, None
@@ -296,7 +321,7 @@ class World:
                     self._set_state(z, "FAULT", t, f"placed {i} into a busy zone ({z['state']})")
             elif z:
                 z["stack_count"] += 1
-                z["stack_top_z"] += self._thickness(b["variant"])
+                z["stack_top_z"] += self._stack_thickness(b["variant"])
             self._note(t, f"placed {i}" + (f" in {zn}" if zn else ""))
         elif typ == "dropped":
             self.boards.pop(i, None)
@@ -306,7 +331,7 @@ class World:
             z = self.zones.get(ev.get("zone", ""))
             if z is None:
                 raise ValueError(f"reset_zone: unknown zone '{ev.get('zone')}'")
-            z.update(board_id="", stack_count=0, stack_top_z=self.c["table_z"])
+            z.update(board_id="", stack_count=0, stack_top_z=z["base_z"])
             self._set_state(z, "EMPTY" if z["kind"] == "processing" else "OK", t)
             gone = [i for i, b in self.boards.items() if b["location"] == "zone" and b["zone"] == z["name"]]
             for i in gone:                                   # the operator emptied it: no ghost boards stay behind
@@ -325,6 +350,8 @@ class World:
                 top = NAN                                      # input stack height unknown -> contact search (CL-16)
             elif b["location"] == "zone" and self.zones.get(b["zone"], {}).get("kind") != "processing":
                 top = self.zones[b["zone"]]["stack_top_z"]
+            elif b["location"] == "zone" and b["zone"] in self.zones:   # processing: one board on the sheet (V2)
+                top = self.zones[b["zone"]]["base_z"] + self._thickness(b.get("variant", ""))
             else:
                 top = c["table_z"] + self._thickness(b.get("variant", ""))
             boards.append({"id": b["id"], "variant": b.get("variant", "unknown"), "label": b.get("label", ""),
@@ -335,7 +362,7 @@ class World:
                            "score": b.get("score", 0.0), "inside": b.get("inside", True), "size_ok": b.get("size_ok", False),
                            "age": t - b.get("seen", t)})
         zones = [{**{k: z[k] for k in ("name", "kind", "state", "x", "y", "yaw", "length", "width", "board_id",
-                                        "stack_count", "stack_top_z", "fixed", "message")},
+                                        "stack_count", "stack_top_z", "base_z", "fixed", "message")},
                   "age": 0.0 if z["fixed"] else t - z["seen"], "state_age": t - z["since"]} for z in self.zones.values()]
         obstacles = [{**{k: o[k] for k in ("label", "x", "y", "yaw", "length", "width", "in_work_area")},
                       "age": t - o["seen"]} for o in self.obstacles]

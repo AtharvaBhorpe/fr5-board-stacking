@@ -111,7 +111,7 @@ sim.inject = [("place", None, "STACK_FULL")]
 sim.loop()
 J = jobs(sim)[a]
 check("STACK_FULL on place (holding): board to the fault zone, job PAUSED", J["state"] == "PAUSED" and J["to_fault"] == 1
-      and sim.zone("fault")["stack_count"] == 1 and sim.wd()["held_board_id"] == "", str(J))
+      and sim.fault_drops == 1 and sim.wd()["held_board_id"] == "", str(J))
 
 sim = Sim(); _, _, a = sim.add(type="transfer", select_variant="red", to="drop_off_1", count=1)
 sim.inject = [("place", None, "NOT_VERIFIED+done")]           # placed, but the camera did not confirm it
@@ -133,7 +133,7 @@ sim.loop()
 J = jobs(sim)[a]
 check("not processed (plain board back): picked out into the fault zone; the 2nd red tried too (same) -> DONE partial, 0 delivered, 2 to fault",
       J["state"] == "DONE" and J["delivered"] == 0 and J["to_fault"] == 2 and "partial" in J["message"]
-      and sim.zone("fault")["stack_count"] == 2, " | ".join(short(sim.seq)))
+      and sim.fault_drops == 2, " | ".join(short(sim.seq)))
 
 # 6 commands: pause (holding), stop (holding), cancel_job (holding), per-job pause / resume
 sim = Sim(); _, _, a = sim.add(type="transfer", select_variant="red", to="drop_off_1", count=2)
@@ -218,7 +218,9 @@ for job, text in [({"type": "dance"}, "unknown job type"), ({"type": "transfer",
                   ({"type": "transfer", "to": "drop_off_1", "count": 3, "max_attempts": 2}, "max_attempts must be >= count"),
                   ({"type": "transfer", "to": "drop_off_1", "select_board": "b99"}, "not in the world"),
                   ({"type": "transfer", "to": "drop_off_1", "select_board": "b1", "count": 2}, "count must be 0 or 1"),
-                  ({"type": "clear_zone", "from_zone": "drop_off_1", "to": "drop_off_1"}, "same zone")]:
+                  ({"type": "clear_zone", "from_zone": "drop_off_1", "to": "drop_off_1"}, "same zone"),
+                  ({"type": "clear_zone", "from_zone": "fault", "to": "drop_off_1"}, "fault zone is a void"),
+                  ({"type": "transfer", "from_zone": "fault", "to": "drop_off_1"}, "fault zone is a void")]:
     okk, msg, _ = sim.core.add_job(job, sim.wd(), sim.t)
     check(f"add_job rejects: {text}", not okk and text in msg, msg)
 for cmd, jid, text in [("dance", "", "unknown command"), ("cancel_job", "", "needs a job_id"), ("pause", "j99", "unknown job")]:

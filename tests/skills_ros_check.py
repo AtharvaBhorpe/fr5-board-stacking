@@ -1,5 +1,5 @@
-"""Skills in the full sim stack (T4): motion bringup (motion worktree, fake arm + fake gripper + scene, headless),
-vision_transform, fake_world (+ contact simulation), world_model, skill_server. Every skill and every failure code
+"""Skills in the full sim stack (T4, V5 TM-24: real variants, Vision 1 JSON, zone sheets): motion bringup (motion
+worktree, fake arm + fake gripper + scene, headless), fake_world (+ contact simulation), world_model, skill_server. Every skill and every failure code
 that can be provoked. ~2-3 min.
 
     ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=83 pixi run python3 tests/skills_ros_check.py
@@ -71,7 +71,6 @@ cfg.update(speed=float(os.environ.get("HK_SPEED", "1.0")), approach_speed=0.25, 
 yaml.safe_dump(cfg, open(os.path.join(tmp, "skills.yaml"), "w"))
 procs = {"motion": start("motion", [PIXI, "run", "--manifest-path", os.path.join(MOTION_WT, "pixi.toml"), "ros2", "launch",
                                     "hk_fr5_moveit_config", "bringup.launch.py", "use_rviz:=false"], cwd=MOTION_WT),
-         "vision": start("vision", [exe("hk_fr5_vision", "vision_transform")]),
          "fake": start("fake", [exe("hk_fr5_task", "fake_world"), "--ros-args", "-p", "contact_sim:=true", "-p", "seed:=2"]),
          "world": start("world", [exe("hk_fr5_task", "world_model")]),
          "skills": start("skills", [exe("hk_fr5_task", "skill_server"), "--ros-args", "-p", f"config:={tmp}/skills.yaml"])}
@@ -183,7 +182,8 @@ def reset(label):
     r = run("home", Home.Goal(), timeout=40)
     if r is None or not r.success:
         print(f"INFO reset before '{label}': home failed: {desc(r)}", flush=True)
-STACK = (-0.25, -0.25)                           # input stack of 3 white_small (scenario_demo)
+STACK = (-0.21, -0.68)                           # input stack of 3 VARb (scenario_demo)
+TH = 0.005                                       # board thickness (world.yaml VARa / VARb / VARc)
 def zone(name):
     return next(z for z in S["w"].zones if z.name == name)
 def desc(r):
@@ -205,52 +205,59 @@ try:
     check("home", r and r.success, desc(r))
     spin(1.0)
 
-    red = board("red")
+    red = board("VARa")
     r = run("pick", Pick.Goal(board_id=bid(red)))
-    check("pick red from the input area by contact search: success, world holds it", r and r.success
-          and "contact search" in r.message and until(lambda: S["w"].held_board_id == red.id, 2) and r.variant == "red", desc(r))
+    check("pick VARa from the input area by contact search: success, world holds it", r and r.success
+          and "contact search" in r.message and until(lambda: S["w"].held_board_id == red.id, 2) and r.variant == "VARa", desc(r))
     sz = S["seal_z"]
-    check("contact search sealed at the board top (table + 6 mm), not in the air / below", sz is not None
-          and TABLE + 0.006 - 0.015 <= sz <= TABLE + 0.006 + 0.001, f"seal tcp z {sz}")
+    check("contact search sealed at the board top (table + 5 mm), not in the air / below", sz is not None
+          and TABLE + TH - 0.015 <= sz <= TABLE + TH + 0.001, f"seal tcp z {sz}")
     r = run("place", Place.Goal(target="processing_1"))
-    check("place red in processing_1: success, camera confirmed (settle check), zone LOADED", r and r.success
+    check("place VARa in processing_1: success, camera confirmed (settle check), zone LOADED", r and r.success
           and until(lambda: zone("processing_1").state in ("LOADED", "PROCESSING"), 3), desc(r))
 
     ws = board_near(*STACK)
     r = run("pick", Pick.Goal(board_id=bid(ws)))
     sz = S["seal_z"]
-    check("pick from an input stack of 3: contact search sealed on the stack top (table + 18 mm)", r and r.success
-          and sz is not None and TABLE + 0.018 - 0.015 <= sz <= TABLE + 0.018 + 0.001, f"{desc(r)}; seal z {sz}")
-    r = run("place", Place.Goal(target="drop_off_2"))
-    check("place on drop_off_2: success, stack count 1", r and r.success and r.stack_count == 1, desc(r))
+    check("pick from an input stack of 3: contact search sealed on the stack top (table + 15 mm)", r and r.success
+          and sz is not None and TABLE + 3 * TH - 0.015 <= sz <= TABLE + 3 * TH + 0.001, f"{desc(r)}; seal z {sz}")
+    r = run("place", Place.Goal(target="drop_off_b"))
+    check("place on drop_off_b: success, stack count 1", r and r.success and r.stack_count == 1, desc(r))
 
-    r = run("place", Place.Goal(target="drop_off_2"))
+    r = run("place", Place.Goal(target="drop_off_b"))
     check("place without a board: NOT_HOLDING", r and r.code.value == C.NOT_HOLDING, desc(r))
     r = run("pick", Pick.Goal(board_id="b99"))
     check("pick an unknown board: BOARD_NOT_FOUND", r and r.code.value == C.BOARD_NOT_FOUND, desc(r))
 
-    check("processing_1: simulated operator -> DONE, red processed", until(lambda: zone("processing_1").state == "DONE"
-          and board(bid=bid(red)).processed, 15))
+    check("processing_1: simulated operator -> DONE, VARa processed", until(lambda: zone("processing_1").state == "DONE"
+          and board(bid=bid(red)).processed, 30))           # operator 5 s + gone 2 s + 5 s + back 2 s (CL-40)
     r = run("pick", Pick.Goal(board_id=bid(red)))
-    check("pick the processed red board from processing_1 (known top, no search)", r and r.success
+    check("pick the processed VARa board from processing_1 (known top, no search)", r and r.success
           and "contact search" not in r.message and until(lambda: zone("processing_1").state == "EMPTY", 2), desc(r))
-    r = run("place", Place.Goal(target="drop_off_2"))
-    check("place it on drop_off_2: stack count 2 (placed on top of the first board)", r and r.success and r.stack_count == 2, desc(r))
+    r = run("place", Place.Goal(target="drop_off_b"))
+    check("place it on drop_off_b: stack count 2 (placed on top of the first board)", r and r.success and r.stack_count == 2, desc(r))
+    top = S["w"].zones and next((b for b in S["w"].boards if b.location == "zone" and b.zone == "drop_off_b"
+                                 and b.age < 1.0), None)
+    r = run("pick", Pick.Goal(board_id=bid(top)))
+    r2 = run("place", Place.Goal(target="drop_off_b"))
+    check("pick the top board off the drop_off_b stack (stack box rebuilt without it, S-11 / CL-38), place it back on the "
+          "same stack (no leftover box in the way)", r and r.success and r2 and r2.success and r2.stack_count == 2,
+          f"{desc(r)} / {desc(r2)}")
 
     reset("busy processing zone")
     ws = board_near(*STACK)
-    r = run("pick", Pick.Goal(board_id=bid(ws))); r2 = run("place", Place.Goal(target="processing_2"))
-    check("white_small (stack 2 left) -> processing_2 LOADED", r and r.success and r2 and r2.success, f"{desc(r)} / {desc(r2)}")
+    r = run("pick", Pick.Goal(board_id=bid(ws))); r2 = run("place", Place.Goal(target="processing_1"))
+    check("VARb (stack 2 left) -> processing_1 LOADED", r and r.success and r2 and r2.success, f"{desc(r)} / {desc(r2)}")
     ws = board_near(*STACK)
     r = run("pick", Pick.Goal(board_id=bid(ws)))
-    r2 = run("place", Place.Goal(target="processing_2"))
-    check("place into the busy processing_2: TARGET_OCCUPIED, board still held", r and r.success and r2
+    r2 = run("place", Place.Goal(target="processing_1"))
+    check("place into the busy processing_1: TARGET_OCCUPIED, board still held", r and r.success and r2
           and r2.code.value == C.TARGET_OCCUPIED and until(lambda: S["g"].state == GripperState.HOLDING, 1), desc(r2))
-    r = run("place", Place.Goal(target="drop_off_1"))
-    check("so place it on drop_off_1 instead", r and r.success, desc(r))
+    r = run("place", Place.Goal(target="drop_off_a"))
+    check("so place it on drop_off_a instead", r and r.success, desc(r))
 
     reset("grip failed")
-    wl = board("white_large")
+    wl = board("VARc")
     set_fake("force_vacuum", "off")
     r = run("pick", Pick.Goal(board_id=bid(wl)), timeout=90)
     set_fake("force_vacuum", "")
@@ -259,20 +266,20 @@ try:
                                                       and S["w"].held_board_id == "", 2), desc(r))
 
     reset("lost in transit")
-    wl = board("white_large")
+    wl = board("VARc")
     r = run("pick", Pick.Goal(board_id=bid(wl)))
     lost = {"done": False}
     def lose(phase, gh):                             # runs in run()'s loop, not in a ROS callback
         if phase == "HOVER" and not lost["done"]:
             lost["done"] = True; set_fake("force_vacuum", "off")
-    r2 = run("place", Place.Goal(target="drop_off_1"), hook=lose)
+    r2 = run("place", Place.Goal(target="drop_off_a"), hook=lose)
     set_fake("force_vacuum", "")
     check("vacuum lost while carrying: LOST_IN_TRANSIT, board dropped from the world, nothing held",
           r and r.success and r2 and r2.code.value == C.LOST_IN_TRANSIT
           and until(lambda: S["w"].held_board_id == "" and all(b.id != bid(wl) for b in S["w"].boards), 3), desc(r2))
 
     reset("obstacle")
-    red2 = board("red")
+    red2 = board("VARa")
     def hand(phase, gh):
         if phase == "HOVER":
             set_fake("hand_now", "-0.40 0.0 2.5")
@@ -285,18 +292,19 @@ try:
     def cancel(phase, gh):
         if phase == "HOVER":
             gh.cancel_goal_async()
-    r = run("pick", Pick.Goal(board_id=bid(board("red"))), hook=cancel)
+    r = run("pick", Pick.Goal(board_id=bid(board("VARa"))), hook=cancel)
     check("cancel during a move: CANCELLED", r and r.code.value == C.CANCELLED, desc(r))
 
     reset("release_safe")
-    pb = board(bid=zone("processing_2").board_id) if zone("processing_2").board_id else None   # input stack is used up
+    pb = board(bid=zone("processing_1").board_id) if zone("processing_1").board_id else None   # input stack is used up
     r = run("pick", Pick.Goal(board_id=bid(pb)))
     r2 = run("release_safe", ReleaseSafe.Goal())
-    check("release_safe while holding: board to the fault zone, home", r and r.success and r2 and r2.success
-          and "fault" in r2.message and until(lambda: zone("fault").stack_count == 1, 3), f"{desc(r)} / {desc(r2)}")
+    check("release_safe while holding: dropped into the fault zone (a void: the board leaves the world, CL-39), home",
+          r and r.success and r2 and r2.success and "fault" in r2.message and until(lambda: board(bid=bid(pb)) is None
+          and S["w"].held_board_id == "" and zone("fault").stack_count == 0, 3), f"{desc(r)} / {desc(r2)}")
     reset("release_safe with an empty cup")
-    fz = zone("fault")
-    r = run("pick", Pick.Goal(board_id=bid(board_near(fz.x, fz.y))))       # the board release_safe just put there
+    src = next((b for b in S["w"].boards if b.location == "zone" and b.zone in ("drop_off_a", "drop_off_b") and b.age < 1.0), None)
+    r = run("pick", Pick.Goal(board_id=bid(src)))                         # a stack board (the fault zone is a void)
     set_fake("force_vacuum", "off")                                       # operator takes it off the cup (no skill running)
     lost = until(lambda: S["g"].state == GripperState.PART_LOST, 5)
     r2 = run("release_safe", ReleaseSafe.Goal())
@@ -310,8 +318,8 @@ try:
     check("a 2nd skill while one runs is refused (one skill at a time)", f1.result().accepted and not f2.result().accepted)
     until(lambda: f1.result().get_result_async().done(), 30)
 finally:
-    for k in ("skills", "world", "fake", "vision", "motion"):
-        outs[k] = stop(procs[k])                     # logs are already in LOG_DIR/skills_check_<k>.log
+    for k in [k for k in ("skills", "world", "fake") if k in procs] + [k for k in procs if k not in ("skills", "world", "fake")]:
+        outs[k] = stop(procs[k])                     # every started process (motion last); logs in LOG_DIR/skills_check_<k>.log
     n.destroy_node(); rclpy.shutdown()
     shutil.rmtree(tmp, ignore_errors=True)
 for k in ("skills", "world", "fake"):

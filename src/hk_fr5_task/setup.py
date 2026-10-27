@@ -23,5 +23,6 @@ setup(
         "world_model = hk_fr5_task.world_model:main",
         "fake_world = hk_fr5_task.fake_world:main",
         "skill_server = hk_fr5_task.skill_server:main",
+        "task_main_controller = hk_fr5_task.main_controller:main",
     ]},
 )

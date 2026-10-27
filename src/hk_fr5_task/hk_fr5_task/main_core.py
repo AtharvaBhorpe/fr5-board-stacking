@@ -194,6 +194,8 @@ class MainCore:
                 return False, f"clear_zone needs a known drop-off / fault zone 'to', got '{job.get('to', '')}'", ""
         if typ in ("transfer", "clear_zone") and job.get("from_zone") and job.get("from_zone") == job.get("to"):
             return False, "from_zone and to are the same zone", ""
+        if typ in ("transfer", "clear_zone") and zones.get(job.get("from_zone", "")) == "fault":
+            return False, "the fault zone is a void (boards put there leave the world): nothing to pick from it", ""
         self._seq += 1
         j = {"id": f"j{self._seq}", "type": typ, "select_variant": v, "select_board": job.get("select_board", ""),
              "from_zone": job.get("from_zone", ""), "zone": job.get("zone", ""), "to": job.get("to", ""),
@@ -243,6 +245,8 @@ class MainCore:
                     continue
             elif b["location"] != "input":
                 continue
+            elif b["variant"] == "unknown" and not j["select_board"]:
+                continue                                     # TM-22: an UNKWN input board only when named explicitly
             out.append(b)
         return out
 
