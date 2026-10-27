@@ -2,7 +2,7 @@
 # Stop the tmux session "trial" cleanly: Ctrl+C into each window in the right order (our nodes first, then vision,
 # motion, monitor last - it writes the log index at exit), wait, then close the session.
 #   tools/trial_down.sh
-TMUX_BIN=~/.pixi/bin/tmux
+TMUX_BIN="env -u TERMINFO TERM=xterm-256color $HOME/.pixi/bin/tmux"   # kitty: TERM / TERMINFO unusable for pixi tmux
 export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/usr/share/terminfo:/lib/terminfo"   # pixi tmux: system terminfo
 S=trial
 if ! $TMUX_BIN has-session -t $S 2>/dev/null; then echo "no tmux session '$S'"; exit 0; fi

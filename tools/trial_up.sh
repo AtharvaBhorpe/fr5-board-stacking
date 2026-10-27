@@ -16,7 +16,7 @@ WT=~/hackathon/wt/feat-task-main-controller
 MW=~/hackathon/wt/feat-robot-motion-gripper
 VW=~/hackathon/wt/feat-vision1-overhead
 PX=~/.pixi/bin/pixi
-TMUX_BIN=~/.pixi/bin/tmux
+TMUX_BIN="env -u TERMINFO TERM=xterm-256color $HOME/.pixi/bin/tmux"   # kitty: TERM / TERMINFO unusable for pixi tmux
 export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/usr/share/terminfo:/lib/terminfo"   # pixi tmux: system terminfo
 S=trial
 MODE=debug; SIM=0; RVIZ=false; GUI=1
@@ -80,7 +80,7 @@ wait_for "controller (/task/list_jobs)" 60 svc /task/list_jobs
 win 6 cli $WT "tc() { $PX run python3 $WT/tools/task_cli.py \"\$@\"; }; echo 'tc help = all commands'; sleep 3; tc status"
 $TMUX_BIN select-window -t $S:6
 echo "all started. Logs: $HK_LIVE_DIR"
-echo "attach: tmux attach -t $S   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: tools/trial_down.sh"
+echo "attach: tools/trial_attach.sh   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: tools/trial_down.sh"
 if [ $GUI = 1 ] && [ -n "${DISPLAY:-}" ]; then
   gnome-terminal --maximize --title="trial ($MODE)" -- $TMUX_BIN attach -t $S > /dev/null 2>&1 &
 fi
