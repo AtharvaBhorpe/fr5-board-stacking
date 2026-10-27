@@ -4,7 +4,7 @@ table_z: -0.060                # table top (motion branch H-10)
 hover_z: 0.090                 # tcp z for all moves over the table (150 mm above it: above the tallest stack + a held board)
 max_input_stack_height: 0.040  # contact search starts above this (CL-16)
 search_clear: 0.010            #   + this
-search_speed: 0.01             # contact search LIN velocity scaling (~10 mm/s: the fake / real vacuum needs ~0.1-0.6 s)
+search_speed: 0.015            # contact search LIN velocity scaling (~10 mm/s: the fake / real vacuum needs ~0.1-0.6 s)
 press: 0.004                   # go this far below the expected surface (cup is soft); teammate's real-robot value (TM-25)
 place_press: 0.001             # release with the board this far INTO the surface (teammate's real-robot value, TM-25)
 blow_off_time: 2.0             # s blow-off at every release (gripper default 1 s left boards stuck; TM-25)
@@ -14,8 +14,8 @@ home_pose: [-0.233, 0.0, 0.243, 1.543]   # tcp x, y, z, yaw of 'home': STRICTLY 
 unstick_lift: 0.015            # straight lift after the seal, before the board is attached in the scene (S-12)
 max_stack: 10                  # drop-off / fault stacks (same as world.yaml)
 default_thickness: 0.005       # board thickness when the variant is unknown
-speed: 0.2                     # velocity scaling of the normal moves (0 -> motion default 0.2)
-approach_speed: 0.1            # LIN down / up near the board
+speed: 0.15                    # velocity scaling of the normal moves (0 -> motion default 0.2)
+approach_speed: 0.075          # LIN down / up near the board
 ref_yaw: 1.5708                # tcp yaw reference (home 'ready'), see skill_math.tcp_yaw_for
 grip_timeout: 3.0              # grip at a known height
 search_timeout: 12.0           # contact search (grip goal running while descending)

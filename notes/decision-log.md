@@ -59,6 +59,8 @@ Units: metres / radians in code, mm only in logs.
 | TM-O14 | Trial 1 T2: same-colour stacking (red on red) -> the camera cannot separate the top board, the settle check failed (NOT_VERIFIED) for b25, label UNKWN. Fix: on a drop-off stack accept a board detection at the target as confirmation (count known); with TM-O12 | open (after the trial) |
 | TM-O15 | Trial 1 T2: one carry to drop_off_b failed twice in 0.15 s with INVALID_MOTION_PLAN 'planned path is in collision'; the controller's retry worked. Suspect: stack-box update (_update_stacks) racing the plan. Analyse session_20261027_213029 (move_group log) | open (after the trial) |
 | TM-O16 | Trial 1: contact search over-presses 8-10 mm (search 0.01 ~ 9 mm/s x ~0.9 s vacuum report latency); cup absorbed it every time (T1 2.8 / 7.8 mm, T2 8.3 / 10.6 / 8.2 mm). Options: search_speed 0.005, or Vision 2 measured start (method A) | open (decide) |
+| TM-O17 | Trial 1 T4a: the red VARc placed on processing_1 **stuck to the suction cup after release** (adhesion, despite the 2 s blow-off) and left with the gripper -> the camera rightly saw the zone empty -> processing_1 went LOADED -> PROCESSING. Not a vision fault. The user has an idea to solve it: discuss later | open (discuss) |
+| TM-O18 | Trial 1 T4b: `tc stop` got no answer within 10 s from /task/control (it took effect: PAUSED, board held). The Control service should answer immediately (the stop / skill cancel runs afterwards). Also: release_safe ends with a 2nd home move (0.3 s, redundant) | open (after the trial) |
 | TM-O8 | Live run (Claude): log the time between `/vision/boards` frames (arrival gaps + `now - stamp`) over a few minutes; check vs. `stale_after` 1.5 / `lost_after` 2.0 / `fresh` 1.5 | open (live) |
 
 ## 3. Step log

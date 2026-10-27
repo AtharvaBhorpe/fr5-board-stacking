@@ -143,12 +143,14 @@ any ...` must not pick it); a board moved by hand while the robot hovers over it
 
 | Test | Result | Seal z / place z offsets | Notes, tuned values |
 |---|---|---|---|
-| Checks | | | |
-| T0 | | | |
-| T1 | | | |
-| T2 | | | |
-| T3 | | | |
-| T4 | | | |
-| T5 | | | |
+| Checks | PASS | - | Vision 5 Hz, latency ~0.13-0.2 s; gripper 1 COMM_ERROR at start-up, then restored; home within 0.5 mm |
+| T0 | PASS | - | all visible boards right variant (conf 0.85-0.93); red on brown OK; zone margin OK. Ghost zone boards from hands (TM-O13) |
+| T1 | PASS | seal -0.0628 / -0.0578 (top -0.055: 7.8 / 2.8 mm over-press); release -0.051 / -0.046 exact | VARb on VARa merges -> VARa label (TM-O12) |
+| T2 | PASS (findings) | seals 8.3 / 10.6 / 8.2 mm over-press (TM-O16); releases -0.051 / -0.046 / -0.041 | red on red NOT_VERIFIED (TM-O14); one carry plan failure, retry OK (TM-O15) |
+| T3 | PASS | known-top pick from processing: -0.0541 = 4.1 mm press (as set) | order exact; LOADED -> PROCESSING -> DONE -> EMPTY with the operator; id kept; far board (0.81 m) reachable |
+| T4 | PASS (a, b); c skipped | fault drop at 0.194 exact | pause while holding: placed first, then idle; stop while holding -> resume -> fault zone; board stuck to the cup after release (TM-O17, user's idea); stop answer > 10 s (TM-O18) |
+| T5 | not run | | |
+
+Speeds tuned during the trial: 0.2 / 0.1 / 0.01 -> 0.05 / 0.025 (too slow) -> 0.1 / 0.05 / 0.01 -> **0.15 / 0.075 / 0.015** (user, 1.5x). Pick + place ~32-38 s at the end.
 
 After the trial: copy the results + every tuned value into decision-log.md; logs stay in the session folder.
