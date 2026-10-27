@@ -92,20 +92,40 @@ def destination(c, tag):
             "tag_side_mm": round(float(side.mean()) * 1000, 1)}
 
 
-def pickable(c, boards, rejected):
-    """Add metric fields; keep only size-verified boards (renumbered), move the rest to `rejected`.
-    Size-mismatched blobs are stacks, partly hidden boards or the robot arm: never pick them."""
+PLAUSIBLE_MM = ((100, 230), (180, 320))  # short, long side of anything board-like (top board of unknown variant)
+
+
+def pickable(c, boards, rejected, occluded=None):
+    """Add metric fields; keep boards the robot can pick now, move the rest to `rejected` / `occluded`.
+    Size-mismatched blobs are stacks, partly hidden boards or the robot arm: never pick them.
+    Model boards: a top board whose size matches no variant but looks like a board -> variant 'UNKWN' (pickable,
+    e.g. to clear it away). Occluded boards (model only) -> `occluded` with x / y of their visible part.
+    Ids are kept from detect() so `covered_by` stays valid."""
     ok = []
     for b in boards:
         b.pop("area_px", None)
+        if not b.get("top", True):
+            x, y = to_base(c, [[b["u"], b["v"]]])[0]
+            b.update({"x": round(float(x), 4), "y": round(float(y), 4), "zone": "pick" if y < ZONE_SPLIT_Y else "drop"})
+            if occluded is not None:
+                occluded.append(b)
+            continue
+        guess = b["variant"]
+        if guess == "UNKWN":
+            b["variant"] = b["model_class"]
         add_metric(c, b)
+        (s0, s1), ((a0, a1), (c0, c1)) = b["size_mm"], PLAUSIBLE_MM
         if b["size_ok"]:
             ok.append(b)
+        elif "model_class" in b and a0 <= s0 <= a1 and c0 <= s1 <= c1:
+            b["variant"] = "UNKWN"
+            ok.append(b)
         else:
-            rejected.append({"reason": "size_mismatch", "variant_guess": b["variant"], "u": b["u"], "v": b["v"],
+            rejected.append({"reason": "size_mismatch", "variant_guess": guess, "u": b["u"], "v": b["v"],
                              "size_mm": b["size_mm"]})
-    for i, b in enumerate(ok):
-        b["id"] = i
+    if not any("model_class" in b for b in boards):  # classic path: ids 0..n as before
+        for i, b in enumerate(ok):
+            b["id"] = i
     return ok
 
 

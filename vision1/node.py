@@ -10,8 +10,10 @@ import math
 import os
 import sys
 import time
+from collections import deque
 
 import cv2
+import numpy as np
 import rclpy
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.node import Node
@@ -24,6 +26,15 @@ from detect import detect, draw  # noqa: E402
 import table  # noqa: E402
 
 DEST_MEMORY = 10.0  # s a destination tag stays valid after it was last seen
+DEST_FRAMES = 15    # median over the last N detections of a tag: single frames jitter ~2.5 mm / 1 deg (p95)
+
+
+def median_dest(hist):
+    """[(seen, dest)] -> one dest: median x / y, circular mean yaw (yaw wraps at +-pi)."""
+    ds = [d for _, d in hist]
+    yaw = math.atan2(sum(math.sin(d["yaw"]) for d in ds), sum(math.cos(d["yaw"]) for d in ds))
+    return dict(ds[-1], x=round(float(np.median([d["x"] for d in ds])), 4),
+                y=round(float(np.median([d["y"] for d in ds])), 4), yaw=round(yaw, 4), frames=len(ds))
 
 
 def find_camera(name):
@@ -43,6 +54,7 @@ class Vision1(Node):
         super().__init__("vision1_overhead")
         device = str(self.declare_parameter("device", "C920", ParameterDescriptor(dynamic_typing=True)).value)
         rate = float(self.declare_parameter("rate", 5.0).value)
+        self.use_model = bool(self.declare_parameter("model", False).value)  # learned segmenter (stacks, UNKWN)
         focus = int(self.declare_parameter("focus", 15).value)  # fixed focus as in the team calibration; -1 = leave as is
         self.still = cv2.imread(device) if os.path.isfile(device) else None
         if self.still is None:
@@ -88,17 +100,18 @@ class Vision1(Node):
         return res
 
     def tick(self):
-        if self.still is not None:
-            frame = self.still
+        if self.still is not None:  # replay: re-read so a test can swap the file (scene changed)
+            frame = cv2.imread(self.device)
+            frame = self.still if frame is None else frame
         else:
             ok, frame = self.cap.read()
             if not ok:
                 self.get_logger().warn("camera read failed", throttle_duration_sec=2.0)
                 return False
-        rejected, tags = [], []
-        boards = detect(frame, rejected, tags)
+        rejected, tags, occluded = [], [], []
+        boards = detect(frame, rejected, tags, use_model=self.use_model)
         if self.calib is not None:
-            boards = table.pickable(self.calib, boards, rejected)
+            boards = table.pickable(self.calib, boards, rejected, occluded)
         else:
             for b in boards:
                 b.pop("area_px")
@@ -107,15 +120,15 @@ class Vision1(Node):
             for t in tags:  # templates don't move: remember each tag, small tags are missed in ~10 % of frames
                 d = table.destination(self.calib, t)
                 if d:
-                    self.dest[d["variant"]] = dict(d, seen=now)
-        dests = [{**{k: v for k, v in d.items() if k != "seen"}, "age": round(now - d["seen"], 1)}
-                 for d in self.dest.values() if now - d["seen"] < DEST_MEMORY]
+                    self.dest.setdefault(d["variant"], deque(maxlen=DEST_FRAMES)).append((now, d))
+        dests = [dict(median_dest([h for h in hist if now - h[0] < DEST_MEMORY]), age=round(now - hist[-1][0], 1))
+                 for hist in self.dest.values() if now - hist[-1][0] < DEST_MEMORY]
         msg = {"stamp": now, "destinations": dests, "image_size": [frame.shape[1], frame.shape[0]],
-               "source": self.device, "calibrated": self.calib is not None, "boards": boards, "rejected": rejected}
+               "source": self.device, "calibrated": self.calib is not None, "boards": boards, "occluded": occluded, "rejected": rejected}
         self.last = json.dumps(msg)
         if time.time() - getattr(self, "saved", 0) > 2.0:  # debug overlay for the lab, every 2 s
             self.saved = time.time()
-            img = draw(frame, boards)
+            img = draw(frame, boards + occluded)
             for r in rejected:
                 cv2.putText(img, r["reason"], (int(r["u"]) - 90, int(r["v"])), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 255), 3)
             cv2.imwrite("/tmp/vision1_last.jpg", img)
@@ -133,7 +146,7 @@ class Vision1(Node):
             m.header.frame_id = "base_link"
             m.pose.position.x, m.pose.position.y, m.pose.position.z = o["x"], o["y"], z
             m.pose.orientation.z, m.pose.orientation.w = math.sin(o["yaw"] / 2), math.cos(o["yaw"] / 2)
-            m.scale.x, m.scale.y, m.scale.z = [v / 1000 for v in table.SIZES_MM[o["variant"]]] + [0.005]
+            m.scale.x, m.scale.y, m.scale.z = [v / 1000 for v in table.SIZES_MM.get(o["variant"], o.get("size_mm", (100, 100)))] + [0.005]
             m.color.r, m.color.g, m.color.b, m.color.a = r, g, bl, 0.6
             arr.markers.append(m)
         self.markers.publish(arr)

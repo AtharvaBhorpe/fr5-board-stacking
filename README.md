@@ -38,6 +38,11 @@ Per board:
 `boards` holds only size-verified boards (pick these). Everything else (stacks, partly hidden boards, robot arm,
 hands) is in `rejected` with a `reason`.
 
+**Learned model (opt-in, `-p model:=true`)**: boards may touch / overlap. `boards` then holds the top boards
+(full rectangle visible); `variant` can be `UNKWN` (class confidence < 0.6, or a top board whose size matches no
+variant). Extra fields `conf`, `model_class`, `top`. New list `occluded`: boards partly under others, `x` / `y` of
+the visible part, `covered_by` = ids of the boards on top (fallback: touching boards). ~0.35 s per frame on CPU.
+
 `destinations`: one per visible template tag (DICT_5X5_100, ids 1 / 2 / 16 = VARa / VARb / VARc), anywhere in the
 image: `variant`, `tag_id`, `x`, `y`, `yaw` (target board pose, base_link, team offsets from
 `feat/fr5-demo-integration` `config/perception_geometry.yaml`), `support_z` (template top, -0.055), `age` (s since
@@ -53,15 +58,23 @@ From `fr5-board-stacking` (both repos side by side):
 pixi run python3 ../vision1-overhead/robot/pick_one.py --hover-only   # real robot, first: check the position
 pixi run python3 ../vision1-overhead/robot/pick_one.py                # pick, lift, put back (ENTER twice)
 pixi run python3 ../vision1-overhead/robot/pick_one.py --place        # pick -> its template (--stack N, --press mm)
+pixi run python3 ../vision1-overhead/robot/pick_one.py --place --variant VARa --temp X Y   # model: clear covering boards
 ```
 
+`--press` (default 4 mm) goes below the computed board top. The real cup stopped ~10 mm high, but MoveIt's table
+model refuses more than ~4 mm: measure where the cup touches the table and fix `table_top_z` / `tcp_z` in
+`fr5-board-stacking`. If the requested `--variant` is in `occluded`, the board on top goes to the `--temp` spot
+(stacked there, must be > 0.30 m from every template, default -0.25 0.10), vision looks again, repeat (max 4).
+
 Simulation test (no robot, no camera): `pixi run sim` in `fr5-board-stacking`, then `robot/sim_regression.sh` here
-(11 cases, ~4 min). **Never run `sim` and `robot` at the same time**: a leftover sim process makes the real robot load
+(11 cases, ~10 min) and `robot/sim_clear_test.sh` (covered VARa: clear + place, model on). **Never run `sim` and `robot` at the same time**: a leftover sim process makes the real robot load
 mock hardware (it then reports SUCCESS but does not move). `pick_one.py` prints `robot hardware: REAL FR5` or `MOCK` first, and stops if two robot stacks run.
 
 ## Limits
 
 - Looks only at the pick area (right table in the image, `ROI` in `vision1/detect.py`).
-- Boards must not touch or overlap: merged blobs are rejected (not reported).
+- Classic (default): boards must not touch or overlap, merged blobs are rejected. Model: handles touching boards and
+  simple stacks; still misses many real overlapping white stacks (trained on auto-labels + synthetic pastes only,
+  `train/`). Fix: label ~60 real stack frames, retrain (`train/make_dataset.py`, `train/train.py`, ~50 min GPU).
 - `config/calib.yaml` is copied from `feat/vision-transform`. Re-copy it after every recalibration; the camera must not move.
 - Lab knobs (thresholds, ROI, area limits) are at the top of `vision1/detect.py` and `vision1/table.py`.

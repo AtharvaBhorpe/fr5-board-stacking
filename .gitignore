@@ -2,3 +2,6 @@
 *.overlay.jpg
 __pycache__/
 eval_out/
+train_data/
+runs/
+*.pt

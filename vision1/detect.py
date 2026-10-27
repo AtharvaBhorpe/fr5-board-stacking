@@ -9,6 +9,8 @@ import sys
 import cv2
 import numpy as np
 
+import seg
+
 # --- Lab knobs (pixel values are for the 1920x1080 overhead image) -------------------------------
 # Where to look: pick area (right table), normalized [x, y] in image, perimeter order.
 ROI = [[0.57, 0.15], [0.985, 0.15], [0.985, 0.97], [0.57, 0.97]]  # A/B on 755 frames: +34 boards, 0 lost
@@ -73,10 +75,67 @@ def _quad(contour):
     return None
 
 
-def detect(bgr, rejected=None, tags=None):
+def roi_px(w, h):
+    """ROI bounding box in pixels (x0, y0, x1, y1): the crop the model was trained on."""
+    return (round(ROI[0][0] * (w - 1)), round(ROI[0][1] * (h - 1)), round(ROI[1][0] * (w - 1)), round(ROI[2][1] * (h - 1)))
+
+
+UNKWN_CONF = 0.6   # model class confidence below this -> variant "UNKWN" (any unclear board)
+TOUCH_PX = 9       # px grown around a board mask before testing overlap
+COVER_PX = 800     # px of board j inside occluded board i's hull -> j covers i
+
+
+def _from_model(bgr, roi_px, tag_centres, reject):
+    """Model masks -> boards. Full rectangle = on top (pickable). Partial = occluded: 'top': False, 'covered_by'."""
+    out, masks = [], []
+    for inst in seg.segment(bgr, roi_px):
+        cs, _ = cv2.findContours(inst["mask"], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not cs:
+            continue
+        c = max(cs, key=cv2.contourArea)
+        area = cv2.contourArea(c)
+        if area < MIN_AREA / 4:
+            continue
+        rect = cv2.minAreaRect(c)
+        box = _quad(c)
+        if box is not None and any(cv2.pointPolygonTest(box, tuple(map(float, t)), False) >= 0 for t in tag_centres):
+            reject("has_tag", c, area)
+            continue
+        top = (box is not None and MIN_AREA <= area <= MAX_AREA
+               and area / (rect[1][0] * rect[1][1]) >= MIN_RECTANGULARITY)
+        variant = inst["cls"] if inst["conf"] >= UNKWN_CONF else "UNKWN"
+        if box is None:
+            box = cv2.boxPoints(rect).astype(np.float32)
+        m = cv2.moments(c)
+        b = {"variant": variant, "model_class": inst["cls"], "conf": round(inst["conf"], 3), "top": bool(top),
+             "u": round(m["m10"] / m["m00"], 1), "v": round(m["m01"] / m["m00"], 1),
+             "yaw_deg": round(_yaw_deg(box, X_IS_LONG_EDGE.get(inst["cls"], True)), 1),
+             "corners": np.round(box, 1).tolist(), "area_px": int(area)}
+        if top:  # centre of the 4 corners, not of the mask (same as the classic path)
+            b["u"], b["v"] = round(float(box[:, 0].mean()), 1), round(float(box[:, 1].mean()), 1)
+        hull = np.zeros_like(inst["mask"])
+        cv2.fillPoly(hull, [cv2.convexHull(c)], 255)  # where the occluded board's missing corner / edge is
+        out.append(b)
+        masks.append((cv2.dilate(inst["mask"], np.ones((TOUCH_PX, TOUCH_PX), np.uint8)), hull))
+    order = sorted(range(len(out)), key=lambda i: out[i]["u"])
+    out, masks = [out[i] for i in order], [masks[i] for i in order]
+    for i, b in enumerate(out):
+        b["id"] = i
+        if not b["top"]:  # j covers i: j lies inside i's visible outline (hull); thin slivers have no useful hull,
+            others = [j for j in range(len(out)) if j != i]  # then any touching board (worst case: one extra move)
+            b["covered_by"] = ([j for j in others if cv2.countNonZero(masks[j][0] & masks[i][1]) >= COVER_PX]
+                               or [j for j in others if cv2.countNonZero(masks[j][0] & masks[i][0])])
+    return out
+
+
+def detect(bgr, rejected=None, tags=None, use_model=False):
     """Return [{'id','variant','u','v','yaw_deg','corners'}], sorted left -> right, id = index.
     rejected: optional list, gets {'reason','colour','u','v','area_px'} for every board-sized blob that was dropped.
-    tags: optional list, gets {'id','corners'} for every DICT_5X5_100 marker in the whole image (destinations)."""
+    tags: optional list, gets {'id','corners'} for every DICT_5X5_100 marker in the whole image (destinations).
+    With use_model (needs models/boards-seg.onnx): learned masks, boards also get 'top', 'conf', and occluded ones
+    'covered_by' (ids of touching boards); variant may be 'UNKWN'. Without it: classic colour masks (all 'top')."""
+    colour = "model"
+
     def reject(reason, c, area):
         if rejected is not None:
             (u, v), _, _ = cv2.minAreaRect(c)
@@ -91,6 +150,8 @@ def detect(bgr, rejected=None, tags=None):
     if tags is not None:
         tags += [{"id": i, "corners": c.tolist()} for i, c in found.items()]
 
+    if use_model and seg.available():
+        return _from_model(bgr, roi_px(w, h), tag_centres, reject)
     boards = []
     for colour, ranges, close in (("white", [WHITE], 9), ("red", RED, RED_CLOSE)):
         contours, _ = cv2.findContours(_mask(hsv, ranges, roi, close), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -127,8 +188,9 @@ def draw(bgr, boards):
     h, w = out.shape[:2]
     cv2.polylines(out, [np.int32(np.array(ROI) * [w - 1, h - 1])], True, (255, 255, 0), 2)
     for b in boards:
-        cv2.polylines(out, [np.int32(b["corners"])], True, (0, 255, 0), 3)
-        cv2.putText(out, f'{b["id"]} {b["variant"]} {b["yaw_deg"]:.0f}deg', (int(b["u"]) - 80, int(b["v"])),
+        col = (0, 255, 0) if b.get("top", True) else (0, 165, 255)  # orange = occluded
+        cv2.polylines(out, [np.int32(b["corners"])], True, col, 3)
+        cv2.putText(out, f'{b["id"]} {b["variant"]} {b["yaw_deg"]:.0f}deg' + ("" if b.get("top", True) else " under"), (int(b["u"]) - 80, int(b["v"])),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 200, 0), 3)
     return out
 
