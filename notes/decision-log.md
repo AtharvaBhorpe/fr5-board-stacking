@@ -54,6 +54,8 @@ Units: metres / radians in code, mm only in logs.
 | TM-O9 | Lab: zone sheet `top_z` by robot touch-off (relaxed cup just touching the taped-down sheet, z from `/motion/get_state`), per zone -> the vision owner's tag table (vision1-human-setup.md 1b) | open (lab) |
 | TM-O10 | Lab: suction cup travel (how far the cup compresses before the flange pushes): limits the height error a too-high top estimate may have (`press` 3 mm, place press) | open (lab) |
 | TM-O11 | After the lab measurement of the cardboard zones (3 drop-off + 2 processing, sizes via Vision 1): adapt `scenario_demo.yaml` / test layouts to the real zone sizes and positions | open (lab) |
+| TM-O12 | Trial 1 T1 finding: a VARb (small white) placed on a VARa (large white) merges into one white blob, Vision 1 reports VARa, world_core overwrote the placed board's variant VARb -> VARa. Fix: a board PLACED by the robot keeps its known variant (camera label only as `label`); heights unaffected (from the count) | open (after the trial) |
+| TM-O13 | Trial 1 T0 / T1 finding: ghost zone boards (UNKWN from a hand placing boards, or a board taken away) never expire because zone boards are kept when unseen (stacks hide them). Fix: expire zone boards that were never placed by the robot / not seen for lost_after; meanwhile `tc reset_zone <zone>` when a sheet is emptied | open (after the trial) |
 | TM-O8 | Live run (Claude): log the time between `/vision/boards` frames (arrival gaps + `now - stamp`) over a few minutes; check vs. `stale_after` 1.5 / `lost_after` 2.0 / `fresh` 1.5 | open (live) |
 
 ## 3. Step log
