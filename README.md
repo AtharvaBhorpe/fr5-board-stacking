@@ -12,6 +12,20 @@ This branch is a standalone pixi workspace (ROS 2 Humble, RoboStack) that runs *
 | RViz demo panel | Status lights, both cameras, one button per variant, Confirm / Stop, log; ROS request topic | `robot/rviz.sh` |
 | Learned segmenter | YOLO26s-seg (ONNX) for touching / stacked boards, trained on this lab's data | `models/boards-seg.onnx` |
 
+![Workcell: Fairino FR5 on an aluminium rail between two tables; Schmalz vacuum gripper with a RealSense D405 on a
+3D-printed bracket at the wrist; boards and yellow-taped templates with ArUco tags on the black table cloth](docs/img/photo_workcell.jpg)
+
+*The workcell: FR5 on its rail, pick table (front right), templates with ArUco tags, overhead C920 above the tables
+(not visible), D405 on the wrist.*
+
+![RViz demo window on the real robot: Pick panel on the left (status line all green: robot REAL FR5, overhead camera,
+wrist camera, gripper IDLE; overhead image with detections; wrist D405 image; buttons VARa 0 free, VARb 3 free,
+VARc 0 free; log ending with park SUCCESS, done, exit code 0), 3D view on the right with the robot model, the D405
+point cloud of the rail and two boards, green board markers and red template markers](docs/img/rviz_real_robot.jpg)
+
+*`robot/rviz.sh` on the real robot right after a successful VARc pick and place (status line, both cameras, variant
+buttons, log; 3D: robot, D405 point cloud, green = detected boards, red = template poses).*
+
 Contents: [Quick start](#1-quick-start) · [Environments and tasks](#2-environments-and-tasks) ·
 [Data flow](#3-data-flow) · [ROS interface](#4-ros-interface-reference) · [`/vision/boards` JSON](#5-visionboards-json-schema) ·
 [Coordinates](#6-coordinate-conventions) · [pick_one.py](#7-pick_onepy-supervised-pick--place) ·
@@ -108,6 +122,16 @@ the scene while the node runs.
 
 The vision node never moves the robot. Only `pick_one.py` sends motion goals, and only after a human presses
 ENTER / Confirm before each descent.
+
+![Overhead camera frame as published on /vision/image (full size shown): cyan rectangle = pick-area ROI on the right
+table; green outlines with "id variant yaw" = pickable boards (2 VARb 88deg, 3 VARb 89deg); red text = rejected blobs
+with their reason (size_mismatch, has_tag); red squares with labels VARa / VARb / VARc = template ArUco tags; header
+line "pickable: VARb x2"](docs/img/overhead_annotated.jpg)
+
+*What the vision node sees (`/vision/image`, real camera). Legend: **cyan** = pick area (ROI), **green** = pickable
+board (`id variant yaw`), **orange** = board under another board (model mode), **red text** = rejected blob and its
+`reason`, **red squares** = template tags (destinations). Here the VARb template lies inside the pick area: its sheet
+is correctly rejected as `has_tag`.*
 
 ---
 
@@ -336,6 +360,12 @@ stays on the cup: take it off, or `pixi run shell` then `release`.
 
 Measurements outside "1 cm below to 6 cm above one board on the table" are ignored (fixed height used).
 
+![Side photo: green Schmalz suction cup resting on a white board, slightly squashed (the jog contact test used to
+measure the real cup length)](docs/img/photo_cup_contact.jpg)
+
+*Contact test for the cup length (`tcp_z`): jogged down until the cup just squashes on the board, then compared the
+TCP height with the known board top (section 14).*
+
 ---
 
 ## 8. RViz pick panel
@@ -371,6 +401,12 @@ pixi run wrist
 `config/d405.yaml`: color + depth 848x480 at 15 Hz, point cloud (decimated 2x), waits for the camera if it is not
 plugged in yet. Without the udev rule the driver logs `RS2_USB_STATUS_ACCESS`.
 
+![Close-up of the tool: FR5 wrist flange, white 3D-printed bracket holding the silver RealSense D405 to the right of
+the Schmalz vacuum gripper; green suction cup below; boards on the table](docs/img/photo_tool_d405.jpg)
+
+*The wrist tool: D405 on the bracket beside the Schmalz gripper. On the robot model the bracket points to base -X at
+the startup pose and the camera hangs upside down (`mount.yaw = -90 deg`, `roll = pi`, section 14).*
+
 ### 9.1 `robot/wrist_depth.py` (Python API)
 
 ```python
@@ -392,6 +428,25 @@ With robot, vision and wrist running and the cup hovering above a board (`pick_o
 from the overhead camera, red = templates, yellow = TCP (outside the image, top edge: per the model the gripper is
 at the top of the wrist image), magenta = point straight below the cup. Output `/wrist/check`, `/tmp/wrist_check.png`.
 Outlines on the real boards = the camera pose on the model is right.
+
+![Wrist D405 color image with the model prediction drawn on it: a white board filling the view, magenta cross
+"below cup (z -0.055)" near the bottom centre, yellow arrow at the bottom edge labelled "TCP (outside)"](docs/img/wrist_check.jpg)
+
+*`check_wrist.py` on the real robot (cup hovering above a 2-board VARa stack): magenta = point straight below the cup,
+yellow arrow = TCP direction (the gripper is just outside the image). Green / red outlines appear when boards /
+templates from the overhead camera are in view.*
+
+![Top-down height map from the D405 point cloud around the TCP: colours from blue (table) to red (12 mm above the
+table), white cross = TCP, red X = estimated top-board centre; speckles on the black cloth](docs/img/wrist_heightmap.jpg)
+
+*D405 heights around the cup (blue = table, red = 12 mm above). Board tops are clean; the black cloth gives
+speckled depth, which is why heights are taken as board-minus-table in one view.*
+
+![Overhead camera zoom on the tool from above: the white D405 bracket with its USB cable sticks out downward in the
+image, i.e. toward base -X, away from the robot base](docs/img/mount_check_overhead.jpg)
+
+*How the mount yaw was found without moving the arm: seen from the overhead camera the D405 bracket points to base
+-X, while the old model put the camera on base +Y.*
 
 ---
 
@@ -488,6 +543,24 @@ pixi run python train/compare_real.py models/boards-seg.onnx            # classi
 
 Labelling rules: visible part only (a board under another has a notch), every board >= ~25 % visible, nothing for
 hands / arm / paper / tags, a board cut in two by an arm: the bigger piece.
+
+![X-AnyLabeling with a real stack frame: polygons labelled VARa (blue), VARb (red), VARc (green) on white and red
+boards; the Labels list shows the three classes; the Shapes list shows the outlines of the frame](docs/img/labelling_xanylabeling.jpg)
+
+*Reviewing SAM 3 pre-labels in X-AnyLabeling (3 classes only; partly hidden boards keep their notch).*
+
+![Two lab photos, classic detector (left) vs learned model (right). Sample 04: classic finds 0 boards (all blobs
+rejected as not_rectangular / too_big), model finds 5 (two touching VARa, VARc top, VARc and VARb under others in
+orange). Sample 05: classic 3, model 7](docs/img/classic_vs_model.jpg)
+
+*Classic vs model on lab photos: touching / overlapping boards merge into one rejected blob for the classic
+detector; the model separates them and marks boards lying under others (orange).*
+
+![Three real stack frames from the held-out set with the model's outlines: green = top boards, orange = boards under
+others, labels with variant (VARa / VARb / VARc / UNKWN)](docs/img/model_real_stacks.jpg)
+
+*Model on held-out real stack frames (not used for training). `UNKWN` = class confidence < 0.6: such boards are only
+moved aside when they cover a requested board.*
 
 ---
 
