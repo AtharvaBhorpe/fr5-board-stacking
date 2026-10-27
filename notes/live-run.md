@@ -9,8 +9,10 @@ All terminals: the same `ROS_DOMAIN_ID` (unset = 0); `ROS_LOCALHOST_ONLY` unset 
 
 ## 0. Before the slot
 
-- [ ] Vision 1 runs on THIS PC (C9: `stamp` compared with our clock). Other PC -> clocks synced (chrony), else
-      `world_model` logs "stamp ... off this clock" and uses the arrival time.
+- [x] Vision 1 runs on THIS PC (C9), GPU env installed (TM-28). After the teammate pushes zone values:
+      `cd ~/hackathon/wt/feat-vision1-overhead && git fetch origin && git checkout --detach origin/feat/vision1-overhead`.
+- [ ] **Fault zone position (TM-O5) BEFORE the first job:** the placeholder (-0.30, 0.70) overlaps the zone of tag 1
+      (drop_off_a placeholder at about (-0.34, 0.83)) -> boards there would be ignored as 'in the fault void'.
 - [ ] Vision 1 in model mode (C13, FROZEN TM-27).
 - [ ] Zone sheets placed (brown cardboard, tag beside the board area, inputs >= 3 cm outside every sheet).
 
@@ -29,7 +31,7 @@ one log file per node (motion, move_group, gripper, Vision 1, ours), `monitor/` 
 |---|---|---|---|
 | 1 | this branch | `pixi run python3 tools/live_monitor.py` (quiet console: WARN / ERROR of every node, jobs, vision stats; `--verbose` = everything) | "logging everything to ..." |
 | 2 | `~/hackathon/wt/feat-robot-motion-gripper` | `pixi run robot use_rviz:=false` (gripper on by default; start = DO0 + DO1 off) | `/motion/get_state` answers |
-| 3 | Vision 1 checkout | `pixi run -e gpu vision --ros-args -p model:=true` (model mode FROZEN, TM-27) | monitor: `VIS` stats at ~5 Hz |
+| 3 | `~/hackathon/wt/feat-vision1-overhead` (detached worktree, the teammate's code, never commit there) | `pixi run -e gpu vision --ros-args -p model:=true` (model mode FROZEN; log line "seg model on CUDAExecutionProvider") | monitor: `VIS` 5 Hz, now-stamp ~0.13 s |
 | 4 | this branch | `pixi run ros2 run hk_fr5_task world_model --ros-args $HK_NODE_ARGS` | monitor: no "zone(s) SKIPPED" ERROR |
 | 5 | this branch | `pixi run ros2 run hk_fr5_task skill_server --ros-args $HK_NODE_ARGS` | `ros/` log: "skills ready" |
 | 6 | this branch | `pixi run ros2 run hk_fr5_task task_main_controller --ros-args $HK_NODE_ARGS` | `task_cli.py status`: skills_ready + motion_ready True |
