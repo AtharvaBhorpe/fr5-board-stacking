@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 
-from hk_fr5_task.skill_math import in_shadow
+from hk_fr5_task import mask as M
 
 NAN = float("nan")
 
@@ -106,13 +106,15 @@ class World:
         return best
 
     # ---------- Vision 1 frame ----------
-    def update(self, t, dets, shadow=None):
-        """shadow (CL-20 B): None, or {"x", "y", "radius"} = tcp position + half-width of the arm's shadow on the table
-        (band robot base -> tcp). Under it: board detections ignored (arm / held board), boards not dropped as lost,
-        processing-zone timers frozen (a covered zone must not look empty)."""
+    def update(self, t, dets, mask=None):
+        """mask (CL-31, hk_fr5_task.mask): None, or {"arm": [shapes], "tool": [shapes]} on the table plane.
+        tool (gripper + held board): board detections touching it are ignored. arm: explains absence only - a board
+        detection touching it is used only if it matches a known board and shows its full size (no new boards, no
+        cut-off boxes); known boards touching the mask are not dropped as lost; a processing zone touching it with no
+        board seen keeps its state (a covered zone must not look empty)."""
         c = self.c
         self.last_frame_t = t
-        self.shadow = shadow
+        self.mask = mask or {}
         dets = [d for d in dets if d.get("score", 1.0) >= c["min_score"]]
         # zones (detected) + fixed fallbacks
         seen_zones = set()
@@ -146,8 +148,9 @@ class World:
         matched = set()
         for d in bdets:
             x, y, yaw, l, wd = rect_from_corners(d["corners"])
-            if self._shadowed(x, y):
-                continue                                     # arm / held board seen by the camera (CL-20)
+            if M.hits(self.mask.get("tool"), d["corners"]):
+                continue                                     # the robot's own board / gripper (CL-31)
+            under_arm = M.hits(self.mask.get("arm"), d["corners"])
             label = d["cls"].split("/", 1)[1]
             best, bd = None, None
             for i, b in free.items():
@@ -160,6 +163,8 @@ class World:
                     #   the most recently placed / seen wins (top of a stack, not the hidden board under it)
                     if bd is None or key < bd:                          # (top board of a stack, not the hidden one)
                         best, bd = i, key
+            if under_arm and not self._full_view(best, label, l, wd):
+                continue                                     # CL-31: under the arm only full views of known boards
             if best is None:
                 best = self._new_board_id(t, x, y)
             b = self.boards.setdefault(best, {"id": best, "location": "input", "zone": "", "first": t,
@@ -178,8 +183,9 @@ class World:
         # boards not seen: drop input boards after lost_after (zone boards may be hidden under a stack / away)
         for i in [i for i, b in self.boards.items() if i not in matched]:
             b = self.boards[i]
-            if self._shadowed(b.get("x", 0.0), b.get("y", 0.0)):
-                b["lost_ref"] = t                            # hidden by the arm: the loss timer restarts after it
+            if self._masked(rect_corners(b.get("x", 0.0), b.get("y", 0.0), b.get("yaw", 0.0),
+                                         b.get("length", 0.0), b.get("width", 0.0))):
+                b["lost_ref"] = t                            # hidden by the robot: the loss timer restarts after it
                 continue
             if b["location"] == "input" and t - max(b["seen"], b.get("lost_ref", 0.0)) > c["lost_after"]:
                 self._note(t, f"board {i} lost (not seen {t - b['seen']:.1f} s)")
@@ -189,9 +195,21 @@ class World:
             if z["kind"] != "processing":
                 self._set_state(z, "FULL" if z["stack_count"] >= c["max_stack"] else "OK", t)
 
-    def _shadowed(self, x, y, grow=0.0):
-        s = getattr(self, "shadow", None)
-        return bool(s) and in_shadow(x, y, s["x"], s["y"], s["radius"] + grow)
+    def _masked(self, corners):
+        """Any part of the footprint under the robot (arm or tool), CL-31."""
+        m = getattr(self, "mask", None) or {}
+        return M.hits(m.get("arm"), corners) or M.hits(m.get("tool"), corners)
+
+    def _full_view(self, best, label, length, width):
+        """CL-31: a detection under the arm counts only if it matches a known board and shows its full size (the
+        variant's nominal size, else the size last seen of that board)."""
+        if best is None:
+            return False
+        v = self._variant(label)
+        b = self.boards[best]
+        ref = (v["length"], v["width"]) if v else (b.get("length", 0.0), b.get("width", 0.0))
+        tol = self.c["size_tol"]
+        return ref[0] > 0 and abs(length - ref[0]) <= tol and abs(width - ref[1]) <= tol
 
     def _new_board_id(self, t, x, y):
         """New board, unless it is the board coming back into a PROCESSING zone (keeps its identity)."""
@@ -210,10 +228,10 @@ class World:
         for z in self.zones.values():
             if z["kind"] != "processing":
                 continue
-            if self._shadowed(z["x"], z["y"], grow=math.hypot(z["length"], z["width"]) / 2):
-                z["occ_since"] = z["empty_since"] = None     # covered by the arm: freeze, debounce restarts after
-                continue
             present = [i for i in matched if self.boards[i]["location"] == "zone" and self.boards[i]["zone"] == z["name"]]
+            if not present and self._masked(rect_corners(z["x"], z["y"], z["yaw"], z["length"], z["width"])):
+                z["occ_since"] = z["empty_since"] = None     # covered, nothing seen: freeze, debounce restarts after
+                continue
             if present:
                 z["empty_since"] = None
                 z["occ_since"] = z["occ_since"] if z["occ_since"] is not None else t
@@ -290,6 +308,11 @@ class World:
                 raise ValueError(f"reset_zone: unknown zone '{ev.get('zone')}'")
             z.update(board_id="", stack_count=0, stack_top_z=self.c["table_z"])
             self._set_state(z, "EMPTY" if z["kind"] == "processing" else "OK", t)
+            gone = [i for i, b in self.boards.items() if b["location"] == "zone" and b["zone"] == z["name"]]
+            for i in gone:                                   # the operator emptied it: no ghost boards stay behind
+                del self.boards[i]                           # (a new board there must not take an old id)
+            if gone:
+                self._note(t, f"reset {z['name']}: removed {', '.join(gone)}")
         else:
             raise ValueError(f"unknown event type '{typ}'")
 

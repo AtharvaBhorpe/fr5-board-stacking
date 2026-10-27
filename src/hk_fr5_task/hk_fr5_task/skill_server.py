@@ -405,8 +405,11 @@ class SkillServer(Node):
         raise SkillError(C.TIMEOUT, f"work area not clear after {timeout:.0f} s")
 
     def _release_safe(self, gh, res):
+        held = self.world.held_board_id if self.world is not None else ""
+        if held and not self._holding():                 # CL-32: taken off the cup by hand (e.g. during a stop)
+            raise SkillError(C.NOT_HOLDING, f"the world holds {held} but the cup is empty")
         msg = "nothing held"
-        if self._holding() and self.world is not None and self.world.held_board_id:
+        if self._holding() and held:
             target = gh.request.target or "fault"
             msg = self._place(gh, Place.Result(), target=target)
         self._home_move(gh)

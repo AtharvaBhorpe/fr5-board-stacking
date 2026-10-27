@@ -1,4 +1,4 @@
-"""Offline checks of hk_fr5_task.skill_math (T4): tcp yaw choice, pick / place heights, zone acceptance, arm shadow,
+"""Offline checks of hk_fr5_task.skill_math (T4): tcp yaw choice, pick / place heights, zone acceptance,
 board lookup. No ROS.
 
     pixi run python3 tests/skill_math_check.py
@@ -49,11 +49,6 @@ check("zone_accepts: processing EMPTY ok, LOADED occupied; drop-off ok, FULL / c
       and sm.zone_accepts(C, dz) == "" and sm.zone_accepts(C, dict(dz, state="FULL")) == "STACK_FULL"
       and sm.zone_accepts(C, dict(dz, stack_count=C["max_stack"])) == "STACK_FULL")
 
-check("shadow: tcp end, mid-band, base: inside; 20 cm beside the band: outside",
-      sm.in_shadow(-0.45, 0.45, -0.45, 0.45, 0.12) and sm.in_shadow(-0.22, 0.22, -0.45, 0.45, 0.12)
-      and sm.in_shadow(0.0, 0.05, -0.45, 0.45, 0.12) and not sm.in_shadow(-0.40, 0.0, -0.45, 0.45, 0.12))
-check("shadow: beyond the tcp end only within the radius", sm.in_shadow(-0.55, 0.45, -0.45, 0.45, 0.12)
-      and not sm.in_shadow(-0.60, 0.60, -0.45, 0.45, 0.12))
 bs = [{"id": "b1", "x": -0.3, "y": 0.1, "variant": "red"}, {"id": "b2", "x": -0.31, "y": 0.11, "variant": "white_small"}]
 check("board_at: nearest within tol, variant filter, None when far", sm.board_at(bs, -0.3, 0.1, 0.02)["id"] == "b1"
       and sm.board_at(bs, -0.3, 0.1, 0.02, "white_small")["id"] == "b2" and sm.board_at(bs, 0.0, 0.0, 0.02) is None)

@@ -25,6 +25,7 @@ from vision_msgs.msg import Detection2DArray
 
 from hk_fr5_interfaces.msg import GripperState
 from hk_fr5_task.fake_core import Camera, bbox_corners
+from hk_fr5_task import mask
 from hk_fr5_task.world_core import World
 from hk_fr5_task_interfaces.msg import Board, Obstacle, World as WorldMsg, Zone
 from hk_fr5_vision_interfaces.srv import PixelToTable
@@ -53,7 +54,8 @@ class WorldModel(Node):
             self.cam = Camera(calib.load(p))
         else:
             self.cli = self.create_client(PixelToTable, "/vision/pixel_to_table")
-        self.declare_parameter("shadow_radius", 0.12)          # CL-20 B: arm shadow half-width (0 = off)
+        self.declare_parameter("shadow_radius", 0.12)          # CL-20 B band base -> tcp half-width (0 = no mask)
+        self.declare_parameter("mask_extra", 0.03)             # CL-31 extra margin on the held-board area
         self.declare_parameter("tcp_frame", "tcp")
         self.shadow_radius = float(self.get_parameter("shadow_radius").value)
         self.tf = tf2_ros.Buffer()
@@ -111,18 +113,27 @@ class WorldModel(Node):
         for k, (cls, tid, score, _, _) in enumerate(items):
             dets.append({"cls": cls, "id": tid, "score": score, "corners": [list(p) for p in xy[5 * k:5 * k + 4]],
                          "inside": bool(inside[5 * k + 4])})
-        self.core.update(self.now(), dets, self._shadow())
+        self.core.update(self.now(), dets, self._mask())
         self._publish()
 
-    def _shadow(self):
-        """tcp position from TF (motion stack running), else None = no mask (fake world / no robot)."""
+    def _mask(self):
+        """CL-31 mask, transitional (step 7: link capsules from TF + camera rays): the band base -> tcp as 'arm', a
+        circle of the held board's half-diagonal at the tcp as 'tool' (only while holding; the gripper alone is covered
+        by the band). No TF (fake world / no robot) -> None."""
         if self.shadow_radius <= 0:
             return None
         try:
             tr = self.tf.lookup_transform("base_link", self.get_parameter("tcp_frame").value, rclpy.time.Time())
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return None
-        return {"x": tr.transform.translation.x, "y": tr.transform.translation.y, "radius": self.shadow_radius}
+        tcp = (tr.transform.translation.x, tr.transform.translation.y)
+        hb = self.core.boards.get(self.core.held) if self.core.held else None
+        r = 0.0
+        if hb is not None:
+            v = self.core.c["variants"].get(hb.get("variant", ""))
+            l, w = (v["length"], v["width"]) if v else (hb.get("length", 0.0), hb.get("width", 0.0))
+            r = math.hypot(l, w) / 2 + float(self.get_parameter("mask_extra").value)
+        return mask.band(tcp, self.shadow_radius, r)
 
     def _event(self, msg):
         try:

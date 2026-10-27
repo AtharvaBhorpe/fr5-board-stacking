@@ -1,5 +1,5 @@
 """Offline checks of hk_fr5_task.world_core (T3): geometry, variants, tracking, zones + margin, processing-zone state
-machine (CL-4 / CL-8), stacks, obstacles, stale vision, fixed-zone fallback, events. Simulated time, no ROS.
+machine (CL-4 / CL-8), stacks, obstacles, stale vision, fixed-zone fallback, events, robot mask (CL-31). Simulated time, no ROS.
 
     pixi run python3 tests/world_core_check.py
 """
@@ -208,31 +208,79 @@ for ev, text in [({"type": "picked", "board": "b99"}, "unknown board"), ({"type"
     except ValueError as e:
         check(f"event {ev['type']} rejected: {text}", text in str(e), str(e))
 
-# 7 arm shadow (CL-20 B): tcp at (-0.45, 0.45) above processing_1, band from the base, radius 0.12
-SH = {"x": -0.45, "y": 0.45, "radius": 0.12}
+# 7 robot mask (CL-31): geometry, then the world rules (tool area ignored, arm explains absence only)
+from hk_fr5_task import mask as M
+sq = rect_corners(-0.30, 0.10, 0.0, 0.10, 0.06)                       # a 10 x 6 cm board
+check("mask geometry: thin capsule crossing a board's middle (no corner inside) touches it", M.touches(
+      M.capsule((-0.30, 0.0), (-0.30, 0.2), 0.005), sq))
+check("mask geometry: capsule end 1 mm short of the board edge (radius 2 cm): 21 mm -> no, 19 mm -> yes",
+      not M.touches(M.capsule((-0.30, 0.0), (-0.30, 0.049), 0.020), sq)
+      and M.touches(M.capsule((-0.30, 0.0), (-0.30, 0.051), 0.020), sq))
+check("mask geometry: board fully inside a big circle; polygon overlap; polygon 1 cm away with grow 0.5 / 1.5 cm",
+      M.touches(M.capsule((-0.3, 0.1), (-0.3, 0.1), 0.3), sq) and M.touches(M.poly(rect_corners(-0.25, 0.1, 0.3, 0.1, 0.1)), sq)
+      and not M.touches(M.poly(rect_corners(-0.20, 0.10, 0.0, 0.08, 0.06), 0.005), sq)
+      and M.touches(M.poly(rect_corners(-0.20, 0.10, 0.0, 0.08, 0.06), 0.015), sq))
+check("mask geometry: zero-size footprint (a point) is tested by distance, not counted inside everything",
+      not M.touches(M.capsule((0.5, 0.5), (0.6, 0.6), 0.01), [[-0.3, 0.1]] * 4)
+      and M.touches(M.capsule((-0.3, 0.05), (-0.3, 0.15), 0.01), [[-0.3, 0.1]] * 4))
+check("mask band(): arm capsule base -> tcp; tool circle at the tcp only while holding", M.band((-0.45, 0.45), 0.12, 0.08) ==
+      {"arm": [M.capsule((0, 0), (-0.45, 0.45), 0.12)], "tool": [M.capsule((-0.45, 0.45), (-0.45, 0.45), 0.08)]}
+      and M.band((-0.45, 0.45), 0.12)["tool"] == [])
+
+ARM = {"arm": [M.capsule((0.0, 0.0), (-0.45, 0.45), 0.12)], "tool": [M.capsule((-0.45, 0.45), (-0.45, 0.45), 0.08)]}
 w = World(CFG); t = 0.0
-run([det("board/red", -0.6, -0.3)], 0.3)
-w.update(t + 0.1, ZONES + [det("board/red", -0.6, -0.3), det("board/white_small", -0.40, 0.40)], SH); t += 0.1
-check("shadow: a board seen under the arm (held board / arm) is ignored, the other is tracked",
-      sorted(boards(w, t)) == ["b1"], str(sorted(boards(w, t))))
+run([det("board/red", -0.6, -0.3), det("board/white_small", -0.25, 0.25)], 0.3)     # b1 free, b2 under the arm later
+w.update(t + 0.1, ZONES + [det("board/red", -0.6, -0.3), det("board/white_small", -0.25, 0.25),
+                           det("board/red", -0.45, 0.45), det("board/white_large", -0.12, 0.10)], ARM); t += 0.1
+bs = boards(w, t)
+check("tool area (held board): the board seen at the tcp is ignored; a NEW board under the arm is not "
+      "created; the known board under the arm (full view) is still updated", sorted(bs) == ["b1", "b2"]
+      and bs["b2"]["age"] < 0.05, str({k: round(v["age"], 2) for k, v in bs.items()}))
+for k in range(10):                                     # b2 under the arm, cut off by it (half length seen)
+    t = round(t + 0.1, 6); w.update(t, ZONES + [det("board/red", -0.6, -0.3), det("board/white_small", -0.27, 0.25, l=0.05, w=0.07)], ARM)
+bs = boards(w, t)
+check("arm: a cut-off box of a known board under the arm is not used (pose kept, not lost, age grows)", "b2" in bs
+      and abs(bs["b2"]["x"] + 0.25) < 0.005 and bs["b2"]["age"] > 0.9 and bs["b2"]["length"] > 0.09, str(bs.get("b2")))
+for k in range(30):                                     # b2 not seen at all under the arm 3 s
+    t = round(t + 0.1, 6); w.update(t, ZONES + [det("board/red", -0.6, -0.3)], ARM)
+check("arm: a known board not seen under the arm 3 s is frozen, not lost", "b2" in boards(w, t) and boards(w, t)["b2"]["age"] > 3.5)
+t = round(t + 0.5, 6); w.update(t, ZONES + [det("board/red", -0.6, -0.3)])
+check("arm gone, board not visible yet: grace period (lost_after from the mask end)", "b2" in boards(w, t))
+EDGE = {"arm": [M.capsule((0.0, 0.0), (-0.30, 0.065), 0.02)], "tool": []}              # reaches 5 mm over b1's edge
+w = World(CFG); t = 0.0
+run([det("board/red", -0.30, 0.13)], 0.3)
+for k in range(30):
+    t = round(t + 0.1, 6); w.update(t, ZONES, EDGE)
+check("any part counts: a board whose centre is far outside the mask but whose edge is under it is frozen, not lost",
+      "b1" in boards(w, t), str(sorted(boards(w, t))))
+
+w = World(CFG); t = 0.0
+ZM = {"arm": [M.capsule((0.0, 0.0), (-0.45, 0.45), 0.12)], "tool": []}
+run([det("board/red", -0.6, 0.0)], 0.3)
 w.event(t, {"type": "picked", "board": "b1"}); w.event(t, {"type": "placed", "board": "b1", "zone": "processing_1", "x": -0.45, "y": 0.45})
-for k in range(30):                                      # arm stays over the zone 3 s, zone looks empty
-    t = round(t + 0.1, 6); w.update(t, ZONES, SH)
-check("zone covered by the arm 3 s (looks empty): stays LOADED (timers frozen)", zone(w, "processing_1")["state"] == "LOADED")
-for k in range(5):
+for k in range(30):                                     # zone covered, nothing seen 3 s
+    t = round(t + 0.1, 6); w.update(t, ZONES, ZM)
+check("zone covered, nothing seen 3 s: stays LOADED (state frozen)", zone(w, "processing_1")["state"] == "LOADED")
+for k in range(15):
     t = round(t + 0.1, 6); w.update(t, ZONES)
-check("arm gone, zone empty < gone_after again (debounce restarted) -> still LOADED", zone(w, "processing_1")["state"] == "LOADED")
-for k in range(10):
-    t = round(t + 0.1, 6); w.update(t, ZONES)
-check("arm gone, zone empty >= gone_after -> PROCESSING", zone(w, "processing_1")["state"] == "PROCESSING")
+check("mask gone, zone empty >= gone_after -> PROCESSING (operator took it)", zone(w, "processing_1")["state"] == "PROCESSING")
+for k in range(15):                                     # operator returns it while the arm covers the zone, full view
+    t = round(t + 0.1, 6); w.update(t, ZONES + [det("board/red", -0.452, 0.448, 0.05)], ZM)
+check("zone covered but the returned board fully seen: the state machine runs -> DONE, same board id",
+      zone(w, "processing_1")["state"] == "DONE" and zone(w, "processing_1")["board_id"] == "b1", str(zone(w, "processing_1")))
+
+# 8 reset_zone empties the zone in the world too (fuzz seed 22: a ghost board kept the old id)
 w = World(CFG); t = 0.0
-run([det("board/red", -0.30, 0.10)], 0.3)
-for k in range(30):                                      # arm over the input board 3 s
-    t = round(t + 0.1, 6); w.update(t, ZONES, {"x": -0.30, "y": 0.10, "radius": 0.12})
-check("input board hidden under the arm 3 s: not lost; its age shows it was not seen", "b1" in boards(w, t)
-      and boards(w, t)["b1"]["age"] > 2.5)
-t = round(t + 0.5, 6); w.update(t, ZONES)
-check("arm gone, board not visible yet: grace period (lost_after from the shadow end)", "b1" in boards(w, t))
+run([det("board/red", -0.6, 0.0)], 0.3)
+w.event(t, {"type": "picked", "board": "b1"}); w.event(t, {"type": "placed", "board": "b1", "zone": "processing_1", "x": -0.45, "y": 0.45})
+run([det("board/red", -0.45, 0.45)], 0.5)
+w.event(t, {"type": "reset_zone", "zone": "processing_1"})              # the operator emptied it
+check("reset_zone: the zone's board is removed from the world (no ghost), zone EMPTY", "b1" not in boards(w, t)
+      and zone(w, "processing_1")["state"] == "EMPTY" and zone(w, "processing_1")["board_id"] == "", str(sorted(boards(w, t))))
+run([det("board/white_small", -0.452, 0.448)], 1.5)                    # someone puts another board there
+check("... a board appearing there later gets a NEW id (not the old one) and is flagged as unknown (FAULT)",
+      "b1" not in boards(w, t) and zone(w, "processing_1")["state"] == "FAULT" and zone(w, "processing_1")["board_id"] not in ("", "b1"),
+      str(zone(w, "processing_1")))
 
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

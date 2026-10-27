@@ -294,6 +294,16 @@ try:
     r2 = run("release_safe", ReleaseSafe.Goal())
     check("release_safe while holding: board to the fault zone, home", r and r.success and r2 and r2.success
           and "fault" in r2.message and until(lambda: zone("fault").stack_count == 1, 3), f"{desc(r)} / {desc(r2)}")
+    reset("release_safe with an empty cup")
+    fz = zone("fault")
+    r = run("pick", Pick.Goal(board_id=bid(board_near(fz.x, fz.y))))       # the board release_safe just put there
+    set_fake("force_vacuum", "off")                                       # operator takes it off the cup (no skill running)
+    lost = until(lambda: S["g"].state == GripperState.PART_LOST, 5)
+    r2 = run("release_safe", ReleaseSafe.Goal())
+    set_fake("force_vacuum", "")
+    check("release_safe, world holds a board but the cup is empty: NOT_HOLDING (CL-32), no move, world unchanged",
+          r and r.success and lost and r2 and r2.code.value == C.NOT_HOLDING and S["w"].held_board_id != "",
+          f"{desc(r)} / lost {lost} / {desc(r2)}")
     reset("one skill at a time")
     f1 = A["home"].send_goal_async(Home.Goal()); until(lambda: f1.done(), 5)
     f2 = A["home"].send_goal_async(Home.Goal()); until(lambda: f2.done(), 5)

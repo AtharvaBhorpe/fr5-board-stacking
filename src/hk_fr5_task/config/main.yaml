@@ -1,0 +1,19 @@
+# Main controller (T5, control-loop.md CL-21..CL-32, review fixes TM-16, failure policies section 6). Seconds.
+fresh: 1.0                # boards / zones seen longer ago are not chosen
+end_wait: 3.0             # CL-24: count 0 (all) ends after this long without a candidate
+partial_after: 30.0       # count n: give up waiting for more matching boards after this long
+lookup_retries: 2         # BOARD_NOT_FOUND / BOARD_MOVED / VISION_STALE: retries before the board is skipped;
+                          #   also place-target retries (S2). Keep < max_place_fail (else D5 halts first, A11)
+motion_retries: 1         # PLAN_FAILED / MOTION_FAILED on a pick: retries (after a home move) before skipping
+halt_after: 3             # motion / system failures in a row -> HALTED (resume by command)
+fault_zone: fault         # where boards with problems go (CL-11 / CL-15)
+place_when_paused: true   # pause with a board on the cup: place it first, then hold
+home_xy: [-0.497, -0.102] # CL-26 fallback for 'nearest board' when /motion/get_state fails
+world_wait: 1.0           # CL-23: max wait for a world message newer than the last skill result
+tick: 0.2                 # decision loop period when idle
+max_place_fail: 3         # D5: failed puts-down of a held board into the fault zone before HALTED
+retry_wait: 1.0           # P / R5: wait before retrying a place (target not seen / busy)
+hold_alert_after: 10.0    # CL-28: holding, target cannot take the board this long -> alert (also: target not seen)
+hold_fault_after: 10.0    # CL-28: ... this long more -> board to the fault zone (FULL / not seen: job paused too)
+loaded_alert_after: 30.0  # CL-29: processing zone LOADED this long (not taken for processing) -> alert
+home_tol: 0.05            # CL-30: m, tcp this close to home_xy counts as at home

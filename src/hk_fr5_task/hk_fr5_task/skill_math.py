@@ -56,16 +56,6 @@ def zone_accepts(cfg, zone):
     return ""
 
 
-def in_shadow(px, py, tcp_x, tcp_y, radius, base=(0.0, 0.0)):
-    """Point inside the arm's shadow on the table (CL-20 B): a capsule of `radius` around the segment robot base ->
-    tcp (seen from the overhead camera the arm covers roughly this band)."""
-    bx, by = base
-    dx, dy = tcp_x - bx, tcp_y - by
-    L2 = dx * dx + dy * dy
-    k = 0.0 if L2 < 1e-12 else max(0.0, min(1.0, ((px - bx) * dx + (py - by) * dy) / L2))
-    return math.hypot(px - (bx + k * dx), py - (by + k * dy)) <= radius
-
-
 def board_at(world_boards, x, y, tol, variant=None):
     """First board within tol of (x, y) (optionally of a variant) in a list of Board-like dicts, else None."""
     best = None
