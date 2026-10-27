@@ -37,6 +37,35 @@ done yet; yellow = lagging; orange = seriously lagging](docs/img/team_architectu
 
 *The team's planned architecture, used by all agents for development (status colours as drawn by the team).*
 
+The same graph as text (Mermaid), with the interfaces between the nodes:
+
+```mermaid
+flowchart LR
+    LLM["LLM agent<br/>(not built yet)"]
+    LOOP["Main control loop<br/>feat/task-main-controller (planned)<br/>now: robot/pick_one.py + RViz pick panel"]
+    MAP["vis-irl mapping<br/>feat/vision-transform<br/>config/calib.yaml"]
+    subgraph THIS["THIS BRANCH: feat/vision1-overhead (one pixi workspace)"]
+        V1["Vision 1: overhead cam C920<br/>vision1/node.py<br/>boards, variants, zones, templates, obstacles"]
+        V2["Vision 2: wrist cam D405<br/>pixi run wrist + robot/wrist_depth.py<br/>pick height, template stack height"]
+    end
+    subgraph ROBOT["fr5-board-stacking: feat/robot-motion-gripper"]
+        GRIP["gripper controller<br/>hk_fr5_gripper"]
+        MOVE["movement controller<br/>hk_fr5_motion + MoveIt"]
+        FR5["FR5 robot"]
+    end
+    LLM -- "/pick_panel/request, /pick_panel/log" --> LOOP
+    MAP -- "calib.yaml: pixel to base_link" --> V1
+    V1 -- "/vision/boards JSON, /vision/detect" --> LOOP
+    V2 -- "/wrist/wrist_camera/*, WristDepth.measure()" --> LOOP
+    LOOP -- "/gripper/grip, /gripper/release, /gripper/state" --> GRIP
+    LOOP -- "/motion/move_to, /motion/move_delta, /scene/*" --> MOVE
+    GRIP --> FR5
+    MOVE --> FR5
+    FR5 -. "TF: base_link to tcp, d405_camera_link" .-> V2
+    classDef here fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#000
+    class V1,V2 here
+```
+
 **The two bottom nodes, Vision 1 (overhead cam) and Vision 2 (wrist cam), both live in this branch and this pixi
 workspace** (`feat/vision1-overhead`, `vision1-overhead/`). The name says "vision1", but the wrist camera work
 (Vision 2) is here too. Map from the graph to the code:
