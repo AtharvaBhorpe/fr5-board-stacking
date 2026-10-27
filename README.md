@@ -98,7 +98,10 @@ mock hardware (it then reports SUCCESS but does not move). `pick_one.py` prints 
 
 - Looks only at the pick area (right table in the image, `ROI` in `vision1/detect.py`).
 - Classic (default): boards must not touch or overlap, merged blobs are rejected. Model: handles touching boards and
-  simple stacks; still misses many real overlapping white stacks (trained on auto-labels + synthetic pastes only,
-  `train/`). Fix: label ~60 real stack frames, retrain (`train/make_dataset.py`, `train/train.py`, ~50 min GPU).
+  stacks. Trained on auto-labels + synthetic pastes, then fine-tuned on 70 hand-reviewed real stack frames
+  (`train/prelabel.py` SAM 3 pre-labels -> X-AnyLabeling review -> `train/add_real.py` -> `train/train.py`).
+  10 held-out real stack frames (69 boards, `train/compare_real.py`): boards found classic 10 %, model 91 %
+  (variant right 84 %, 14 false detections; at class confidence >= 0.6, the UNKWN cut, 39 / 40 named boards right).
+  Held-out frames are all from one recording (dataset_2): check on the lab camera.
 - `config/calib.yaml` is copied from `feat/vision-transform`. Re-copy it after every recalibration; the camera must not move.
 - Lab knobs (thresholds, ROI, area limits) are at the top of `vision1/detect.py` and `vision1/table.py`.
