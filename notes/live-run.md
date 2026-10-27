@@ -23,9 +23,12 @@ All terminals: the same `ROS_DOMAIN_ID` (unset = 0); `ROS_LOCALHOST_ONLY` unset 
 | 3 | `~/hackathon/wt/feat-task-main-controller` | `pixi run ros2 run hk_fr5_task world_model` | no "zone(s) SKIPPED" ERROR |
 | 4 | same | `pixi run ros2 run hk_fr5_task skill_server` | "skills ready: /task/skills/..." |
 | 5 | same | `pixi run ros2 run hk_fr5_task task_main_controller` | "main controller ready"; monitor: skills_ready + motion_ready True |
-| 6 | same | `pixi run python3 tools/live_monitor.py` (logs to `~/hackathon/live_logs/`) | VIS stats every 10 s |
+| 6 | same | `pixi run python3 tools/live_monitor.py` (start it FIRST if possible: it also records the start-up; `--quiet` = only WARN / ERROR + vision stats) | "logging everything to ...", VIS stats every 10 s |
 
-Commands to the controller (Claude or a human): `pixi run python3 tools/task_cli.py list | add k=v ... | control <cmd>`.
+Commands (Claude or a human): `pixi run python3 tools/task_cli.py help` - look: `status`, `world`, `list`, `wait JOB`;
+jobs: `transfer VARIANT TO [COUNT]`, `board ID TO`, `process VARIANT ZONE [TO]`, `clear FROM TO`; control: `pause`,
+`resume`, `stop`, `home`, `cancel JOB`, `prio JOB N`, `reset_zone ZONE`; debug: `skill pick board_id=...` (only while
+paused / idle; moves the robot).
 Stop everything: `task_cli.py control stop` (holds a board in place) or the e-stop; then Ctrl+C in 5 -> 1.
 
 ## 2. Checks before the first motion (no motion)
@@ -47,5 +50,8 @@ Stop everything: `task_cli.py control stop` (holds a board in place) or the e-st
 
 ## 4. After the run
 
-- `~/hackathon/live_logs/live_*.jsonl`: Vision 1 frame gaps vs the timers (TM-O8), alerts, skill results.
+- `~/hackathon/live_logs/run_<date>_<time>/` (TM-26): `main.jsonl` (status, events, world changes, gripper, tcp 10 Hz,
+  skill action status + feedback, vision stats, rosout), `vision_raw.jsonl` (every Vision 1 frame + gap / lag),
+  `world_raw.jsonl` (every world message), `joints.jsonl`, `rosout.log` (all nodes, text). Frame gaps vs the timers
+  (TM-O8): `vision_stats` lines / SLOW frame warnings.
 - Open items: TM-O2 / O5 / O7 / O9 / O10 / O11.

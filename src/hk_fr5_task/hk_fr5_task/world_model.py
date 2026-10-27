@@ -47,6 +47,7 @@ class WorldModel(Node):
         self.tf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf, self)
         self.gripper_state, self.dropped_frames, self.last_event_t = "", 0, 0.0
+        self.notes_logged = 0                                    # TM-26: world_core notes already in the log
         self.pub = self.create_publisher(WorldMsg, "world", LATCHED)
         self.create_subscription(String, "/vision/boards", self._frame, 5)
         self.create_subscription(String, "events", self._event, 50)
@@ -79,9 +80,20 @@ class WorldModel(Node):
             stamp = now
         if stamp < self.last_event_t:
             self.dropped_frames += 1                                     # captured before the robot changed the table
+            self.get_logger().info(f"Vision 1 frame dropped: captured {self.last_event_t - stamp:.2f} s before the last "
+                                   f"robot event ({self.dropped_frames} so far)")
             return
         self.core.update(now, dets, self._mask())
+        self._log_notes()
         self._publish()
+
+    def _log_notes(self):
+        """TM-26: every new world_core note (zone states, new / lost boards, variant changes, events) once in /rosout."""
+        n = getattr(self.core, "note_count", 0)
+        new = min(n - self.notes_logged, len(self.core.log))
+        for t, text in self.core.log[len(self.core.log) - new:] if new > 0 else []:
+            self.get_logger().info(f"world: {text}")
+        self.notes_logged = n
 
     def _mask(self):
         """CL-31 mask, transitional (step 7: link capsules from TF + camera rays): the band base -> tcp as 'arm', a
@@ -109,6 +121,8 @@ class WorldModel(Node):
         except (ValueError, KeyError, TypeError) as e:
             self.get_logger().error(f"bad event {msg.data!r}: {e}")
             return
+        self.get_logger().info(f"event applied: {msg.data}")
+        self._log_notes()
         self._publish()
 
     def _publish(self):

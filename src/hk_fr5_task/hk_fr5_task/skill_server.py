@@ -80,6 +80,15 @@ class SkillServer(Node):
         self.get_logger().info("skills ready: /task/skills/{pick, place, home, wait_clear, release_safe}")
 
     # ---------- plumbing ----------
+    def _step(self, text):
+        """TM-26: one INFO line per step of a skill (motion goal, gripper, scene, world event, phase) -> /rosout."""
+        if self.c.get("verbose", True):
+            self.get_logger().info(f"[{self.busy or '-'}] {text}")
+
+    def _step_warn(self, text):
+        """Same, WARN (its own call site: rclpy logger severity trap)."""
+        self.get_logger().warn(f"[{self.busy or '-'}] {text}")
+
     def _on_world(self, m):
         self.world, self.world_t = m, time.monotonic()
 
@@ -97,6 +106,9 @@ class SkillServer(Node):
         def execute(gh):
             self.fb_type = typ                             # feedback type of the running action (one at a time)
             res = typ.Result()
+            t_start = time.monotonic()
+            req = gh.request
+            self._step(f"START goal {{{', '.join(f'{k}={getattr(req, k)!r}' for k in req.get_fields_and_field_types())}}}")
             try:
                 msg = fn(gh, res) or "done"
                 res.success, res.code, res.message = True, SkillCode(value=C.SUCCESS), msg
@@ -112,19 +124,21 @@ class SkillServer(Node):
                 with self.lock:
                     self.busy = ""
             if res.success:                                # one call site per severity (rclpy raises otherwise)
-                self.get_logger().info(f"{name}: OK - {res.message}")
+                self.get_logger().info(f"{name}: OK - {res.message} ({time.monotonic() - t_start:.1f} s)")
             else:
-                self.get_logger().warn(f"{name}: FAILED - {res.message}")
+                self.get_logger().warn(f"{name}: FAILED - {res.message} ({time.monotonic() - t_start:.1f} s)")
             return res
         return execute
 
     def _phase(self, gh, _typ, phase):
+        self._step(f"phase {phase}")
         fb = self.fb_type.Feedback()
         if hasattr(fb, "phase"):
             fb.phase = phase
             gh.publish_feedback(fb)
 
     def _event(self, **ev):
+        self._step(f"world event {ev}")
         self.events.publish(String(data=json.dumps(ev)))
 
     def _wait_future(self, fut, timeout, gh=None):
@@ -158,13 +172,28 @@ class SkillServer(Node):
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             raise SkillError(C.INTERNAL_ERROR, f"no tcp pose from TF: {e}")
 
+    def _grip_log(self, how, attempt, gres, gripped):
+        r = gres.result().result if gres.done() else None
+        self._step(f"grip ({how}, attempt {attempt + 1}): {'SEALED' if gripped else 'NO SEAL'} at {self._tcp_text()}"
+                   + (f" - {r.message} (vacuum after {getattr(r, 'time_to_vacuum', float('nan')):.2f} s)" if r else
+                      " - no grip result"))
+
+    def _tcp_text(self):
+        try:
+            return "tcp (%.4f, %.4f, %.4f)" % self._tcp()
+        except SkillError:
+            return "tcp unknown"
+
     def _call(self, client, req, what, timeout=5.0):
         if not client.wait_for_service(timeout_sec=2.0):
             raise SkillError(C.SCENE_ERROR, f"{what}: service not available")
         fut = client.call_async(req)
         if not self._wait_future(fut, timeout):
             raise SkillError(C.SCENE_ERROR, f"{what}: no answer")
-        return fut.result()
+        r = fut.result()
+        self._step(f"scene {what} {{{', '.join(f'{k}={getattr(req, k)!r}' for k in req.get_fields_and_field_types())}}} "
+                   f"-> success={getattr(r, 'success', '?')} {getattr(r, 'message', '')}")
+        return r
 
     # ---------- stack boxes in the scene (W13 / CL-38) ----------
     def _update_stacks(self, skip=""):
@@ -196,6 +225,18 @@ class SkillServer(Node):
         timeout: expected duration based (a hung move_group is reported fast, TM-10), capped by motion_timeout."""
         if not client.wait_for_server(timeout_sec=2.0):
             raise SkillError(C.MOTION_FAILED, f"{what}: /motion not available")
+        t0 = time.monotonic()
+        try:
+            here = "tcp (%.4f, %.4f, %.4f)" % self._tcp()
+        except SkillError:
+            here = "tcp unknown"
+        if isinstance(goal, MoveTo.Goal):
+            tgt = (f"move_to {goal.named_target}" if goal.named_target else
+                   f"move_to ({goal.x:.4f}, {goal.y:.4f}, {goal.z:.4f}) yaw {goal.yaw:.3f} planner '{goal.planner or 'OMPL'}'")
+        else:
+            tgt = f"move_delta dz {goal.dz * 1000:+.1f} mm (LIN)"
+        self._step(f"{what}: {tgt} speed {goal.velocity_scaling:.2f} from {here}{' HOLDING' if holding else ''}"
+                   f"{' (stops on a condition)' if stop_when is not None else ''}")
         fut = client.send_goal_async(goal)
         if not self._wait_future(fut, 5.0) or not fut.result().accepted:
             raise SkillError(C.MOTION_FAILED, f"{what}: goal not accepted")
@@ -217,12 +258,16 @@ class SkillServer(Node):
                 mg.cancel_goal_async()                      # motion controller: smooth stop
                 self._wait_future(rf, 5.0)
                 if reason[0] == "stopped":
+                    self._step(f"{what}: stopped by its condition after {time.monotonic() - t0:.2f} s at {self._tcp_text()}")
                     return "stopped"
+                self._step_warn(f"{what}: aborted ({reason[1]}) after {time.monotonic() - t0:.2f} s at {self._tcp_text()}")
                 raise SkillError(*reason)
             time.sleep(0.02)
         r = rf.result().result
         if r.success:
+            self._step(f"{what}: done in {time.monotonic() - t0:.2f} s, now at {self._tcp_text()}")
             return "done"
+        self._step_warn(f"{what}: motion failed after {time.monotonic() - t0:.2f} s: error {r.error_code.val} {r.message}")
         code = C.MOTION_FAILED if r.error_code.val in EXEC_ERRORS else C.PLAN_FAILED
         raise SkillError(code, f"{what}: {r.message}")
 
@@ -267,6 +312,10 @@ class SkillServer(Node):
         hover, end, search = sm.pick_heights(self.c, board)
         search = search or req.contact_search
         speed = req.velocity_scaling or self.c["approach_speed"]
+        self._step(f"pick plan: board {b.id} {b.variant} ({b.label}) {b.location}{'/' + b.zone if b.zone else ''} at "
+                   f"({b.x:.4f}, {b.y:.4f}) yaw {b.yaw:.3f} size {b.length:.3f} x {b.width:.3f} top_z {b.top_z:.4f} "
+                   f"thick {thick:.4f} age {b.age:.2f} s -> tcp yaw {yaw:.3f}, hover {hover:.4f}, "
+                   f"{'contact search from ' + format(end, '.4f') + ' to ' + format(sm.search_end_z(self.c), '.4f') if search else 'known top: down to ' + format(end, '.4f')}")
         self._update_stacks(skip=b.id)                   # S-11: the picked board is not part of its stack box
         self._phase(gh, Pick, "HOVER")
         self._goto(gh, b.x, b.y, hover, yaw, what="hover over the board")
@@ -292,6 +341,7 @@ class SkillServer(Node):
                     gfut.result().cancel_goal_async()
                     raise SkillError(C.CANCELLED, "cancelled during the contact search")
                 gripped = gres.done() and gres.result().result.success
+                self._grip_log("contact search" if search else "known top", attempt, gres, gripped)
             else:
                 self._vertical(gh, max(end - 0.003 * attempt, sm.search_end_z(self.c)), speed, what="down to the board")
                 self._phase(gh, Pick, "GRIP")
@@ -301,6 +351,7 @@ class SkillServer(Node):
                 gres = gfut.result().get_result_async()
                 self._wait_future(gres, self.c["grip_timeout"] + 2.0, gh)
                 gripped = gres.done() and gres.result().result.success
+                self._grip_log("contact search" if search else "known top", attempt, gres, gripped)
             if gripped:
                 break
             self._vertical(gh, min(hover, self._tcp()[2] + 0.02), speed, what="lift after a failed grip")
@@ -363,9 +414,14 @@ class SkillServer(Node):
                 raise SkillError(getattr(C, why), f"zone {target} cannot take a board now ({z.state})")
             x, y, zyaw, tz = sm.place_target(self.c, zd, thick)
             void = zd["kind"] == "fault"                 # CL-39: drop from fault_drop_z, the board leaves the world
+            self._step(f"place plan: {held} ({hb.variant if hb else '?'}) thick {thick:.4f} -> zone {target} {zd['kind']} "
+                       f"{zd['state']} count {zd['stack_count']} stack_top {zd['stack_top_z']:.4f} base {zd['base_z']:.4f} "
+                       f"at ({x:.4f}, {y:.4f}) zone yaw {zyaw:.3f}: release at tcp z {tz:.4f}"
+                       f"{' (fault void: fault_drop_z)' if void else ' (press ' + format(self.c['place_press'] * 1000, '.1f') + ' mm)'}")
         else:
             x, y, zyaw = req.x, req.y, req.yaw
             tz, void = self.c["table_z"] + thick - self.c["place_press"], False
+            self._step(f"place plan: {held} at the free pose ({x:.4f}, {y:.4f}) yaw {zyaw:.3f}: release at tcp z {tz:.4f}")
         yaw = sm.tcp_yaw_for(zyaw, self.c["ref_yaw"])
         self._update_stacks()
         self._phase(gh, Place, "HOVER")
@@ -382,7 +438,10 @@ class SkillServer(Node):
         if not self._wait_future(rfut, 3.0) or not rfut.result().accepted:
             raise SkillError(C.RELEASE_FAILED, "release goal not accepted")
         rres = rfut.result().get_result_async()
-        if not self._wait_future(rres, self.c["blow_off_time"] + 5.0) or not rres.result().result.success:
+        ok_r = self._wait_future(rres, self.c["blow_off_time"] + 5.0) and rres.result().result.success
+        self._step(f"release (blow-off {self.c['blow_off_time']:.1f} s) at {self._tcp_text()}: "
+                   f"{'OK' if ok_r else 'FAILED'} {rres.result().result.message if rres.done() else 'no result'}")
+        if not ok_r:
             raise SkillError(C.RELEASE_FAILED, "release failed")
         self._phase(gh, Place, "DETACH")
         r = self._call(self.detach, DetachBoard.Request(keep_as_obstacle=False), "detach_board")   # W13: stack box instead

@@ -272,13 +272,20 @@ class MainController(Node):
         self._publish()
         if a is None:
             return
+        self.get_logger().info(f"ACTION start {a} (tcp {[round(v, 4) for v in tcp]})")          # TM-26: verbose trace
+        t0 = time.monotonic()
         code, msg = self._run(a)
+        if code == "SUCCESS":                        # one call site per severity (rclpy logger trap)
+            self.get_logger().info(f"ACTION result {a.get('skill')} {code} in {time.monotonic() - t0:.1f} s: {msg}")
+        else:
+            self.get_logger().warn(f"ACTION result {a.get('skill')} {code} in {time.monotonic() - t0:.1f} s: {msg}")
         self.tcp_dirty = True                        # the robot may have moved
         with self.lock:
             self.cancel_next = False                 # N4: a pending 'stop' cancel belongs to this action only
             self.core.on_result(a, code, msg, self.now())
             evs = self.core.take_world_events()
         for ev in evs:
+            self.get_logger().info(f"world event from the core: {ev}")
             self.events_pub.publish(String(data=json.dumps(ev)))
         self._publish()
 

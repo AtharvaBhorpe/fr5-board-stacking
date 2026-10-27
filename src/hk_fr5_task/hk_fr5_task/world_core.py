@@ -66,6 +66,7 @@ class World:
     # ---------- helpers ----------
     def _note(self, t, text):
         self.log = (self.log + [(t, text)])[-200:]
+        self.note_count = getattr(self, "note_count", 0) + 1         # TM-26: the node logs each note once
 
     def _variant(self, name):
         return self.c["variants"].get(name)

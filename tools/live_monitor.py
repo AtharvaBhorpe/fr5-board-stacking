@@ -1,87 +1,129 @@
-"""Live monitor for real runs (TM-O8): prints what changes and logs EVERYTHING as JSON lines.
+"""Live monitor for real runs (TM-O8, TM-26): extreme logging of the whole pipeline + a readable live view.
 
-    pixi run python3 tools/live_monitor.py [log_dir]       (default ~/hackathon/live_logs, outside the repo)
+    pixi run python3 tools/live_monitor.py [--dir DIR] [--quiet]     (default DIR ~/hackathon/live_logs, outside the repo)
 
-Watches /task/status (controller state, current skill + phase, jobs, alerts), /task/events (world events),
-/task/world (vision_ok, boards, held, zones) and /vision/boards (frame timing: arrival gap + now - stamp, every 10 s;
-parse problems via the real adapter). Read-only: sends nothing.
+Read-only (sends nothing). One directory per run, run_<date>_<time>/:
+    main.jsonl        everything with a kind: status (full), task events, world summary on change, gripper, tcp (10 Hz),
+                      skill action status + feedback, motion action status, vision stats (10 s), rosout (all nodes)
+    vision_raw.jsonl  every /vision/boards frame as received (+ arrival time, gap, now - stamp, parse problems)
+    world_raw.jsonl   every /task/world message, all fields
+    joints.jsonl      every /joint_states message
+    rosout.log        all node log lines as text (time, level, node, message)
+Console: controller / job / alert / world changes, gripper, our nodes' log lines (task.*), every WARN / ERROR of any
+node, vision stats. --quiet: only WARN / ERROR + vision stats.
 """
+import argparse
 import json
+import math
 import os
-import sys
 import time
 
 import rclpy
-from rclpy.qos import DurabilityPolicy, QoSProfile
+import tf2_ros
+from action_msgs.msg import GoalStatusArray
+from rcl_interfaces.msg import Log
+from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
+from rosidl_runtime_py.convert import message_to_ordereddict
+from sensor_msgs.msg import JointState
 from std_msgs.msg import String
 
+from hk_fr5_interfaces.msg import GripperState
 from hk_fr5_task import vision1
+from hk_fr5_task_interfaces.action import Home, Pick, Place, ReleaseSafe, WaitClear
 from hk_fr5_task_interfaces.msg import World
 
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-log_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/hackathon/live_logs")
-os.makedirs(log_dir, exist_ok=True)
-LOG = open(os.path.join(log_dir, time.strftime("live_%Y%m%d_%H%M%S.jsonl")), "a", buffering=1)
+SKILLS = {"pick": Pick, "place": Place, "home": Home, "wait_clear": WaitClear, "release_safe": ReleaseSafe}
+LEVEL = {10: "DEBUG", 20: "INFO", 30: "WARN", 40: "ERROR", 50: "FATAL"}
+STATUS = {0: "UNKNOWN", 1: "ACCEPTED", 2: "EXECUTING", 3: "CANCELING", 4: "SUCCEEDED", 5: "CANCELED", 6: "ABORTED"}
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--dir", default=os.path.expanduser("~/hackathon/live_logs"))
+ap.add_argument("--quiet", action="store_true")
+args = ap.parse_args()
+RUN = os.path.join(args.dir, time.strftime("run_%Y%m%d_%H%M%S"))
+os.makedirs(RUN, exist_ok=True)
+F = {k: open(os.path.join(RUN, k), "a", buffering=1) for k in
+     ("main.jsonl", "vision_raw.jsonl", "world_raw.jsonl", "joints.jsonl", "rosout.log")}
 
 
-def log(kind, data):
-    LOG.write(json.dumps({"t": round(time.time(), 3), "kind": kind, "data": data}) + "\n")
+def clean(x):
+    """NaN / inf -> None, so every line is strict JSON."""
+    if isinstance(x, float):
+        return None if math.isnan(x) or math.isinf(x) else x
+    if isinstance(x, dict):
+        return {k: clean(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [clean(v) for v in x]
+    return x
 
 
-def say(text):
-    print(f"{time.strftime('%H:%M:%S')} {text}", flush=True)
+def log(kind, data, f="main.jsonl"):
+    F[f].write(json.dumps(clean({"t": round(time.time(), 4), "kind": kind, "data": data})) + "\n")
+
+
+def say(text, important=False):
+    if important or not args.quiet:
+        print(f"{time.strftime('%H:%M:%S')} {text}", flush=True)
     log("print", text)
 
 
 S = {"status": None, "seen_alerts": set(), "world": None, "gaps": [], "lags": [], "last_arrival": None, "frames": 0,
-     "stat_t": time.time()}
+     "stat_t": time.time(), "gripper": None, "goal_status": {}}
 
 
 def on_status(m):
     st = json.loads(m.data)
     log("status", st)
     old = S["status"] or {}
-    cur = st.get("current") or {}
-    key = (st.get("state"), st.get("paused"), cur.get("skill"), cur.get("job"), cur.get("board"), st.get("phase"))
-    okey = (old.get("state"), old.get("paused"), (old.get("current") or {}).get("skill"),
-            (old.get("current") or {}).get("job"), (old.get("current") or {}).get("board"), old.get("phase"))
+    cur, ocur = st.get("current") or {}, old.get("current") or {}
+    key = (st.get("state"), st.get("paused"), cur.get("skill"), cur.get("job"), cur.get("board"), st.get("phase"),
+           st.get("skills_ready"), st.get("motion_ready"), st.get("world_ok"))
+    okey = (old.get("state"), old.get("paused"), ocur.get("skill"), ocur.get("job"), ocur.get("board"), old.get("phase"),
+            old.get("skills_ready"), old.get("motion_ready"), old.get("world_ok"))
     if key != okey:
         say(f"CTRL {st.get('state')}{' PAUSED' if st.get('paused') else ''} | skill {cur.get('skill') or '-'} "
-            f"{cur.get('job') or ''} {cur.get('board') or ''} phase {st.get('phase') or '-'} | skills_ready "
-            f"{st.get('skills_ready')} motion_ready {st.get('motion_ready')} world_ok {st.get('world_ok')}")
-    jobs = {j["id"]: (j["state"], j.get("delivered"), j.get("to_fault"), j.get("skipped")) for j in st.get("jobs", [])}
-    ojobs = {j["id"]: (j["state"], j.get("delivered"), j.get("to_fault"), j.get("skipped")) for j in old.get("jobs", [])}
+            f"{cur.get('job') or ''} {cur.get('board') or ''} {cur.get('target') or ''} phase {st.get('phase') or '-'} | "
+            f"skills_ready {st.get('skills_ready')} motion_ready {st.get('motion_ready')} world_ok {st.get('world_ok')}")
+    jobs = {j["id"]: (j["state"], j.get("delivered"), j.get("to_fault"), j.get("lost"), j.get("skipped"), j.get("message"))
+            for j in st.get("jobs", [])}
+    ojobs = {j["id"]: (j["state"], j.get("delivered"), j.get("to_fault"), j.get("lost"), j.get("skipped"), j.get("message"))
+             for j in old.get("jobs", [])}
     for jid, v in jobs.items():
         if ojobs.get(jid) != v:
-            say(f"JOB  {jid} {v[0]} delivered {v[1]} to_fault {v[2]} skipped {v[3]}")
+            say(f"JOB  {jid} {v[0]} delivered {v[1]} to_fault {v[2]} lost {v[3]} skipped {v[4]} | {v[5]}")
+    if st.get("problem_boards") != old.get("problem_boards"):
+        say(f"PROB problem boards {st.get('problem_boards')}")
     for e in st.get("events", []):
         k = json.dumps(e, sort_keys=True)
         if k not in S["seen_alerts"]:
             S["seen_alerts"].add(k)
-            say(f"EVT  {e.get('level', '')} {e.get('text', e)}")
+            say(f"EVT  {e.get('level', '')} {e.get('text', e)}", important=e.get("level") in ("warn", "error"))
     S["status"] = st
 
 
 def on_events(m):
-    log("event", m.data)
+    log("task_event", m.data)
     say(f"WEV  {m.data}")
 
 
 def on_world(m):
-    zs = {z.name: (z.state, z.stack_count, round(z.base_z, 4)) for z in m.zones}
-    bs = sorted((b.id, b.variant, b.location, b.zone) for b in m.boards)
-    snap = {"vision_ok": m.vision_ok, "held": m.held_board_id, "zones": zs, "boards": bs, "gripper": m.gripper_state,
-            "obstacles": len(m.obstacles)}
-    log("world", snap)
+    d = message_to_ordereddict(m)
+    log("world", d, "world_raw.jsonl")
+    zs = {z.name: (z.state, z.stack_count, round(z.stack_top_z, 4), round(z.base_z, 4), z.board_id) for z in m.zones}
+    bs = sorted((b.id, b.variant, b.label, b.location, b.zone, round(b.x, 3), round(b.y, 3)) for b in m.boards)
+    snap = {"vision_ok": m.vision_ok, "held": m.held_board_id, "zones": zs, "gripper": m.gripper_state,
+            "obstacles": [(o.label, round(o.x, 3), round(o.y, 3), o.in_work_area) for o in m.obstacles]}
     old = S["world"]
-    if old is None or {k: v for k, v in snap.items()} != old:
-        if old is None or old["vision_ok"] != snap["vision_ok"] or old["held"] != snap["held"] or old["zones"] != zs \
-                or old["gripper"] != snap["gripper"] or old["obstacles"] != snap["obstacles"]:
-            say(f"WRLD vision_ok {m.vision_ok} held '{m.held_board_id}' gripper {m.gripper_state} obstacles "
-                f"{len(m.obstacles)} | zones {zs}")
-        if old is None or old["boards"] != bs:
-            say(f"WRLD boards {bs}")
-    S["world"] = snap
+    if old is None or old["snap"] != snap:
+        log("world_change", snap)
+        say(f"WRLD vision_ok {m.vision_ok} age {m.vision_age:.2f} held '{m.held_board_id}' gripper {m.gripper_state} "
+            f"obstacles {snap['obstacles']} | zones (state, count, top, base, board) {zs}")
+    ids = [b[:5] for b in bs]                                   # board list without the jittering x / y
+    if old is None or old["ids"] != ids:
+        log("world_boards", bs)
+        say(f"WRLD boards (id, variant, label, location, zone, x, y) {bs}")
+    S["world"] = {"snap": snap, "ids": ids}
 
 
 def on_vision(m):
@@ -90,35 +132,104 @@ def on_vision(m):
         data = json.loads(m.data)
         stamp, dets, problems = vision1.parse(data)
     except ValueError as e:
-        say(f"VIS  frame refused: {e}")
+        F["vision_raw.jsonl"].write(json.dumps({"t": now, "refused": str(e), "raw": m.data[:20000]}) + "\n")
+        say(f"VIS  frame refused: {e}", important=True)
         return
-    if S["last_arrival"] is not None:
-        S["gaps"].append(now - S["last_arrival"])
+    gap = None if S["last_arrival"] is None else now - S["last_arrival"]
+    if gap is not None:
+        S["gaps"].append(gap)
     S["last_arrival"] = now
     S["lags"].append(now - stamp)
     S["frames"] += 1
+    F["vision_raw.jsonl"].write(json.dumps(clean({"t": now, "gap": gap, "lag": now - stamp, "problems": problems,
+                                                  "frame": data})) + "\n")
     if problems:
-        say(f"VIS  parse problems: {problems}")
-    log("vision", {"gap": S["gaps"][-1] if S["gaps"] else None, "lag": now - stamp, "boards": len(data.get("boards", [])),
-                   "zones": [z.get("name") for z in data.get("zones", [])], "problems": problems})
+        say(f"VIS  parse problems: {problems}", important=True)
+    if gap is not None and gap > 1.0:
+        say(f"VIS  SLOW frame: {gap:.2f} s since the previous one (stale_after 1.5 s)", important=True)
     if now - S["stat_t"] >= 10.0 and S["gaps"]:
         g, l = S["gaps"], S["lags"]
-        say(f"VIS  {S['frames']} frames / {now - S['stat_t']:.0f} s ({S['frames'] / (now - S['stat_t']):.1f} Hz) | gap mean "
-            f"{sum(g) / len(g):.2f} max {max(g):.2f} s | now-stamp mean {sum(l) / len(l):.2f} max {max(l):.2f} s | "
-            f"{len(data.get('boards', []))} boards, zones {[z.get('name') for z in data.get('zones', [])]}")
-        log("vision_stats", {"frames": S["frames"], "gap_mean": sum(g) / len(g), "gap_max": max(g),
-                             "lag_mean": sum(l) / len(l), "lag_max": max(l)})
+        st = {"frames": S["frames"], "hz": S["frames"] / (now - S["stat_t"]), "gap_mean": sum(g) / len(g), "gap_max": max(g),
+              "lag_mean": sum(l) / len(l), "lag_max": max(l), "boards": len(data.get("boards", [])),
+              "zones": [z.get("name") for z in data.get("zones", [])]}
+        log("vision_stats", st)
+        say(f"VIS  {st['frames']} frames ({st['hz']:.1f} Hz) | gap mean {st['gap_mean']:.2f} max {st['gap_max']:.2f} s | "
+            f"now-stamp mean {st['lag_mean']:.2f} max {st['lag_max']:.2f} s | {st['boards']} boards, zones {st['zones']}",
+            important=True)
         S.update(gaps=[], lags=[], frames=0, stat_t=now)
+
+
+def on_rosout(m):
+    lvl = LEVEL.get(m.level, str(m.level))
+    line = f"{m.stamp.sec + m.stamp.nanosec * 1e-9:.3f} {lvl:5} [{m.name}] {m.msg}"
+    F["rosout.log"].write(line + "\n")
+    log("rosout", {"level": lvl, "node": m.name, "msg": m.msg, "file": m.file, "line": m.line})
+    if m.level >= 30:
+        say(f"LOG  {lvl} [{m.name}] {m.msg}", important=True)
+    elif m.name.startswith("task.") and m.name != "task.live_monitor":
+        say(f"LOG  [{m.name}] {m.msg}")
+
+
+def on_gripper(m):
+    d = message_to_ordereddict(m)
+    log("gripper", d)
+    k = (m.state, m.vacuum_on, getattr(m, "blow_off_on", None), getattr(m, "vacuum_achieved", None))
+    if k != S["gripper"]:
+        say(f"GRIP {d}")
+    S["gripper"] = k
+
+
+def on_joints(m):
+    F["joints.jsonl"].write(json.dumps({"t": round(time.time(), 4), "name": list(m.name), "pos": [round(p, 5) for p in m.position],
+                                        "vel": [round(v, 5) for v in m.velocity]}) + "\n")
+
+
+def status_cb(name):
+    def cb(m):
+        for s in m.status_list:
+            gid = bytes(s.goal_info.goal_id.uuid).hex()[:8]
+            key = (name, gid)
+            if S["goal_status"].get(key) != s.status:
+                S["goal_status"][key] = s.status
+                log("action_status", {"action": name, "goal": gid, "status": STATUS.get(s.status, s.status)})
+                if not name.startswith("/motion"):
+                    say(f"ACT  {name} goal {gid} {STATUS.get(s.status, s.status)}")
+    return cb
+
+
+def feedback_cb(name):
+    def cb(m):
+        log("action_feedback", {"action": name, "feedback": message_to_ordereddict(m.feedback)})
+    return cb
 
 
 def main():
     rclpy.init()
-    n = rclpy.create_node("live_monitor")
+    n = rclpy.create_node("live_monitor", namespace="task")
     n.create_subscription(String, "/task/status", on_status, LATCHED)
     n.create_subscription(String, "/task/events", on_events, 50)
     n.create_subscription(World, "/task/world", on_world, LATCHED)
-    n.create_subscription(String, "/vision/boards", on_vision, 5)
-    say(f"live monitor: logging to {LOG.name}")
+    n.create_subscription(String, "/vision/boards", on_vision, 10)
+    n.create_subscription(Log, "/rosout", on_rosout, 1000)
+    n.create_subscription(GripperState, "/gripper/state", on_gripper, LATCHED)
+    n.create_subscription(JointState, "/joint_states", on_joints, qos_profile_sensor_data)
+    for k, typ in SKILLS.items():
+        n.create_subscription(GoalStatusArray, f"/task/skills/{k}/_action/status", status_cb(f"skill {k}"), 10)
+        n.create_subscription(typ.Impl.FeedbackMessage, f"/task/skills/{k}/_action/feedback", feedback_cb(f"skill {k}"), 10)
+    for k in ("move_to", "move_delta"):
+        n.create_subscription(GoalStatusArray, f"/motion/{k}/_action/status", status_cb(f"/motion/{k}"), 10)
+    tfb = tf2_ros.Buffer()
+    tf2_ros.TransformListener(tfb, n)
+
+    def tcp():
+        try:
+            tr = tfb.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform
+            log("tcp", {"x": tr.translation.x, "y": tr.translation.y, "z": tr.translation.z,
+                        "q": [tr.rotation.x, tr.rotation.y, tr.rotation.z, tr.rotation.w]})
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            pass
+    n.create_timer(0.1, tcp)
+    say(f"live monitor: logging everything to {RUN}", important=True)
     try:
         rclpy.spin(n)
     except KeyboardInterrupt:
@@ -127,6 +238,8 @@ def main():
         n.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+        for f in F.values():
+            f.close()
 
 
 if __name__ == "__main__":
