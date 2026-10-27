@@ -1,0 +1,9 @@
+{
+  "backend": "yolo11_seg",
+  "weights": ".local/training/yolo_pilot_001/weights/best.pt",
+  "scene_config": "config/perception_full_table.toml",
+  "confidence": 0.25,
+  "nms_iou": 0.7,
+  "imgsz": 640,
+  "max_detections": 30
+}

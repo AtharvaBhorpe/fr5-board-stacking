@@ -34,6 +34,8 @@ demo = "ros2 launch fr5_bringup bringup.launch.py"
 robot = "ros2 launch fr5_bringup bringup.launch.py use_fake_hardware:=false"
 live-b-pixels = "ros2 launch config/live_b_pixels.launch.py"
 read-b-pixels = "python scripts/read_live_b_pixels.py"
+live-yolo-pixels = "ros2 launch config/live_yolo_pixels.launch.py"
+read-yolo-pixels = "python scripts/read_live_b_pixels.py"
 build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 external/frcobot_ros2/fairino5_v6_moveit2_config src/fr5_bringup src/fr5_gripper'
 
 
@@ -65,6 +67,7 @@ torch = { version = "==2.7.1", index = "https://download.pytorch.org/whl/cu128" 
 torchvision = { version = "==0.22.1", index = "https://download.pytorch.org/whl/cu128" }
 transformers = "==4.57.1"
 pillow = ">=10,<12"
+ultralytics = "==8.3.228"
 
 
 [feature.gpu.tasks]

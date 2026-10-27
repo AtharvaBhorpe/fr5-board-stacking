@@ -24,12 +24,14 @@ def quad_center_and_axis(points):
     return centre,angle
 
 
-def supported_quad(mask):
+def supported_quad(mask,allow_rectangle_fit=False):
     contours,_=cv2.findContours(mask.astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     if len(contours)!=1:return None
     c=contours[0];length=cv2.arcLength(c,True)
     q=cv2.approxPolyDP(c,.01*length,True)
-    if len(q)!=4 or not cv2.isContourConvex(q):return None
+    if len(q)!=4 or not cv2.isContourConvex(q):
+        if not allow_rectangle_fit:return None
+        q=np.rint(cv2.boxPoints(cv2.minAreaRect(c))).astype(np.int32)
     q=q.reshape(4,2)
     approximated=np.zeros(mask.shape,np.uint8)
     cv2.fillConvexPoly(approximated,q,1)
@@ -39,7 +41,7 @@ def supported_quad(mask):
     return q.astype(float)
 
 
-def measure(candidate,mask):
+def measure(candidate,mask=None):
     rectangle=rectangle_geometry(candidate['pixel_corners'])
     result={'candidate_id':candidate['id'],'rectangle_center_px':rectangle['rectangle_center_px'],
             'mask_centroid_px':candidate['pixel_center'],
@@ -52,7 +54,14 @@ def measure(candidate,mask):
             'detector_score':candidate.get('detector_score'),
             'near_square_orientation_ambiguous':rectangle['near_square_orientation_ambiguous'],
             'instance_isolation_verified':False,'execution_allowed':False}
-    q=supported_quad(mask)
+    result.update(mask_origin=candidate.get('mask_origin','box_prompt'),
+                  class_name=candidate.get('class_name'),class_id=candidate.get('class_id'),
+                  confidence=candidate.get('confidence'),
+                  rectangle_consistency=candidate.get('rectangle_consistency'),layer_order_verified=False,
+                  detection_status=candidate.get('detection_status','candidate'),
+                  uncertainty_reason=candidate.get('uncertainty_reason'))
+    checked=bool((candidate.get('rectangle_consistency') or {}).get('passed'))
+    q=supported_quad(mask,allow_rectangle_fit=checked) if mask is not None else None
     if q is not None:
         centre,angle=quad_center_and_axis(q)
         result.update(centre_px=centre.tolist(),orientation_image_deg=angle,
@@ -62,7 +71,7 @@ def measure(candidate,mask):
 
 def draw(image,objects):
     for item in objects:
-        is_quad=item['supported_pixel_corners'] is not None
+        is_quad=item['supported_pixel_corners'] is not None and item.get('detection_status')!='uncertain'
         points=item['supported_pixel_corners'] if is_quad else item['enclosing_rectangle_corners']
         colour=(0,255,0) if is_quad else (0,165,255)
         cv2.polylines(image,[np.rint(points).astype(np.int32)],True,colour,2)
@@ -73,6 +82,8 @@ def draw(image,objects):
         cv2.drawMarker(image,start,colour,cv2.MARKER_CROSS,16,2)
         cv2.arrowedLine(image,start,end,colour,2)
         label=f'{item["candidate_id"]}: {centre[0]:.0f},{centre[1]:.0f} {item["orientation_image_deg"]:.1f}deg'
+        if item.get('class_name'):label=item['class_name']+' '+label
+        if item.get('detection_status')=='uncertain':label='UNCERTAIN '+label
         cv2.putText(image,label,start,cv2.FONT_HERSHEY_SIMPLEX,.5,colour,2)
     return image
 

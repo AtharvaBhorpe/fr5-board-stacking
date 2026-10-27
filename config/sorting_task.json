@@ -1,0 +1,76 @@
+{
+  "scene_calibration": "config/calibration/logitech_extrinsics_candidate_001.json",
+  "camera_to_base_verified": false,
+  "minimum_colour_fraction": 0.55,
+  "outline_epsilon_fraction": 0.015,
+  "minimum_outline_fill": 0.92,
+  "size_relative_tolerance": 0.12,
+  "maximum_tag_rms_px": 1.0,
+  "pickup_surface": {
+    "point_m": null,
+    "normal": null,
+    "single_layer_confirmed": false
+  },
+  "tag_dictionary": "DICT_5X5_100",
+  "classes": {
+    "VARa": {
+      "colour": "white",
+      "size_m": [
+        0.295,
+        0.21,
+        0.004
+      ],
+      "destination_tag_id": 1
+    },
+    "VARb": {
+      "colour": "white",
+      "size_m": [
+        0.21,
+        0.152,
+        0.004
+      ],
+      "destination_tag_id": 2
+    },
+    "VARc": {
+      "colour": "red",
+      "size_m": [
+        0.21,
+        0.142,
+        0.004
+      ],
+      "destination_tag_id": 16
+    }
+  },
+  "bins": {
+    "1": {
+      "tag_size_m": 0.039,
+      "T_tag_placement": null,
+      "nominal_centre_distance_m": 0.1385,
+      "reported_centre_distance_range_m": [
+        0.138,
+        0.139
+      ],
+      "support_height_above_table_m": 0.004
+    },
+    "2": {
+      "tag_size_m": 0.039,
+      "T_tag_placement": null,
+      "nominal_centre_distance_m": 0.1385,
+      "reported_centre_distance_range_m": [
+        0.138,
+        0.139
+      ],
+      "support_height_above_table_m": 0.004
+    },
+    "16": {
+      "tag_size_m": 0.039,
+      "T_tag_placement": null,
+      "nominal_centre_distance_m": 0.1385,
+      "reported_centre_distance_range_m": [
+        0.138,
+        0.139
+      ],
+      "support_height_above_table_m": 0.004
+    }
+  }
+}

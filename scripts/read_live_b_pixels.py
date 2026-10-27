@@ -5,6 +5,8 @@ import math
 
 
 def handoff(packet,now,max_age=2.):
+    if not math.isfinite(max_age) or max_age<=0:
+        raise ValueError('max-age must be finite and positive')
     if packet.get('status')!='ok' or packet.get('coordinate_system')!='raw_image_pixels':
         raise ValueError('Need a valid raw-image observation')
     if packet.get('frame_id')!='scene_camera_optical_frame':
@@ -12,26 +14,56 @@ def handoff(packet,now,max_age=2.):
     stamp=float(packet['source_timestamp_sec']);age=now-stamp
     if not math.isfinite(age) or not -.1<=age<=max_age:
         raise ValueError('Observation stale or clocks are not synchronized')
+    source=packet['source_stamp']
+    if (type(source.get('sec')) is not int or type(source.get('nanosec')) is not int
+            or not 0<=source['nanosec']<1_000_000_000
+            or abs(stamp-(source['sec']+source['nanosec']*1e-9))>1e-6):
+        raise ValueError('Source timestamp fields disagree')
+    if not isinstance(packet.get('snapshot_id'),str) or not packet['snapshot_id']:
+        raise ValueError('Missing snapshot identity')
     width,height=packet['image_size']
     if not all(type(v) is int and v>0 for v in (width,height)):
         raise ValueError('Invalid image dimensions')
     objects=[]
     for obj in packet['objects']:
+        if obj.get('class_name')=='hand':raise ValueError('Hands must not be included in board coordinates')
         u,v=map(float,obj['centre_px']);angle=float(obj['orientation_image_deg'])
         if not all(math.isfinite(x) for x in (u,v,angle)) or not (0<=u<width and 0<=v<height):
             raise ValueError('Invalid pixel coordinates')
+        if not 0<=angle<180:
+            raise ValueError('Image orientation must be in [0, 180) degrees')
+        if obj.get('detection_status')=='uncertain':
+            raise ValueError('Uncertain instances must not be included in board coordinates')
+        if not isinstance(obj.get('instance_id'),str) or not obj['instance_id']:
+            raise ValueError('Missing instance identity')
+        confidence=obj.get('confidence')
+        if confidence is not None and (not math.isfinite(confidence) or not 0<=confidence<=1):
+            raise ValueError('Invalid detection confidence')
         objects.append({'instance_id':obj['instance_id'],'candidate_id':obj['candidate_id'],
                         'centre_px':[u,v],'orientation_image_deg':angle,
                         'outline_kind':obj['outline_kind'],
                         'supported_pixel_corners':obj.get('supported_pixel_corners'),
                         'text_prompt_label':obj.get('text_prompt_label'),
+                        'class_name':obj.get('class_name'),'class_id':obj.get('class_id'),
+                        'confidence':obj.get('confidence'),
+                        'mask_origin':obj.get('mask_origin','box_prompt'),
+                        'rectangle_consistency':obj.get('rectangle_consistency'),
+                        'near_square_orientation_ambiguous':obj.get('near_square_orientation_ambiguous',False),
+                        'layer_order_verified':False,
                         'instance_isolation_verified':False})
     if len({o['instance_id'] for o in objects})!=len(objects):
         raise ValueError('Duplicate instance IDs')
     return {'snapshot_id':packet['snapshot_id'],'source_timestamp_sec':stamp,
             'source_stamp':packet['source_stamp'],'observation_age_s':age,
             'frame_id':packet['frame_id'],'coordinate_system':'raw_image_pixels',
-            'image_size':[width,height],'objects':objects,'execution_allowed':False}
+            'model_backend':packet.get('model_backend','grounded_sam2'),
+            'checkpoint_sha256':packet.get('checkpoint_sha256'),
+            'angle_convention':'clockwise image angle from +u/right, modulo 180 degrees',
+            'units':{'centre_px':'pixels','orientation_image_deg':'degrees'},
+            'hand_count':len(packet.get('hand_detections',[])),
+            'human_safety_validated':False,
+            'image_size':[width,height],'objects':objects,
+            'uncertain_count':len(packet.get('uncertain_objects',[])),'execution_allowed':False}
 
 
 def main():

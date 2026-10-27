@@ -11,6 +11,7 @@ import threading
 import time
 import uuid
 from b_worker_protocol import read_reply
+from read_live_b_pixels import handoff
 
 
 def fresh(packet,now,max_age):
@@ -18,28 +19,57 @@ def fresh(packet,now,max_age):
             and -.1<=now-packet['source_timestamp_sec']<=max_age)
 
 
+def write_frame(path,image):
+    import numpy as np
+    # Lossless transfer between the two Python environments, without PNG compression.
+    with path.open('wb') as stream:np.save(stream,image,allow_pickle=False)
+
+
+def read_frame(path):
+    import numpy as np
+    image=np.load(path,allow_pickle=False)
+    if image.dtype!=np.uint8 or image.ndim!=3 or image.shape[2]!=3:
+        raise ValueError('Expected a uint8 BGR image')
+    return image
+
+
 def worker(args):
     with contextlib.redirect_stdout(sys.stderr):
         import cv2
         import tomllib
-        from inspect_b import Models
         from b_live_geometry import measure,draw
         settings=json.loads(args.settings.read_text())
         config=tomllib.loads(Path(settings['scene_config']).read_text())
-        models=Models(settings)
+        backend=settings.get('backend','grounded_sam2')
+        if backend=='yolo11_seg':
+            from yolo_pixels import YoloModels
+            models=YoloModels(settings)
+        elif backend=='grounded_sam2':
+            from inspect_b import Models
+            models=Models(settings)
+        else:raise ValueError('Unknown perception backend: '+str(backend))
     print(json.dumps({'ready':True}),flush=True)
     for line in sys.stdin:
         try:
             request=json.loads(line)
-            image=cv2.imread(request['image'])
-            if image is None:raise ValueError('Unreadable worker image')
+            image=read_frame(request['image'])
             with contextlib.redirect_stdout(sys.stderr):
                 report,accepted,masks,roi=models.detect(image,config)
             objects=[measure(candidate,mask) for candidate,mask in accepted]
+            uncertain=[measure(candidate) for candidate in report.get('uncertain_candidates',[])]
+            hands=report.get('hand_detections',[])
             overlay=Path(request['overlay'])
-            if not cv2.imwrite(str(overlay),draw(image,objects)):raise OSError('Overlay save failed')
-            response={'ok':True,'objects':objects,'image_size':report['image_size'],
+            visual=draw(image,uncertain+objects)
+            if hands:
+                from yolo_pixels import draw_hands
+                draw_hands(visual,hands)
+            if not cv2.imwrite(str(overlay),visual):raise OSError('Overlay save failed')
+            response={'ok':True,'objects':objects,'uncertain_objects':uncertain,'image_size':report['image_size'],
+                      'model_backend':report.get('model_backend','grounded_sam2'),
+                      'checkpoint_sha256':report.get('checkpoint_sha256'),
+                      'hand_detections':hands,
                       'detector_ms':report['detector_ms'],
+                      'prompt_refinement':report.get('prompt_refinement'),
                       'rejected_proposals':report['rejected_proposals']}
         except Exception as error:
             response={'ok':False,'error':str(error)}
@@ -73,7 +103,7 @@ def serve(args):
     run.mkdir(parents=True,exist_ok=False)
     command=worker_command(Path.cwd(),args.settings)
     process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
-    print('Loading B once on GPU; waiting for worker...',flush=True)
+    print('Loading perception model once on GPU; waiting for worker...',flush=True)
     node=None;executor=None
     try:
         if read_reply(process,120).get('ready') is not True:raise RuntimeError('Worker startup failed')
@@ -125,9 +155,11 @@ def serve(args):
                             raise ValueError('Latest camera image is stale or clock-incompatible')
                         if msg.header.frame_id!='scene_camera_optical_frame':raise ValueError('Unexpected scene image frame')
                         image=self.bridge.imgmsg_to_cv2(msg,'bgr8')
-                        temporary=run/'input_next.png';input_path=run/'input.png';overlay=run/'overlay.jpg'
-                        if not cv2.imwrite(str(temporary),image):raise OSError('Frame save failed')
+                        transfer_started=time.monotonic()
+                        temporary=run/'input_next.npy';input_path=run/'input.npy';overlay=run/'overlay.bmp'
+                        write_frame(temporary,image)
                         temporary.replace(input_path)
+                        transfer_ms=(time.monotonic()-transfer_started)*1000
                         process.stdin.write(json.dumps({'image':str(input_path.resolve()),'overlay':str(overlay.resolve())})+'\n')
                         process.stdin.flush()
                         result=read_reply(process,30)
@@ -136,17 +168,31 @@ def serve(args):
                         snapshot=uuid.uuid4().hex
                         for index,item in enumerate(result['objects'],1):
                             item['instance_id']=f'{snapshot}:{index}'
+                        for index,item in enumerate(result.get('uncertain_objects',[]),1):
+                            item['instance_id']=f'{snapshot}:uncertain:{index}'
+                        for index,item in enumerate(result.get('hand_detections',[]),1):
+                            item['instance_id']=f'{snapshot}:hand:{index}'
                         packet={'status':'ok' if -.1<=age<=args.max_age else 'stale',
                                 'coordinate_system':'raw_image_pixels','frame_id':msg.header.frame_id,
                                 'source_timestamp_sec':stamp,'source_stamp':{'sec':last[0],'nanosec':last[1]},
                                 'snapshot_id':snapshot,'observation_age_s':age,
                                 'image_size':result['image_size'],'detector_ms':result['detector_ms'],
+                                'model_backend':result.get('model_backend','grounded_sam2'),
+                                'checkpoint_sha256':result.get('checkpoint_sha256'),
+                                'hand_detections':result.get('hand_detections',[]),
+                                'human_safety_validated':False,
+                                'prompt_refinement':result.get('prompt_refinement'),
+                                'frame_transfer_write_ms':transfer_ms,
+                                'pipeline_ms':(time.monotonic()-started)*1000,
                                 'objects':result['objects'],'rejected_proposals':result['rejected_proposals'],
+                                'uncertain_objects':result.get('uncertain_objects',[]),
                                 'execution_allowed':False,
                                 'angle_convention':'clockwise image angle from +u/right, modulo 180 degrees',
                                 'limits':['IDs are scoped to this snapshot, not persistent tracks.',
                                           'Pixel positions/angles require validated geometry before robot use.',
                                           'Supported mask quadrilaterals do not certify instance separation.']}
+                        # Validate the same contract used by the motion-side reader before publishing.
+                        handoff(packet,self.now_seconds(),args.max_age)
                         text=json.dumps(packet,allow_nan=False)
                         with self.condition:self.cached=packet;self.condition.notify_all()
                         self.pub.publish(String(data=text))

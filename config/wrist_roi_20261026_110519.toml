@@ -1,0 +1,106 @@
+[probe]
+frames = 20
+timeout_seconds = 30
+
+[transport_test]
+pixi_executable = ".tools/pixi"
+domain_id = 173
+topic = "/_fr5_perception_transport_test/image"
+log_directory = ".local/ros_transport_logs"
+width = 1920
+height = 1080
+frames = 20
+fps = 10
+timeout_seconds = 20
+max_age_ms = 200.0
+
+[host]
+usb_root = "/sys/bus/usb/devices"
+video_root = "/sys/class/video4linux"
+driver_version_file = "/proc/driver/nvidia/version"
+
+[logitech]
+# Stable path on the commissioning laptop; update for another camera/computer.
+# An empty value prevents accidentally opening the laptop camera.
+device = "/dev/v4l/by-id/usb-046d_HD_Pro_Webcam_C920_692E0F9F-video-index0"
+width = 1920
+height = 1080
+fps = 5
+fourcc = "YUYV"
+autofocus = false
+focus_position = 35
+
+[d405]
+# Optional when exactly one D405 is connected. Never select a different model.
+serial = ""
+
+[classical]
+# Empty regions mean diagnostic preview only; never infer pick/placement regions.
+pickup_polygon_normalized = [[0.0035419126328217238, 0.9916492693110647], [0.0023612750885478157, 0.6325678496868476], [0.6103896103896104, 0.006263048016701462], [0.9988193624557261, 1.0]]
+destination_polygon_normalized = []
+min_value = 120
+max_saturation = 90
+# Offline starting thresholds; validate against real boards and cloth.
+# Each range is [H_low, S_low, V_low, H_high, S_high, V_high].
+foreground_hsv_ranges = [
+    [0, 0, 65, 179, 90, 255],
+    [0, 91, 60, 179, 255, 255],
+]
+min_area_fraction = 0.002
+max_area_fraction = 0.4
+min_rectangularity = 0.75
+max_aspect_ratio = 4.0
+contour_epsilon_fraction = 0.02
+
+[markers]
+# Discovery dictionaries; confirm the printed grid before calibration.
+dictionaries = ["DICT_5X5_100", "DICT_APRILTAG_16h5", "DICT_APRILTAG_25h9", "DICT_APRILTAG_36h10", "DICT_APRILTAG_36h11"]
+
+[calibration]
+active_board = "small"
+min_corners = 12
+min_views = 15
+max_rms_px = 1.0
+min_tilt_spread_deg = 15.0
+min_axis_coverage_fraction = 0.5
+output_file = "config/calibration/logitech_intrinsics.json"
+
+[calibration.boards.large]
+dictionary = "DICT_5X5_100"
+# Printed ID ordering matches 7 x 5; the user counted the rotated grid as 5 x 7.
+grid_squares_x = 7
+grid_squares_y = 5
+square_length_m = 0.052
+marker_length_m = 0.038
+views_directory = ".local/calibration/logitech/views"
+
+[calibration.boards.small]
+dictionary = "DICT_5X5_100"
+# This print has a different ID ordering; verified on the camera images.
+grid_squares_x = 5
+grid_squares_y = 7
+square_length_m = 0.032
+marker_length_m = 0.022
+views_directory = ".local/calibration/logitech_small/views"
+
+[ros_calibration.scene]
+board = "large_5x7"
+camera_name = "logitech_scene"
+image_topic = "/scene/image_raw"
+camera_namespace = "/scene"
+
+[ros_calibration.wrist]
+board = "small"
+camera_name = "d405_color_check"
+image_topic = "/wrist/wrist_camera/color/image_raw"
+camera_namespace = "/wrist/wrist_camera/color"
+
+[calibration.boards.large_5x7]
+dictionary = "DICT_5X5_100"
+# Current rigid print: user confirmed 52/38 mm; observed ID layout is 5 x 7.
+# Keep the older large 7 x 5 print separate; never relabel its saved images.
+grid_squares_x = 5
+grid_squares_y = 7
+square_length_m = 0.052
+marker_length_m = 0.038
+views_directory = ".local/calibration/logitech_large_5x7/views"

@@ -88,6 +88,31 @@ def self_test():
 
 
 class Models:
+    def refine(self,pil,masks,qualities,embeddings,sizes):
+        from b_refinement import rectangle_check,prompts_for_masks,select_consistent
+        image=cv2.cvtColor(np.asarray(pil),cv2.COLOR_RGB2BGR)
+        checks=[rectangle_check(image,m[0]>0) for m in masks]
+        hypotheses=[{'source_index':i,'mask':m[0]>0,'quality':float(qualities[i]),
+                     'origin':'box_prompt'} for i,m in enumerate(masks)]
+        prompts=prompts_for_masks([m[0]>0 for m in masks],checks,
+                                 limit=self.settings.get('max_refinement_prompts',6),image=image)
+        for prompt in prompts:
+            inputs=self.segmenter_processor(input_points=[[prompt['points']]],
+                input_labels=[[prompt['labels']]],original_sizes=sizes.tolist(),return_tensors='pt').to('cuda')
+            outputs=self.segmenter(**inputs,image_embeddings=embeddings,multimask_output=True)
+            refined=self.segmenter_processor.post_process_masks(outputs.pred_masks.cpu(),sizes)[0]
+            scores=outputs.iou_scores.detach().float().cpu().numpy().reshape(-1)
+            for mask,score in zip(refined[0].detach().cpu().numpy(),scores):
+                if np.isfinite(score):
+                    hypotheses.append({'source_index':prompt['source_index'],'mask':mask>0,
+                        'quality':float(score),'origin':'point_refinement','prompt':prompt})
+        selected,rejected=select_consistent(image,hypotheses)
+        details={'prompts':prompts,'hypotheses':len(hypotheses),
+                 'rejected':[{'source_index':item['source_index'],'origin':item['origin'],
+                              'reason':reason} for item,reason in rejected],
+                 'layer_order_verified':False}
+        return selected,details
+
     def __init__(self,settings):
         import torch
         from huggingface_hub import model_info
@@ -138,7 +163,7 @@ class Models:
             indices=[usable[i] for i in keep]
             boxes=boxes[indices];scores=scores[indices];labels=[str(labels[i]) for i in indices]
             del outputs,inputs,result
-            proposals=[];accepted=[];rejected=[];raw_masks=[]
+            proposals=[];accepted=[];rejected=[];raw_masks=[];refinement=None;uncertain=[]
             if len(boxes):
                 sam_inputs=self.segmenter_processor(images=pil,input_boxes=[boxes.tolist()],return_tensors='pt').to('cuda')
                 sam_outputs=self.segmenter(**sam_inputs,multimask_output=False)
@@ -149,12 +174,34 @@ class Models:
                 qualities=sam_outputs.iou_scores.detach().float().cpu().numpy().reshape(len(boxes),-1)[:,0]
                 if masks.shape!=(len(boxes),1,crop.shape[0],crop.shape[1]):
                     raise RuntimeError('Unexpected SAM mask shape: '+str(masks.shape))
+                hypotheses=[{'source_index':i,'mask':m[0]>0,'quality':float(qualities[i]),
+                             'origin':'box_prompt'} for i,m in enumerate(masks)]
+                if s.get('prompt_refinement',False):
+                    hypotheses,refinement=self.refine(pil,masks,qualities,sam_outputs.image_embeddings,sizes)
+                    # Keep baseline detections visible when strict refinement cannot validate them.
+                    from b_refinement import same_instance,rectangle_check
+                    for source,m in enumerate(masks):
+                        if any(same_instance(m[0]>0,h['mask']) for h in hypotheses):continue
+                        full=np.zeros(image.shape[:2],bool);full[y0:y1,x0:x1]=m[0]>0
+                        try:item=describe_mask(image,full,roi,config['classical'])
+                        except ValueError:continue
+                        check=rectangle_check(crop,m[0]>0)
+                        uncertain.append({**item,'id':f'uncertain_{source+1}',
+                            'text_label':labels[source],'detector_score':float(scores[source]),
+                            'mask_origin':'box_prompt','detection_status':'uncertain',
+                            'uncertainty_reason':check['reason'] if not check['passed'] else 'Conflicting or nested instance hypothesis',
+                            'rectangle_consistency':check})
                 del sam_inputs,sam_outputs
-                for i,(box,score,label,quality) in enumerate(zip(boxes,scores,labels,qualities)):
-                    full=np.zeros(image.shape[:2],bool);full[y0:y1,x0:x1]=masks[i,0]>0
+                for i,hypothesis in enumerate(hypotheses):
+                    source=hypothesis['source_index'];box=boxes[source];score=scores[source]
+                    label=labels[source];quality=hypothesis['quality']
+                    full=np.zeros(image.shape[:2],bool);full[y0:y1,x0:x1]=hypothesis['mask']
                     raw_masks.append(full)
                     proposal={'proposal_id':i+1,'box_xyxy':(box+[x0,y0,x0,y0]).tolist(),
-                              'detector_score':float(score),'text_label':label,'sam_predicted_iou':float(quality)}
+                              'detector_score':float(score),'text_label':label,'sam_predicted_iou':float(quality),
+                              'mask_origin':hypothesis['origin'],
+                              'rectangle_consistency':hypothesis.get('rectangle_consistency'),
+                              'layer_order_verified':False}
                     proposals.append(proposal)
                     try:
                         if not np.isfinite([score,quality]).all():raise ValueError('Non-finite model scores')
@@ -176,6 +223,8 @@ class Models:
                 'quad_candidates':[item for item,_ in accepted],
                 'box_proposals':proposals,'rejected_proposals':rejected,'detector_ms':elapsed,
                 'roi_crop_xyxy':[x0,y0,x1,y1],'model_revisions':self.revisions,
+                'prompt_refinement':refinement,
+                'uncertain_candidates':uncertain,
                 'warnings':['Scores are model outputs, not calibrated correctness probabilities.',
                             'Predicted masks may merge instances or infer unsupported boundaries.',
                             'Metric coordinates, occlusion and suction suitability are unverified.']}
