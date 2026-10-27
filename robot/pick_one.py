@@ -149,12 +149,16 @@ def fresh_vision(after=0.0):
     return msg
 
 
-def park_and_look():
-    """The arm hides boards from the overhead camera when it is above them (e.g. after --hover-only): park it out of
-    the view, then use a frame taken after the park."""
+def park():
     print("parking the arm out of the overhead camera view")
     check("park", act(move_to, MoveTo.Goal(x=PARK[0], y=PARK[1], z=PARK[2], yaw=PARK[3],
                                            velocity_scaling=args.speed)))
+
+
+def park_and_look():
+    """The arm hides boards from the overhead camera when it is above them (e.g. after --hover-only): park it out of
+    the view, then use a frame taken after the park."""
+    park()
     return fresh_vision(after=time.time() + 0.5)
 
 
@@ -302,5 +306,6 @@ if args.place:
     transfer(b, (d["x"], d["y"], place_z(d), tool_yaw(d)), "put it down on its template")
 else:
     transfer(b)
+park()  # after the drop: out of the camera view, ready for the next pick
 print("done")
 rclpy.shutdown()
