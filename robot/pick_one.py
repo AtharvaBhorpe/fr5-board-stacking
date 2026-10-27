@@ -15,6 +15,8 @@ attach -> ENTER -> detach -> back down -> release -> lift. The board ends where 
 import argparse
 import json
 import math
+import os
+import sys
 import time
 
 import rclpy
@@ -24,12 +26,17 @@ from hk_fr5_interfaces.action import Grip, MoveDelta, MoveTo, Release
 from hk_fr5_interfaces.msg import GripperState
 from hk_fr5_interfaces.srv import AttachBoard, DetachBoard
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from wrist_depth import TOPIC as WRIST_TOPIC, WristDepth  # noqa: E402
+
 SIZES = {"VARa": (0.295, 0.210), "VARb": (0.150, 0.210), "VARc": (0.135, 0.210)}  # board X, Y (m)
 BOARD_H = 0.005
 HOVER = 0.10  # m above the board top
 TEMP_TOP_Z = -0.055   # top of a board lying on the table (temp spot)
 TEMP_CLEARANCE = 0.30  # m from any destination template centre (biggest board half-diagonal + template)
 MAX_CLEAR = 4          # boards moved to the temp spot before giving up
+WRIST_HIGHER = 0.06    # D405 board top accepted up to this much above one board on the table (stack of ~12) ...
+WRIST_LOWER = 0.01     # ... and this much below it; else the fixed height is used
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--variant", help="VARa / VARb / VARc (default: first board)")
@@ -43,6 +50,8 @@ ap.add_argument("--stack", type=int, default=0, help="--place: boards already ly
 ap.add_argument("--temp", type=float, nargs=2, default=(-0.25, 0.10), metavar=("X", "Y"),
                 help="base_link x y (m) of the free spot for boards that cover the requested one (left table)")
 ap.add_argument("--speed", type=float, default=0.1, help="velocity_scaling, first runs <= 0.2")
+ap.add_argument("--no-wrist-height", action="store_true",
+                help="pick descent from the fixed one-board height, not from the wrist D405 depth")
 args = ap.parse_args()
 PRESS = args.press / 1000.0
 
@@ -103,6 +112,14 @@ elif gstate[-1].vacuum_on or gstate[-1].state in ("GRIPPING", "HOLDING", "PART_L
     raise SystemExit(f"STOP: gripper is {gstate[-1].state} (vacuum on): the cup may still hold a board. "
                      "Take it off by hand or release (fr5-board-stacking: pixi run shell, then: release), retry.")
 
+# Wrist D405 depth for the pick height (stacks, thick boards): only if its point cloud is published
+wd = None
+if not args.no_wrist_height:
+    time.sleep(0.5)
+    if node.count_publishers(WRIST_TOPIC):
+        wd = WristDepth(node)
+    print(f"pick height: {'wrist D405 depth' if wd else 'fixed one-board height (no ' + WRIST_TOPIC + ')'}")
+
 # 1. Vision
 msgs = []
 node.create_subscription(String, "/vision/boards", lambda m: msgs.append(json.loads(m.data)), 1)
@@ -149,21 +166,32 @@ def transfer(b, to=None, what="put it back down"):
     # Hover above it (OMPL, avoids the static workcell)
     check("hover", act(move_to, MoveTo.Goal(x=b["x"], y=b["y"], z=b["z"] + HOVER, yaw=yaw,
                                             velocity_scaling=args.speed)))
+    down = HOVER + PRESS
+    if wd:  # measured board top instead of the fixed one-board height
+        m = wd.measure(b["x"], b["y"])
+        gap = None if m is None else (b["z"] + HOVER) - m["top_z"]
+        if gap is not None and HOVER - WRIST_HIGHER <= gap <= HOVER + WRIST_LOWER:
+            down = gap + PRESS
+            print(f"  D405: board top z={m['top_z']:.4f} ({1000 * (m['top_z'] - b['z']):+.1f} mm vs one board), "
+                  f"cup tip -> board {1000 * gap:.1f} mm, table z={m['table_z']:.4f}")
+        else:
+            print(f"  D405: {'no measurement' if m is None else f'implausible gap {1000 * gap:.0f} mm'}, "
+                  "using the fixed height")
     if args.hover_only:
         print("hover-only: check the cup is above the board centre (measure the offset in mm if not).")
         raise SystemExit(0)
     input(">>> cup centred above the board? ENTER = go down and grip, Ctrl+C = stop ")
     # Down (LIN), grip, lift (LIN, rule 3), attach
-    print(f"  going down {(HOVER + PRESS) * 1000:.0f} mm")
-    check("down", lin(-(HOVER + PRESS)))
+    print(f"  going down {down * 1000:.0f} mm")
+    check("down", lin(-down))
     g = act(grip, Grip.Goal())
     print(f"  grip: success={g.success} {g.message} time_to_vacuum={g.time_to_vacuum:.2f}s")
     if not g.success:
-        lin(HOVER + PRESS)
+        lin(down)
         raise SystemExit("NO_VACUUM: lifted without board")
     # Lift BEFORE attaching: with --press the attached board model would start inside the table and MoveIt
     # refuses every plan. The lift is straight up, nothing to avoid.
-    check("lift", lin(HOVER + PRESS))
+    check("lift", lin(down))
     lx, ly = SIZES.get(b["variant"]) or SIZES[b.get("model_class", "VARa")]  # UNKWN: model's guess, collision only
     call(attach, AttachBoard.Request(length=lx, width=ly, height=BOARD_H, yaw=0.0))  # tool yaw = board yaw (mod pi)
     if to:
@@ -174,10 +202,11 @@ def transfer(b, to=None, what="put it back down"):
     # Detach the board MODEL first (the vacuum still holds it): with --press it would end inside the table and
     # MoveIt refuses the descent. Straight down, only the carry above needed it.
     call(detach, DetachBoard.Request(keep_as_obstacle=False))
-    check("down again", lin(-(HOVER + PRESS)))
+    drop = HOVER + PRESS if to else down  # put back: same height it came from; place: computed target height
+    check("down again", lin(-drop))
     r = act(release, Release.Goal())
     print(f"  release: success={r.success} {r.message}")
-    check("lift empty", lin(HOVER + PRESS))
+    check("lift empty", lin(drop))
     return time.time()
 
 

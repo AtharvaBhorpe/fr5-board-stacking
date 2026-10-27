@@ -85,6 +85,13 @@ running, cup hovering above a board: `pick_one.py --hover-only`) draws the model
 real boards = mount right. Shifted / rotated: fix `mount.yaw` in `fr5-board-stacking`
 `src/hk_fr5_description/config/tool_geometry.yaml` (camera position around the tool), rebuild, check again.
 
+**Pick height from the wrist D405** (`robot/wrist_depth.py`): with `pixi run wrist` running, `pick_one` measures the
+board top under the cup at the hover (median depth in a 35 mm patch, via TF) and goes down that gap + `--press`
+instead of the fixed one-board height: stacks and thick boards. Accepted 1 cm below to 6 cm above one board on the
+table, else fixed height; `--no-wrist-height` disables, `--hover-only` prints the measurement. Placing stays fixed
+(the held board hides the template from the camera). `pixi run python robot/wrist_depth.py`: one measurement.
+Real robot 2026-10-27: table measured -0.062 (model -0.060), hover gap repeatable +-1 mm.
+
 `pick_one` refuses to start while the gripper reports vacuum on (a stopped run can leave a board on the cup):
 take it off or `pixi run shell`, then `release`.
 

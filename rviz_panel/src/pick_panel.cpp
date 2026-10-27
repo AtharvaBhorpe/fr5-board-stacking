@@ -33,7 +33,10 @@
 #include <rviz_common/display_context.hpp>
 #include <rviz_common/panel.hpp>
 #include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
+#include <hk_fr5_interfaces/msg/gripper_state.hpp>
+#include <rclcpp/qos.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/string.hpp>
 
 namespace vision1_rviz
@@ -50,6 +53,10 @@ public:
   {
     auto * lay = new QVBoxLayout(this);
     setMinimumWidth(560);
+    status_ = new QLabel;  // live health of everything the demo needs (refresh())
+    status_->setWordWrap(true);
+    status_->setStyleSheet("font-size:13px");
+    lay->addWidget(status_);
     cam_ = new QLabel("camera: waiting for /vision/image");
     cam_->setAlignment(Qt::AlignCenter);
     cam_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);  // no resize loop from the pixmap
@@ -148,6 +155,19 @@ public:
       [this](sensor_msgs::msg::Image::ConstSharedPtr m) {
         QImage img = toQImage(*m);
         if (!img.isNull()) {QMetaObject::invokeMethod(this, [this, img] {onWrist(img);}, Qt::QueuedConnection);}
+      });
+    joints_sub_ = node_->create_subscription<sensor_msgs::msg::JointState>(
+      "/joint_states", rclcpp::SensorDataQoS(), [this](sensor_msgs::msg::JointState::ConstSharedPtr) {
+        QMetaObject::invokeMethod(this, [this] {joints_ms_ = QDateTime::currentMSecsSinceEpoch();}, Qt::QueuedConnection);
+      });
+    desc_sub_ = node_->create_subscription<std_msgs::msg::String>(
+      "/robot_description", rclcpp::QoS(1).transient_local(), [this](std_msgs::msg::String::ConstSharedPtr m) {
+        const bool mock = m->data.find("mock_components") != std::string::npos;
+        QMetaObject::invokeMethod(this, [this, mock] {hw_kind_ = mock ? "SIMULATION" : "REAL FR5";}, Qt::QueuedConnection);
+      });
+    gripper_sub_ = node_->create_subscription<hk_fr5_interfaces::msg::GripperState>(
+      "/gripper/state", rclcpp::QoS(1).transient_local(), [this](hk_fr5_interfaces::msg::GripperState::ConstSharedPtr m) {
+        QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->state)] {gripper_ = s;}, Qt::QueuedConnection);
       });
     log_pub_ = node_->create_publisher<std_msgs::msg::String>("/pick_panel/log", 50);
   }
@@ -266,8 +286,23 @@ private:
     return "";
   }
 
+  // green / red dot + text, by data age
+  static QString dot(bool ok, const QString & text)
+  {
+    // ponytail: coloured block of spaces, not a dot glyph (the env's fontconfig crashes on font fallback for it)
+    return QString("<span style='background:%1'>&nbsp;&nbsp;&nbsp;</span> %2").arg(ok ? "#43a047" : "#e53935", text);
+  }
+
   void refresh()
   {
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const bool robot_ok = joints_ms_ && now - joints_ms_ < 1000;
+    status_->setText(
+      dot(robot_ok, robot_ok ? "robot: " + (hw_kind_.isEmpty() ? QString("connected") : hw_kind_) :
+        QString("robot: not running")) + " &nbsp; " +
+      dot(last_ms_ && now - last_ms_ < 2000, "overhead camera") + " &nbsp; " +
+      dot(wrist_ms_ && now - wrist_ms_ < 2000, "wrist camera") + " &nbsp; " +
+      dot(gripper_ == "IDLE" || gripper_ == "HOLDING", "gripper: " + (gripper_.isEmpty() ? QString("?") : gripper_)));
     const double age = (QDateTime::currentMSecsSinceEpoch() - last_ms_) / 1000.0;
     if (!last_ms_) {
       vision_->setText("vision: waiting for /vision/boards (pixi run vision)");
@@ -420,7 +455,9 @@ private:
 
   QLabel * cam_, * wrist_, * vision_, * run_;
   QImage img_, wrist_img_;
-  qint64 wrist_ms_ = 0;
+  qint64 wrist_ms_ = 0, joints_ms_ = 0;
+  QLabel * status_;
+  QString hw_kind_, gripper_;
   QSize shown_;  // size of the scaled camera pixmap in cam_
   double full_w_ = 1920;  // camera width in px (board corners)
   std::vector<std::pair<QString, QPolygonF>> polys_;
@@ -438,6 +475,9 @@ private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr boards_sub_, request_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_, wrist_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joints_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr desc_sub_;
+  rclcpp::Subscription<hk_fr5_interfaces::msg::GripperState>::SharedPtr gripper_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr log_pub_;
 };
 }  // namespace vision1_rviz

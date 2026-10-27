@@ -23,7 +23,9 @@ from std_msgs.msg import String
 from tf2_ros import Buffer, TransformListener
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "vision1"))
+sys.path.insert(0, os.path.dirname(__file__))
 from table import SIZES_MM  # noqa: E402
+from wrist_depth import WristDepth  # noqa: E402
 
 NS = "/wrist/wrist_camera/color"
 
@@ -83,8 +85,16 @@ def main():
     n.create_subscription(CameraInfo, f"{NS}/camera_info", lambda m: st.update(info=m), qos_profile_sensor_data)
     n.create_subscription(String, "/vision/boards", lambda m: st.update(boards=json.loads(m.data)), 1)
     pub = n.create_publisher(Image, "/wrist/check", 2)
+    wd = WristDepth(n)  # board top height under the cup, for the "below cup" mark
 
     def tick():
+        try:
+            tb = tf.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation
+            d = wd.measure(tb.x, tb.y, timeout=0.5)
+            if d:
+                st["top_z"] = d["top_z"]
+        except Exception:  # noqa: BLE001  no TF yet
+            pass
         m, info, vb = st["img"], st["info"], st["boards"]
         if m is None or info is None:
             n.get_logger().info("waiting for the wrist camera (pixi run wrist)", throttle_duration_sec=5.0)
@@ -111,6 +121,11 @@ def main():
         tp = Tt.transform.translation
         p = np.array([tp.x, tp.y, tp.z])
         draw_point(img, (K @ p)[:2] / max(p[2], 1e-6), p[2] > 0.01, (0, 255, 255), "TCP")
+        # straight below the cup, on the board top (D405 depth) or a single board on the table
+        Tb = tf.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation
+        z = st.get("top_z", -0.055)
+        uv, f = project(K, R, t, np.array([[Tb.x, Tb.y, z]]))
+        draw_point(img, uv[0], f[0], (255, 0, 255), f"below cup (z {z:.3f})")
         cv2.putText(img, "model prediction: green boards, red templates, yellow TCP", (10, 25),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         out = Image(height=img.shape[0], width=img.shape[1], encoding="bgr8", step=img.shape[1] * 3,
