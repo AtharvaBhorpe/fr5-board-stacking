@@ -17,6 +17,7 @@ import numpy as np
 import rclpy
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.node import Node
+from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 from visualization_msgs.msg import Marker, MarkerArray
@@ -89,6 +90,7 @@ class Vision1(Node):
         self.device = device
         self.pub = self.create_publisher(String, "/vision/boards", 10)
         self.markers = self.create_publisher(MarkerArray, "/vision/markers", 10)  # RViz: Add -> By topic
+        self.image = self.create_publisher(Image, "/vision/image", 2)  # annotated camera view, half size (RViz Image)
         self.create_timer(1.0 / rate, self.tick)
         self.get_logger().info(f"publishing /vision/boards at {rate} Hz from {device!r}")
 
@@ -126,15 +128,40 @@ class Vision1(Node):
         msg = {"stamp": now, "destinations": dests, "image_size": [frame.shape[1], frame.shape[0]],
                "source": self.device, "calibrated": self.calib is not None, "boards": boards, "occluded": occluded, "rejected": rejected}
         self.last = json.dumps(msg)
+        img = self.annotate(frame, boards, occluded, rejected, tags)
         if time.time() - getattr(self, "saved", 0) > 2.0:  # debug overlay for the lab, every 2 s
             self.saved = time.time()
-            img = draw(frame, boards + occluded)
-            for r in rejected:
-                cv2.putText(img, r["reason"], (int(r["u"]) - 90, int(r["v"])), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 255), 3)
             cv2.imwrite("/tmp/vision1_last.jpg", img)
         self.pub.publish(String(data=self.last))
+        if self.image.get_subscription_count():
+            small = cv2.resize(img, (img.shape[1] // 2, img.shape[0] // 2), interpolation=cv2.INTER_AREA)
+            m = Image(height=small.shape[0], width=small.shape[1], encoding="bgr8", step=small.shape[1] * 3,
+                      data=small.tobytes())
+            m.header.stamp, m.header.frame_id = self.get_clock().now().to_msg(), "overhead_camera"
+            self.image.publish(m)
         self.publish_markers(boards, dests)
         return True
+
+    def annotate(self, frame, boards, occluded, rejected, tags):
+        """Camera frame + pick area, boards (green = pickable, orange = under another), rejects, template tags."""
+        img = draw(frame, boards + occluded, font=1.8)  # shown at ~1/3 size in the RViz panel
+        for r in rejected:
+            cv2.putText(img, r["reason"], (int(r["u"]) - 90, int(r["v"])), cv2.FONT_HERSHEY_SIMPLEX, 1.6, (0, 0, 255), 4)
+        for t in tags:
+            c = np.int32(t["corners"])
+            cv2.polylines(img, [c], True, (0, 0, 255), 3)
+            name = table.DEST[t["id"]][0] if t["id"] in table.DEST else f"tag {t['id']}"  # template of that variant
+            cv2.putText(img, name, (int(c[:, 0].min()) - 40, int(c[:, 1].max()) + 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5,
+                        (0, 0, 255), 4)
+        n = {}
+        for b in boards:
+            n[b["variant"]] = n.get(b["variant"], 0) + 1
+        text = "pickable: " + (", ".join(f"{k} x{v}" for k, v in sorted(n.items())) or "none")
+        if occluded:
+            text += f" | under others: {len(occluded)}"
+        cv2.rectangle(img, (0, 0), (img.shape[1], 90), (0, 0, 0), -1)
+        cv2.putText(img, text, (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 2.2, (255, 255, 255), 5)
+        return img
 
     def publish_markers(self, boards, dests):
         """Display only (not in the MoveIt scene): green = pickable boards, red = destination board poses."""

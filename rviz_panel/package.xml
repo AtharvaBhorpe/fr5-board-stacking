@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>vision1_rviz</name>
+  <version>0.1.0</version>
+  <description>RViz panel: boards available for pick-up, click = supervised pick and place (robot/pick_one.py)</description>
+  <maintainer email="bhorpeatharva06@gmail.com">Atharva Bhorpe</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>rviz_common</depend>
+  <depend>pluginlib</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

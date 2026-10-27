@@ -183,7 +183,7 @@ def detect(bgr, rejected=None, tags=None, use_model=False):
     return boards
 
 
-def draw(bgr, boards):
+def draw(bgr, boards, font=1.0):
     out = bgr.copy()
     h, w = out.shape[:2]
     cv2.polylines(out, [np.int32(np.array(ROI) * [w - 1, h - 1])], True, (255, 255, 0), 2)
@@ -191,7 +191,7 @@ def draw(bgr, boards):
         col = (0, 255, 0) if b.get("top", True) else (0, 165, 255)  # orange = occluded
         cv2.polylines(out, [np.int32(b["corners"])], True, col, 3)
         cv2.putText(out, f'{b["id"]} {b["variant"]} {b["yaw_deg"]:.0f}deg' + ("" if b.get("top", True) else " under"), (int(b["u"]) - 80, int(b["v"])),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 200, 0), 3)
+                    cv2.FONT_HERSHEY_SIMPLEX, font, (0, 200, 0), max(3, round(3 * font)))
     return out
 
 

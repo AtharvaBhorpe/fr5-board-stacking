@@ -5,3 +5,7 @@ eval_out/
 train_data/
 runs/
 *.pt
+label_real/
+build_panel/
+install_panel/
+log/

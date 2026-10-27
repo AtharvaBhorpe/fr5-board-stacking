@@ -1,0 +1,57 @@
+Panels:
+  - Class: vision1_rviz/PickPanel
+    Name: Pick
+    extra_args: ""
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 0.1
+      Plane Cell Count: 20
+    - Class: moveit_rviz_plugin/PlanningScene
+      Name: Robot + scene
+      Enabled: true
+      Robot Description: robot_description
+      Planning Scene Topic: /monitored_planning_scene
+      Scene Geometry:
+        Scene Alpha: 0.25
+        Scene Color: 160; 160; 160
+      Scene Robot:
+        Robot Alpha: 1
+    - Class: moveit_rviz_plugin/Trajectory
+      Name: Planned path
+      Enabled: true
+      Robot Description: robot_description
+      Trajectory Topic: /display_planned_path
+      Loop Animation: false
+      Show Trail: false
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Boards (green) / templates (red)
+      Enabled: true
+      Topic:
+        Value: /vision/markers
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+  Global Options:
+    Fixed Frame: base_link
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.0
+      Focal Point: {X: -0.1, Y: 0.0, Z: 0.1}
+      Pitch: 0.7
+      Yaw: 3.14
+      Target Frame: base_link
+Window Geometry:
+  Width: 1800
+  Height: 1050

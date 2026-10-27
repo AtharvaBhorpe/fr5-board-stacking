@@ -21,6 +21,7 @@ import rclpy
 from rclpy.action import ActionClient
 from std_msgs.msg import String
 from hk_fr5_interfaces.action import Grip, MoveDelta, MoveTo, Release
+from hk_fr5_interfaces.msg import GripperState
 from hk_fr5_interfaces.srv import AttachBoard, DetachBoard
 
 SIZES = {"VARa": (0.295, 0.210), "VARb": (0.150, 0.210), "VARc": (0.135, 0.210)}  # board X, Y (m)
@@ -89,6 +90,18 @@ print(f"robot hardware: {hw}")
 
 # A run that stopped half-way leaves the board model attached: every plan would then fail. Clear it.
 call(detach, DetachBoard.Request(keep_as_obstacle=False))
+# ... and may leave a board on the cup (stopped after the grip): flying to the next board with it is a collision.
+gstate = []
+node.create_subscription(GripperState, "/gripper/state", gstate.append,
+                         QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+t0 = time.time()
+while not gstate and time.time() - t0 < 3.0:
+    rclpy.spin_once(node, timeout_sec=0.2)
+if not gstate:
+    print("WARNING: no /gripper/state: cannot check the cup is empty")
+elif gstate[-1].vacuum_on or gstate[-1].state in ("GRIPPING", "HOLDING", "PART_LOST"):
+    raise SystemExit(f"STOP: gripper is {gstate[-1].state} (vacuum on): the cup may still hold a board. "
+                     "Take it off by hand or release (fr5-board-stacking: pixi run shell, then: release), retry.")
 
 # 1. Vision
 msgs = []

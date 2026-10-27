@@ -1,0 +1,5 @@
+<library path="vision1_rviz">
+  <class name="vision1_rviz/PickPanel" type="vision1_rviz::PickPanel" base_class_type="rviz_common::Panel">
+    <description>Boards available for pick-up; click a variant = pick and place it (supervised)</description>
+  </class>
+</library>

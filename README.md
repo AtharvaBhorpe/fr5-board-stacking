@@ -17,6 +17,7 @@ pixi run check                                     # self-check on recorded phot
 | `/vision/boards` | topic `std_msgs/String`, 5 Hz | JSON, latest state (below) |
 | `/vision/detect` | service `std_srvs/Trigger` | fresh snapshot; same JSON in `.message` |
 | `/vision/markers` | topic `visualization_msgs/MarkerArray` | RViz (Add -> By topic): green = pickable boards, red = destination poses. Display only, not in the MoveIt scene |
+| `/vision/image` | topic `sensor_msgs/Image` (bgr8, 960x540) | camera frame with detections drawn; only published while someone subscribes |
 
 ```python
 msg = json.loads(s.data)   # {"stamp", "source", "calibrated", "boards": [...], "rejected": [...], "destinations": [...]}
@@ -49,6 +50,29 @@ image: `variant`, `tag_id`, `x`, `y`, `yaw` (target board pose, base_link, team 
 the tag was last seen; kept 10 s because small tags are missed in ~10 % of frames).
 
 Board +X is the long edge for VARa and the short edge for VARb / VARc (team geometry handoff).
+
+## Demo view: RViz with camera and pick panel
+
+```bash
+cd fr5-board-stacking && pixi run robot use_rviz:=false   # or: pixi run sim use_rviz:=false
+cd vision1-overhead   && pixi run vision                  # add --ros-args -p model:=true for stacks
+cd vision1-overhead   && robot/rviz.sh                    # builds the panel (robot env), opens RViz
+```
+
+RViz shows the robot and planning scene (attached board, obstacles), board markers (green = pickable, red = template
+poses) and the **Pick** panel:
+
+- camera image with detections (`/vision/image`, annotated, half size)
+- one button per variant: free / covered count, template seen or not. Disabled (hover = reason) when there is no
+  vision data, no calibration, no such board, no template, or a pick is running
+- click a button **or a board in the camera image** = `pick_one.py --place --variant X` (+ `extra args`, saved with
+  the RViz config, e.g. `--speed 0.2 --temp -0.25 0.10`). Its output goes to the log box; each ENTER prompt turns
+  **Confirm** yellow. **Stop script** = Ctrl+C (a motion already sent still finishes: the e-stop is on the pendant)
+- `/pick_panel/request` (`std_msgs/String`: `VARa` / `VARb` / `VARc` / `confirm` / `stop`) does the same from a
+  script; `confirm` from the topic is refused unless the robot is MOCK. `/pick_panel/log`: every output line
+
+`pick_one` refuses to start while the gripper reports vacuum on (a stopped run can leave a board on the cup):
+take it off or `pixi run shell`, then `release`.
 
 ## Pick / place script (robot workspace)
 

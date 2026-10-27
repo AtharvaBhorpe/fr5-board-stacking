@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.10)
+project(vision1_rviz)
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rviz_common REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
+set(CMAKE_AUTOMOC ON)
+
+add_library(vision1_rviz SHARED src/pick_panel.cpp)
+target_compile_features(vision1_rviz PUBLIC cxx_std_17)
+# pick_one.py of this checkout (the panel runs it)
+get_filename_component(VISION1_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
+target_compile_definitions(vision1_rviz PRIVATE PICK_ONE="${VISION1_DIR}/robot/pick_one.py")
+target_link_libraries(vision1_rviz Qt5::Widgets)
+ament_target_dependencies(vision1_rviz rclcpp rviz_common pluginlib std_msgs sensor_msgs)
+
+pluginlib_export_plugin_description_file(rviz_common plugins.xml)
+install(TARGETS vision1_rviz LIBRARY DESTINATION lib)
+ament_package()
