@@ -27,7 +27,19 @@ One page for the whole trial: setup values, bring-up, checks, tests T0-T5, stop 
 
 Material: 3 red VARc, 4-5 white VARa / VARb. Keep every input board / stack >= 3 cm outside every sheet.
 
-## 2. Bring-up (6 terminals, in this order)
+## 2. Bring-up: ONE command
+
+    ~/hackathon/wt/feat-task-main-controller/tools/trial_up.sh          # debug session (trial); 'demo' for demos
+    ~/hackathon/wt/feat-task-main-controller/tools/trial_down.sh        # stop everything cleanly, in the right order
+
+`trial_up.sh` starts the tmux session `trial` in order (monitor, motion, Vision 1, world model, skill server,
+controller, cli), waits until each part is ready, then opens a terminal attached to it. Windows: 0 monitor, 1 motion,
+2 vision, 3 world, 4 skills, 5 ctrl, 6 cli (`tc ...` ready there). `Ctrl+b <n>` = window n, `Ctrl+b d` = detach
+(keeps running; back: `tmux attach -t trial`). Claude reads any window (`tmux capture-pane`) and types `tc` commands
+into window 6. Sim rehearsal without the robot: `trial_up.sh --sim` (fake arm + fake_world). Optional `--rviz`.
+Robot in AUTO mode first. Nothing moves at start-up.
+
+Manual fallback (6 terminals, in this order):
 
 Every terminal FIRST (terminal 1 with `new`, all others without):
 
@@ -125,7 +137,7 @@ any ...` must not pick it); a board moved by hand while the robot hovers over it
 | Controller HALTED (3 motion failures / release failed) | check the robot / gripper, then `tc resume` |
 | A zone emptied by hand | `tc reset_zone <zone>` |
 | A board on the cup, nothing running | `tc pause`, then `tc skill release_safe` (fault zone) |
-| End | Ctrl+C in terminals 6 -> 4, then 3, 2, 1 (the motion terminal may print a harmless traceback) |
+| End | `tools/trial_down.sh` (or Ctrl+C in terminals 6 -> 4, then 3, 2, 1; the motion window may print a harmless traceback) |
 
 ## 6. Results (fill in during the trial)
 
