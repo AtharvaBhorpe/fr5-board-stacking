@@ -1,4 +1,4 @@
-# Vision 1: overhead board detection, wrist depth and supervised pick / place (branch `feat/vision1-overhead`)
+# Vision 1 (overhead cam) + Vision 2 (wrist cam): board detection, wrist depth and supervised pick / place (branch `feat/vision1-overhead`)
 
 This branch is a standalone pixi workspace (ROS 2 Humble, RoboStack) that runs **next to** the robot workspace
 `fr5-board-stacking` (branch `feat/robot-motion-gripper`) on the same machine and ROS domain. It gives you:
@@ -26,7 +26,31 @@ point cloud of the rail and two boards, green board markers and red template mar
 *`robot/rviz.sh` on the real robot right after a successful VARc pick and place (status line, both cameras, variant
 buttons, log; 3D: robot, D405 point cloud, green = detected boards, red = template poses).*
 
-Contents: [Quick start](#1-quick-start) · [Environments and tasks](#2-environments-and-tasks) ·
+## Where this branch sits in the team graph
+
+![Team architecture graph (planned): Main control loop (maybe state machines) in the centre, connected to an LLM
+agent (task scheduling, adds intelligence), vis-irl mapping for Vision 1 (image pixels to robot base coordinates),
+gripper controller and movement controller (both to the robot), Vision 1 overhead cam (board location, board
+variants, areas processing / drop-off, obstacles such as hands or unknown objects) and Vision 2 wrist cam (depth
+perception while picking a board). Colour legend in the drawing: green = done, tested and verified; blue = no work
+done yet; yellow = lagging; orange = seriously lagging](docs/img/team_architecture_graph.png)
+
+*The team's planned architecture, used by all agents for development (status colours as drawn by the team).*
+
+**The two bottom nodes, Vision 1 (overhead cam) and Vision 2 (wrist cam), both live in this branch and this pixi
+workspace** (`feat/vision1-overhead`, `vision1-overhead/`). The name says "vision1", but the wrist camera work
+(Vision 2) is here too. Map from the graph to the code:
+
+| Graph node | Where | What it provides here |
+|---|---|---|
+| **Vision 1, overhead cam** | **this branch**: `vision1/node.py`, `detect.py`, `seg.py`, `table.py` | board location (`x`, `y`, `yaw` in `base_link`), variant (`VARa` / `VARb` / `VARc` / `UNKWN`), areas (`zone` pick / drop, `destinations` = templates), obstacles (`rejected`: hand / arm / unknown blobs; `occluded` / `covered_by`: boards under boards). API: `/vision/boards`, `/vision/detect`, `/vision/image`, `/vision/markers` |
+| **Vision 2, wrist cam** | **this branch**: `pixi run wrist` (`vision1/wrist.launch.py`, `config/d405.yaml`), `robot/wrist_depth.py`, `robot/check_wrist.py` | depth while picking: board / stack top under the cup (pick height) and stack height on the template (place height); D405 image + point cloud on the robot model. API: `/wrist/wrist_camera/*` topics, `WristDepth.measure()` |
+| vis-irl mapping for Vision 1 | `feat/vision-transform` (calibration app) -> `config/calib.yaml` here, used by `vision1/table.py` | pixel -> `base_link` x / y (table-plane homography, rms ~1.4 mm) |
+| Main control loop | `feat/task-main-controller` (planned); here `robot/pick_one.py` is a minimal supervised loop (one board per run) and the RViz panel its UI | consumes `/vision/boards` + `WristDepth`, sends `/motion/*`, `/gripper/*`, `/scene/*` |
+| LLM agent | not here; hook ready: `/pick_panel/request` (`VARa` / `VARb` / `VARc` / `stop`) and `/pick_panel/log` | ask for a pick by variant, read the outcome |
+| Gripper controller, movement controller, robot | `fr5-board-stacking` (`feat/robot-motion-gripper`): `hk_fr5_gripper`, `hk_fr5_motion`, `hk_fr5_moveit_config` | `/gripper/grip`, `/gripper/release`, `/gripper/state`, `/motion/move_to`, `/motion/move_delta`, `/scene/*` (section 4.6) |
+
+Contents: [Team graph](#where-this-branch-sits-in-the-team-graph) · [Quick start](#1-quick-start) · [Environments and tasks](#2-environments-and-tasks) ·
 [Data flow](#3-data-flow) · [ROS interface](#4-ros-interface-reference) · [`/vision/boards` JSON](#5-visionboards-json-schema) ·
 [Coordinates](#6-coordinate-conventions) · [pick_one.py](#7-pick_onepy-supervised-pick--place) ·
 [RViz panel](#8-rviz-pick-panel) · [Wrist D405](#9-wrist-camera-realsense-d405) · [Integration recipes](#10-integration-recipes) ·
