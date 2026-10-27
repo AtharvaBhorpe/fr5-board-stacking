@@ -48,6 +48,7 @@ STATUS = {0: "UNKNOWN", 1: "ACCEPTED", 2: "EXECUTING", 3: "CANCELING", 4: "SUCCE
 ap = argparse.ArgumentParser()
 ap.add_argument("--dir", default="")
 ap.add_argument("--verbose", action="store_true", help="full console view (the files are always complete)")
+ap.add_argument("--lite", action="store_true", help="demo: no raw vision / world / joints / tcp streams (TM-31)")
 args = ap.parse_args()
 args.quiet = not args.verbose
 RUN = args.dir or (os.path.join(os.environ["HK_LIVE_DIR"], "monitor") if os.environ.get("HK_LIVE_DIR") else
@@ -118,8 +119,8 @@ def on_events(m):
 
 
 def on_world(m):
-    d = message_to_ordereddict(m)
-    log("world", d, "world_raw.jsonl")
+    if not args.lite:
+        log("world", message_to_ordereddict(m), "world_raw.jsonl")
     zs = {z.name: (z.state, z.stack_count, round(z.stack_top_z, 4), round(z.base_z, 4), z.board_id) for z in m.zones}
     bs = sorted((b.id, b.variant, b.label, b.location, b.zone, round(b.x, 3), round(b.y, 3)) for b in m.boards)
     snap = {"vision_ok": m.vision_ok, "held": m.held_board_id, "zones": zs, "gripper": m.gripper_state,
@@ -151,8 +152,9 @@ def on_vision(m):
     S["last_arrival"] = now
     S["lags"].append(now - stamp)
     S["frames"] += 1
-    F["vision_raw.jsonl"].write(json.dumps(clean({"t": now, "gap": gap, "lag": now - stamp, "problems": problems,
-                                                  "frame": data})) + "\n")
+    if not args.lite:
+        F["vision_raw.jsonl"].write(json.dumps(clean({"t": now, "gap": gap, "lag": now - stamp, "problems": problems,
+                                                      "frame": data})) + "\n")
     if problems:
         say(f"VIS  parse problems: {problems}", important=True)
     if gap is not None and gap > 1.0:
@@ -256,7 +258,8 @@ def main():
     n.create_subscription(String, "/vision/boards", on_vision, 10)
     n.create_subscription(Log, "/rosout", on_rosout, 1000)
     n.create_subscription(GripperState, "/gripper/state", on_gripper, LATCHED)
-    n.create_subscription(JointState, "/joint_states", on_joints, qos_profile_sensor_data)
+    if not args.lite:
+        n.create_subscription(JointState, "/joint_states", on_joints, qos_profile_sensor_data)
     for k, typ in SKILLS.items():
         n.create_subscription(GoalStatusArray, f"/task/skills/{k}/_action/status", status_cb(f"skill {k}"), 10)
         n.create_subscription(typ.Impl.FeedbackMessage, f"/task/skills/{k}/_action/feedback", feedback_cb(f"skill {k}"), 10)
@@ -272,7 +275,8 @@ def main():
                         "q": [tr.rotation.x, tr.rotation.y, tr.rotation.z, tr.rotation.w]})
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             pass
-    n.create_timer(0.1, tcp)
+    if not args.lite:
+        n.create_timer(0.1, tcp)
     n.create_timer(30.0, index_ros)
     say(f"live monitor: logging everything to {RUN}", important=True)
     try:

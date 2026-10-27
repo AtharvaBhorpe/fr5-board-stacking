@@ -9,6 +9,7 @@
 #     --no-gui: do not open a terminal window (attach later: tmux attach -t trial)
 #
 # Windows: 0 monitor | 1 motion | 2 vision (or fake) | 3 world | 4 skills | 5 ctrl | 6 cli (tc = task_cli function)
+#          | 7 bridge (agent_bridge: $HK_LIVE_DIR/bridge/state.txt, events.txt, cmd pipe)
 # In tmux: Ctrl+b then a window number = switch window, Ctrl+b d = detach (everything keeps running).
 # The real robot does NOT move at start-up: motion only on a job / command (user's OK, CLAUDE.md section 3).
 set -u
@@ -18,7 +19,7 @@ VW=~/hackathon/wt/feat-vision1-overhead
 PX=~/.pixi/bin/pixi
 TMUX_BIN="env -u TERMINFO TERM=xterm-256color $HOME/.pixi/bin/tmux"   # kitty: TERM / TERMINFO unusable for pixi tmux
 export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/usr/share/terminfo:/lib/terminfo"   # pixi tmux: system terminfo
-S=trial
+S=${HK_TMUX_SESSION:-trial}   # HK_TMUX_SESSION: offline tests next to a running trial
 MODE=debug; SIM=0; RVIZ=false; GUI=1
 for a in "$@"; do
   case "$a" in
@@ -58,7 +59,7 @@ svc() { ros service list | grep -qx "$1"; }
 pub() { ros topic info "$1" | grep -q "Publisher count: [1-9]"; }
 
 echo "starting tmux session '$S' ($MODE$( [ $SIM = 1 ] && echo ', SIM'))"
-win 0 monitor $WT "$PX run python3 tools/live_monitor.py"
+win 0 monitor $WT "$PX run python3 tools/live_monitor.py $( [ $MODE = demo ] && echo --lite )"
 if ! $TMUX_BIN has-session -t $S 2>/dev/null; then echo "ERROR: tmux did not start (see the message above)"; exit 1; fi
 if [ $SIM = 1 ]; then
   win 1 motion $MW "$PX run sim use_rviz:=$RVIZ"
@@ -78,6 +79,7 @@ win 4 skills $WT "$PX run ros2 run hk_fr5_task skill_server --ros-args \$HK_NODE
 win 5 ctrl $WT "$PX run ros2 run hk_fr5_task task_main_controller --ros-args \$HK_NODE_ARGS"
 wait_for "controller (/task/list_jobs)" 60 svc /task/list_jobs
 win 6 cli $WT "tc() { $PX run python3 $WT/tools/task_cli.py \"\$@\"; }; echo 'tc help = all commands'; sleep 3; tc status"
+win 7 bridge $WT "$PX run python3 tools/agent_bridge.py"
 $TMUX_BIN select-window -t $S:6
 echo "all started. Logs: $HK_LIVE_DIR"
 echo "attach: tools/trial_attach.sh   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: tools/trial_down.sh"
