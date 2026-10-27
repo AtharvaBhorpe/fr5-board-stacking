@@ -42,7 +42,7 @@ hands) is in `rejected` with a `reason`.
 **Learned model (opt-in, `-p model:=true`)**: boards may touch / overlap. `boards` then holds the top boards
 (full rectangle visible); `variant` can be `UNKWN` (class confidence < 0.6, or a top board whose size matches no
 variant). Extra fields `conf`, `model_class`, `top`. New list `occluded`: boards partly under others, `x` / `y` of
-the visible part, `covered_by` = ids of the boards on top (fallback: touching boards). ~0.35 s per frame on CPU.
+the visible part, `covered_by` = ids of the boards on top (fallback: touching boards). GPU env (`pixi run -e gpu vision`): model 20-30 ms, full frame ~100 ms, 5 Hz at ~1.3 CPU cores; CPU env: ~1 s per frame.
 
 `destinations`: one per visible template tag (DICT_5X5_100, ids 1 / 2 / 16 = VARa / VARb / VARc), anywhere in the
 image: `variant`, `tag_id`, `x`, `y`, `yaw` (target board pose, base_link, team offsets from
@@ -55,7 +55,7 @@ Board +X is the long edge for VARa and the short edge for VARb / VARc (team geom
 
 ```bash
 cd fr5-board-stacking && pixi run robot use_rviz:=false   # or: pixi run sim use_rviz:=false
-cd vision1-overhead   && pixi run vision                  # add --ros-args -p model:=true for stacks
+cd vision1-overhead   && pixi run -e gpu vision --ros-args -p model:=true   # GPU (NVIDIA); no GPU: pixi run vision
 cd vision1-overhead   && robot/rviz.sh                    # builds the panel (robot env), opens RViz
 ```
 

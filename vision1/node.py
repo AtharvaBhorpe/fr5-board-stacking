@@ -12,6 +12,9 @@ import sys
 import time
 from collections import deque
 
+# one thread per core in numpy (OpenBLAS) / OpenCV spun ~9 cores at 5 Hz on small matrices: cap before importing
+for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "2")
 import cv2
 import numpy as np
 import rclpy
@@ -22,11 +25,13 @@ from std_msgs.msg import String
 from std_srvs.srv import Trigger
 from visualization_msgs.msg import Marker, MarkerArray
 
+cv2.setNumThreads(2)
 sys.path.insert(0, os.path.dirname(__file__))
 from detect import detect, draw  # noqa: E402
 import table  # noqa: E402
 
-DEST_MEMORY = 10.0  # s a destination tag stays valid after it was last seen
+DEST_MEMORY = 60.0  # s a destination tag stays valid after it was last seen (templates are fixed; the arm covers them
+                    # >10 s while placing, real robot 2026-10-27)
 DEST_FRAMES = 15    # median over the last N detections of a tag: single frames jitter ~2.5 mm / 1 deg (p95)
 
 
