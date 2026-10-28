@@ -1,5 +1,6 @@
 """Demo page for the vacuum-failure recovery (TM-47): one big button 'Simulate vacuum failure' + 'Now', and
-'Pause' / 'Resume' for the main controller (TM-48: 'pause' / 'resume' through the bridge, as `tc pause` / `tc resume`).
+'Pause' / 'Resume' / 'Stop' for the main controller (TM-48 / TM-50: through the bridge, as `tc pause` / `tc resume` /
+`tc stop`; stop = smooth software stop now, a held board goes to the fault zone on resume - NOT an e-stop).
 
     pixi run python3 tools/vacuum_demo_ui.py [--port 8765] [--lan] [--delay 1.5] [--bridge DIR]
     (started by tools/trial_up.sh as window 8 'demo-ui'; open http://localhost:8765)
@@ -96,15 +97,17 @@ h1{font-weight:600;font-size:clamp(20px,4vw,34px);margin:0;text-align:center}
 #msg{font-size:clamp(16px,2.6vw,24px);color:#fc6;text-align:center}
 #ev{font-family:ui-monospace,monospace;font-size:13px;color:#aaa;white-space:pre-wrap;max-width:900px;width:100%}
 .warn{color:#f88;font-size:14px}
-#pause{border-color:#fc6}#resume{border-color:#6c6}.on{background:#553 !important}
+#pause{border-color:#fc6}#resume{border-color:#6c6}#stop{border-color:#f55;color:#f99}.on{background:#553 !important}
 </style></head><body>
 <h1>FR5 board stacking - vacuum failure recovery</h1>
 <button id="arm" onclick="post(armed?'/disarm':'/arm')">Simulate vacuum failure</button>
 <div class="row"><button class="small" onclick="post('/now')">Now (while holding)</button>
 <button class="small" id="pause" onclick="post('/pause')">Pause</button>
-<button class="small" id="resume" onclick="post('/resume')">Resume</button></div>
+<button class="small" id="resume" onclick="post('/resume')">Resume</button>
+<button class="small" id="stop" onclick="post('/stop')">Stop</button></div>
 <div id="msg"></div><div id="st"></div><div id="ev"></div>
-<div class="warn">Real robot: the gripper is switched - a person at the e-stop.</div>
+<div class="warn">Real robot: the gripper is switched - a person at the e-stop. Stop = software stop (smooth, a held
+board goes to the fault zone on Resume), NOT an emergency stop.</div>
 <script>
 let armed=false;
 async function post(p){await fetch(p,{method:'POST'});poll();}
@@ -167,8 +170,8 @@ def main():
                     A["msg"] = f"armed: vacuum failure {a.delay:.1f} s into the next carry"
                 elif self.path == "/disarm":
                     A["armed"], A["carry_t"], A["msg"] = False, None, "cancelled"
-                elif self.path in ("/pause", "/resume"):          # TM-48: whole controller (finish the skill /
-                    cmd = self.path[1:]                               # place a held board first, then hold)
+                elif self.path in ("/pause", "/resume", "/stop"):  # TM-48 / TM-50: whole controller (pause:
+                    cmd = self.path[1:]                               # finish the skill; stop: cancel it now, smooth)
                     err = send(fifo, cmd)
                     A["msg"] = err or f"{cmd} sent at {time.strftime('%H:%M:%S')}"
                 elif self.path == "/now":
