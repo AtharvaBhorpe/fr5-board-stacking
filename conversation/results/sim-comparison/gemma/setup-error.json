@@ -1,0 +1,35 @@
+{
+  "variant": "VARa",
+  "chat": true,
+  "passed": false,
+  "seconds": 0.87,
+  "phases": [
+    "idle"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "idle",
+    "stamp": 1793117636.014,
+    "task_id": "",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARa",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "system",
+      "text": "Local model unavailable; no task dispatched. HTTP Error 400: Bad Request",
+      "phase": "error"
+    }
+  ]
+}

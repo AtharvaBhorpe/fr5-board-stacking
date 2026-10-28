@@ -1,0 +1,105 @@
+{
+  "kind": "real_supervised_pick",
+  "variant": "VARb",
+  "seconds": 65.24321957599932,
+  "started": true,
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "REAL FR5",
+    "phase": "completed",
+    "stamp": 1793121350.682,
+    "task_id": "260cf7bf-22e0-4208-9c2d-b472b66afa05",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARb",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARb. Confirm each descent in the panel.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is waiting for your Confirm button.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is waiting for your Confirm button.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    }
+  ],
+  "logs": [
+    "[panel] VARb requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARb --speed 0.1",
+    "robot hardware: REAL FR5",
+    "pick height: wrist D405 depth",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source 'C920', message age 0.09 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "  looking at the VARb template with the wrist camera (boards already on it?)",
+    "action: accepted",
+    "  template look: success=True SUCCESS: target reached",
+    "  D405: template stack top z=-0.0545, 0.5 mm above the empty template (~0 board(s) on it)",
+    "  destination VARb (tag 2) at x=-0.4110 y=0.2784 yaw=-94.3 deg, place top z=-0.049 (D405), median of 15 frames, seen 0.0 s ago",
+    "board VARb at x=-0.1951 y=-0.4304 top z=-0.055 yaw=-17.0 deg, size [150.9, 206.2] mm, inside_calibration=True",
+    "action: accepted",
+    "  hover: success=True SUCCESS: target reached",
+    "  D405: board top z=-0.0543 (+0.7 mm vs one board; 5.7 mm above the table), cup -> board 99.3 mm, then 4 mm press",
+    ">>> cup centred above the board? ENTER = go down and grip, Ctrl+C = stop ",
+    "[panel] confirmed (button)",
+    "  going down 103 mm",
+    "action: accepted",
+    "  down: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  grip: success=True SUCCESS: vacuum achieved in 0.61 s time_to_vacuum=0.61s",
+    "action: accepted",
+    "  lift: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  carry: success=True SUCCESS: target reached",
+    ">>> ENTER = put it down on its template and release ",
+    "[panel] confirmed (button)",
+    "action: accepted",
+    "  down again: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  release: success=True SUCCESS: released (blow-off 2.0 s)",
+    "action: accepted",
+    "  lift empty: success=True SUCCESS: target reached",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "done",
+    "[panel] pick_one finished, exit code 0"
+  ]
+}

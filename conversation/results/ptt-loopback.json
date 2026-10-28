@@ -1,0 +1,14 @@
+{
+  "text": "The pick failed because the vacuum failed.",
+  "capture": {
+    "held_seconds": 3.327,
+    "audio_seconds": 3.3,
+    "peak": 0.3856135904788971,
+    "rms": 0.05149446055293083,
+    "recorder_error": ""
+  },
+  "hint": "Audio arrived, but no speech was recognized. Check microphone input level and try again.",
+  "passed": true,
+  "input": "saved Phonon WAV via isolated virtual source",
+  "hardware_microphone_captured": false
+}

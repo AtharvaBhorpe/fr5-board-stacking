@@ -1,0 +1,93 @@
+{
+  "scenario": "cancel",
+  "seconds": 3.7,
+  "batch": {
+    "id": "a4c153a7-f1f5-49d0-bb96-ce225ebfefcf",
+    "total": 2,
+    "completed": 0,
+    "phase": "stopped",
+    "remaining": [
+      "VARb",
+      "VARb"
+    ],
+    "reason": "Operator cancellation; remaining picks discarded."
+  },
+  "panel": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "stopped",
+    "stamp": 1793125430.46,
+    "task_id": "db810648-e6a2-47cd-b8d5-7b9df58bb3b6",
+    "waiting": false
+  },
+  "tasks": [
+    {
+      "id": "db810648-e6a2-47cd-b8d5-7b9df58bb3b6",
+      "variant": "VARb",
+      "stamp": 1793125428.1055229
+    }
+  ],
+  "logs": [
+    "[panel] VARb requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARb --speed 0.3 --no-wrist-height",
+    "robot hardware: MOCK (simulation, arm will NOT move)",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source '/tmp/robot-batch-demo/scene.png', message age 0.13 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "[panel] Ctrl+C sent to pick_one",
+    "cancel: controller returned a result",
+    "[panel] pick_one finished, stopped"
+  ],
+  "answers": [
+    {
+      "role": "user",
+      "text": "pick two variant B boards",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Starting 2 picks, one at a time. Say stop to cancel the remaining picks.",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARb. Pick, placement, and release will proceed automatically.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "user",
+      "text": "stop",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Cancellation requested. This is not an emergency stop; check the controller confirms the stop.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Batch stopped. Batch interrupted; remaining picks discarded.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The pick script stopped. Check the controller log for action cancellation confirmation; this is not an emergency stop.",
+      "phase": "ready"
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,1 @@
+{"ready": true, "model": "google/gemma-4-E2B-it", "device": "cuda:0", "backend": "gemma", "placement": "GPU vision/language; CPU per-layer embedding/audio", "dtype": "torch.bfloat16", "gpu_allocated_mib": 1853, "speech_recognition": "base.en / CPU int8"}

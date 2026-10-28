@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "scope": "ROS transport with simulated panel and VLM stub",
+  "results": [
+    {
+      "scenario": "success",
+      "dispatches": 2,
+      "total": 2,
+      "completed": 2,
+      "phase": "completed",
+      "remaining": [],
+      "reason": ""
+    },
+    {
+      "scenario": "failure",
+      "dispatches": 1,
+      "total": 2,
+      "completed": 0,
+      "phase": "failed",
+      "remaining": [
+        "VARb",
+        "VARb"
+      ],
+      "reason": "Controller reported failed; remaining picks discarded."
+    },
+    {
+      "scenario": "unchanged",
+      "dispatches": 1,
+      "total": 2,
+      "completed": 0,
+      "phase": "failed",
+      "remaining": [
+        "VARb",
+        "VARb"
+      ],
+      "reason": "Source-board removal was not verified in three fresh frames. Inspect the scene; no retry."
+    },
+    {
+      "scenario": "cancel",
+      "dispatches": 1,
+      "total": 2,
+      "completed": 0,
+      "phase": "stopped",
+      "remaining": [
+        "VARb",
+        "VARb"
+      ],
+      "reason": "Operator cancellation; remaining picks discarded."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "state": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "stopped",
+    "stamp": 1793118992.657,
+    "task_id": "674fb128-7989-4b3d-980c-2783b9d3acf2",
+    "waiting": false
+  },
+  "cancel_log": [
+    "cancel: controller returned a result"
+  ],
+  "duplicate_suppressed": true
+}

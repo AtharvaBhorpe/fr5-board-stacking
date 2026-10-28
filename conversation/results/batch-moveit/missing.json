@@ -1,0 +1,39 @@
+{
+  "scenario": "missing",
+  "seconds": 0.0,
+  "batch": {
+    "id": "1c5fce3b-eeff-422c-9820-02e1e0ece224",
+    "total": 2,
+    "completed": 0,
+    "phase": "failed",
+    "remaining": [
+      "VARb",
+      "VARb"
+    ],
+    "reason": "Source-board removal was not verified in three fresh frames. Inspect the scene; no retry."
+  },
+  "panel": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793125476.028,
+    "task_id": "9a998dda-6974-47ae-8e63-41bd236cc0a0",
+    "waiting": false
+  },
+  "tasks": [],
+  "logs": [],
+  "answers": [
+    {
+      "role": "user",
+      "text": "pick three variant B boards",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Only 2 freely visible VARb boards; requested 3.",
+      "phase": "ready"
+    }
+  ],
+  "passed": true
+}

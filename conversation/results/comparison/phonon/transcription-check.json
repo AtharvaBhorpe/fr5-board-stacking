@@ -1,0 +1,74 @@
+[
+  {
+    "model": "qwen",
+    "case": "describe",
+    "source": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a yellow-bordered board is being handled by the robot's arm.",
+    "whisper_transcript": "The FR5 robot work cell is positioned over a black table with several white and red boards,  and a yellow-boarded board is being handled by the robot's arm."
+  },
+  {
+    "model": "qwen",
+    "case": "ambiguous",
+    "source": "Pick the white board with the yellow border.",
+    "whisper_transcript": "Pick the white board with the yellow border."
+  },
+  {
+    "model": "qwen",
+    "case": "hidden_count",
+    "source": "There are 2 sheets stacked under the white board.",
+    "whisper_transcript": "There are two sheets stacked under the white board."
+  },
+  {
+    "model": "qwen",
+    "case": "failed_task",
+    "source": "The pick failed because the vacuum failed.",
+    "whisper_transcript": "The pick failed because the vacuum failed."
+  },
+  {
+    "model": "qwen",
+    "case": "not_completed",
+    "source": "Yes, the board has been placed.",
+    "whisper_transcript": "Yes, the board has been placed."
+  },
+  {
+    "model": "qwen",
+    "case": "metric_precision",
+    "source": "The exact cup-to-board gap is 100 millimetres.",
+    "whisper_transcript": "The exact cup to board gap is 100 millimeters."
+  },
+  {
+    "model": "gemma",
+    "case": "describe",
+    "source": "The scene shows a robot arm with a tool positioned over several rectangular cards on a dark surface.",
+    "whisper_transcript": "The scene shows a robot arm with a tool positioned over several rectangular cards on a dark surface."
+  },
+  {
+    "model": "gemma",
+    "case": "ambiguous",
+    "source": "I see three white boards on the surface. Which white board would you like me to pick?",
+    "whisper_transcript": "I see three white boards on the surface. Which white board would you like me to pick?"
+  },
+  {
+    "model": "gemma",
+    "case": "hidden_count",
+    "source": "There are three sheets stacked under the white board.",
+    "whisper_transcript": "There are three sheets stacked under the white board."
+  },
+  {
+    "model": "gemma",
+    "case": "failed_task",
+    "source": "The pick failed because there was a vacuum failure.",
+    "whisper_transcript": "The pick failed because there was a vacuum failure."
+  },
+  {
+    "model": "gemma",
+    "case": "not_completed",
+    "source": "No, there are three boards visible on the surface.",
+    "whisper_transcript": "No, there are three boards visible on the surface."
+  },
+  {
+    "model": "gemma",
+    "case": "metric_precision",
+    "source": "I do not have the information about the exact cup-to-board gap in millimetres.",
+    "whisper_transcript": "I do not have the information about the exact cup-to-board gap in millimeters."
+  }
+]

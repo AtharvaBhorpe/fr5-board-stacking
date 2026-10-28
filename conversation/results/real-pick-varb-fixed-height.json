@@ -1,0 +1,86 @@
+{
+  "kind": "real_fixed_single_board_pick",
+  "started": true,
+  "seconds": 48.61190015399916,
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "REAL FR5",
+    "phase": "completed",
+    "stamp": 1793123684.162,
+    "task_id": "52c22c71-705d-4d0c-b488-c417a41fb93e",
+    "waiting": false
+  },
+  "logs": [
+    "[panel] VARb requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARb --speed 0.1 --fixed-pick-height --press 3",
+    "robot hardware: REAL FR5",
+    "pick height: wrist D405 depth",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source 'C920', message age 0.09 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "  looking at the VARb template with the wrist camera (boards already on it?)",
+    "action: accepted",
+    "  template look: success=True SUCCESS: target reached",
+    "  D405: template stack top z=-0.0540, 1.0 mm above the empty template (~0 board(s) on it)",
+    "  destination VARb (tag 2) at x=-0.4031 y=0.2816 yaw=-93.0 deg, place top z=-0.049 (D405), median of 15 frames, seen 0.0 s ago",
+    "board VARb at x=-0.1806 y=-0.4674 top z=-0.055 yaw=17.7 deg, size [149.7, 207.9] mm, inside_calibration=True",
+    "action: accepted",
+    "  hover: success=True SUCCESS: target reached",
+    "  fixed single-board pick: top z=-0.0550, press=3.0 mm, target z=-0.0580; wrist placement measurement remains enabled",
+    "  going down 103 mm",
+    "action: accepted",
+    "  down: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  grip: success=True SUCCESS: vacuum achieved in 0.57 s time_to_vacuum=0.57s",
+    "action: accepted",
+    "  lift: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  carry: success=True SUCCESS: target reached",
+    "  put it down on its template and release",
+    "action: accepted",
+    "  down again: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  release: success=True SUCCESS: released (blow-off 2.0 s)",
+    "action: accepted",
+    "  lift empty: success=True SUCCESS: target reached",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "done",
+    "[panel] pick_one finished, exit code 0"
+  ],
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick variant B",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARb. Pick, placement, and release will proceed automatically.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    }
+  ],
+  "gripper": {
+    "state": "IDLE",
+    "vacuum_on": false,
+    "blow_off_on": false
+  }
+}

@@ -52,7 +52,24 @@ onnxruntime = { version = "*", build = "*cuda*" }
 transformers = ">=4.57,<5"
 accelerate = ">=1,<2"
 faster-whisper = ">=1.1,<2"
+ptts = "==0.5.0"
 
 [environments]
 train = { features = ["train"], no-default-feature = true }
 gpu = { features = ["gpu"] }
+speech = { features = ["speech"], no-default-feature = true }
+
+[feature.speech]
+platforms = ["linux-64-cuda"]
+
+[feature.speech.dependencies]
+python = "3.12.*"
+pytorch-gpu = "*"
+torchvision = "*"
+
+[feature.speech.pypi-dependencies]
+transformers = ">=5.7,<6"
+librosa = ">=0.11,<0.12"
+accelerate = ">=1,<2"
+faster-whisper = ">=1.1,<2"
+ptts = "==0.5.0"

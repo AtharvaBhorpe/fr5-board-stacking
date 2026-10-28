@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "engine": "phonon",
+  "normal_playback": true,
+  "stop_seconds": 0.03768381900226814,
+  "replacement": true,
+  "microphone_captured": false,
+  "status": {
+    "engine": "phonon",
+    "model": "hf://gradium/phonon-40m-multilingual@1537ce46c64f42903e0d608b132ccb073dac46d2",
+    "device": "cpu",
+    "voice": "default",
+    "active": false,
+    "playing": false,
+    "error": null
+  }
+}

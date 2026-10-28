@@ -1,0 +1,62 @@
+{
+  "variant": "VARb",
+  "chat": true,
+  "passed": true,
+  "seconds": 21.37,
+  "phases": [
+    "completed",
+    "running",
+    "waiting"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793117907.96,
+    "task_id": "52e6d898-5886-42d5-b420-7e341a323249",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARb",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARb. Confirm each descent in the panel.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is waiting for your Confirm button.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is waiting for your Confirm button.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    }
+  ]
+}

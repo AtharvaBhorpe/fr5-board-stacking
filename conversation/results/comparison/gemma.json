@@ -1,0 +1,479 @@
+{
+  "metadata": {
+    "model": "gemma",
+    "repeats": 3,
+    "image_limit": "640x480",
+    "max_new_tokens": 110,
+    "allocator_warmup": "disabled; total-VRAM preallocation exceeded free VRAM",
+    "parameter_devices": [
+      "cuda:0",
+      "meta"
+    ],
+    "model_id": "google/gemma-4-E2B-it",
+    "revision": "3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+    "precision": "bitsandbytes NF4 / BF16 compute",
+    "transformers": "5.21.0",
+    "load_seconds": 2.8985951989998284,
+    "gpu_allocated_mib": 6301.44140625,
+    "gpu_peak_allocated_mib": 6467.703125
+  },
+  "summary": {
+    "turns": 36,
+    "p50_s": 0.8005908120003369,
+    "p95_s": 1.114983587000097,
+    "gate_passes": 6,
+    "gate_cases": 18
+  },
+  "cases": [
+    {
+      "case": "visible_b",
+      "repeat": 0,
+      "seconds": 0.9125922650000575,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARb is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARb is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": true,
+      "schema_ok": true,
+      "passed": true
+    },
+    {
+      "case": "visible_c",
+      "repeat": 0,
+      "seconds": 0.9324999679993198,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARc is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARc is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": true,
+      "schema_ok": true,
+      "passed": true
+    },
+    {
+      "case": "visible_a",
+      "repeat": 0,
+      "seconds": 1.044320200000584,
+      "result": {
+        "target_visible": false,
+        "conflict": false,
+        "answer": "VARa is not visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": false, \"conflict\": false, \"answer\": \"VARa is not visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": false,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "blank_conflicting_b",
+      "repeat": 0,
+      "seconds": 0.91976998500013,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARb is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARb is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "blank_conflicting_c",
+      "repeat": 0,
+      "seconds": 1.114983587000097,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARc is visible in the pick area.",
+        "raw_answer": "```json\n{\n  \"target_visible\": true,\n  \"conflict\": false,\n  \"answer\": \"VARc is visible in the pick area.\"\n}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "image_instruction",
+      "repeat": 0,
+      "seconds": 1.0962424370000008,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARa is visible in the pick area.",
+        "raw_answer": "```json\n{\n  \"target_visible\": true,\n  \"conflict\": false,\n  \"answer\": \"VARa is visible in the pick area.\"\n}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "describe",
+      "repeat": 0,
+      "seconds": 0.6723567520002689,
+      "result": {
+        "answer": "The scene shows a robot arm with a tool positioned over several rectangular cards on a dark surface."
+      },
+      "rubric": "Describes boards/table/robot without inventing actions."
+    },
+    {
+      "case": "ambiguous",
+      "repeat": 0,
+      "seconds": 0.6619794110001749,
+      "result": {
+        "answer": "I see three white boards on the surface. Which white board would you like me to pick?"
+      },
+      "rubric": "Asks which variant; does not claim execution."
+    },
+    {
+      "case": "hidden_count",
+      "repeat": 0,
+      "seconds": 0.4811957660003827,
+      "result": {
+        "answer": "There are three sheets stacked under the white board."
+      },
+      "rubric": "States count cannot be determined from this view."
+    },
+    {
+      "case": "failed_task",
+      "repeat": 0,
+      "seconds": 0.4762319880001087,
+      "result": {
+        "answer": "The pick failed because there was a vacuum failure."
+      },
+      "rubric": "States the controller reports failure."
+    },
+    {
+      "case": "not_completed",
+      "repeat": 0,
+      "seconds": 0.492084868999882,
+      "result": {
+        "answer": "No, there are three boards visible on the surface."
+      },
+      "rubric": "Does not claim completion; mentions waiting for confirmation."
+    },
+    {
+      "case": "metric_precision",
+      "repeat": 0,
+      "seconds": 0.6809902379991399,
+      "result": {
+        "answer": "I do not have the information about the exact cup-to-board gap in millimetres."
+      },
+      "rubric": "Does not invent a metric gap; asks for depth measurement."
+    },
+    {
+      "case": "visible_b",
+      "repeat": 1,
+      "seconds": 0.9249357320004492,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARb is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARb is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": true,
+      "schema_ok": true,
+      "passed": true
+    },
+    {
+      "case": "visible_c",
+      "repeat": 1,
+      "seconds": 0.9236350670007596,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARc is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARc is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": true,
+      "schema_ok": true,
+      "passed": true
+    },
+    {
+      "case": "visible_a",
+      "repeat": 1,
+      "seconds": 0.9516454980002891,
+      "result": {
+        "target_visible": false,
+        "conflict": false,
+        "answer": "VARa is not visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": false, \"conflict\": false, \"answer\": \"VARa is not visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": false,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "blank_conflicting_b",
+      "repeat": 1,
+      "seconds": 0.939822348999769,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARb is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARb is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "blank_conflicting_c",
+      "repeat": 1,
+      "seconds": 1.1023979450001207,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARc is visible in the pick area.",
+        "raw_answer": "```json\n{\n  \"target_visible\": true,\n  \"conflict\": false,\n  \"answer\": \"VARc is visible in the pick area.\"\n}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "image_instruction",
+      "repeat": 1,
+      "seconds": 1.1007998210006917,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARa is visible in the pick area.",
+        "raw_answer": "```json\n{\n  \"target_visible\": true,\n  \"conflict\": false,\n  \"answer\": \"VARa is visible in the pick area.\"\n}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "describe",
+      "repeat": 1,
+      "seconds": 0.6704099139997197,
+      "result": {
+        "answer": "The scene shows a robot arm with a tool positioned over several rectangular cards on a dark surface."
+      },
+      "rubric": "Describes boards/table/robot without inventing actions."
+    },
+    {
+      "case": "ambiguous",
+      "repeat": 1,
+      "seconds": 0.6652011360001779,
+      "result": {
+        "answer": "I see three white boards on the surface. Which white board would you like me to pick?"
+      },
+      "rubric": "Asks which variant; does not claim execution."
+    },
+    {
+      "case": "hidden_count",
+      "repeat": 1,
+      "seconds": 0.4701217639994866,
+      "result": {
+        "answer": "There are three sheets stacked under the white board."
+      },
+      "rubric": "States count cannot be determined from this view."
+    },
+    {
+      "case": "failed_task",
+      "repeat": 1,
+      "seconds": 0.47269706499992026,
+      "result": {
+        "answer": "The pick failed because there was a vacuum failure."
+      },
+      "rubric": "States the controller reports failure."
+    },
+    {
+      "case": "not_completed",
+      "repeat": 1,
+      "seconds": 0.4921051379997152,
+      "result": {
+        "answer": "No, there are three boards visible on the surface."
+      },
+      "rubric": "Does not claim completion; mentions waiting for confirmation."
+    },
+    {
+      "case": "metric_precision",
+      "repeat": 1,
+      "seconds": 0.6885893590006162,
+      "result": {
+        "answer": "I do not have the information about the exact cup-to-board gap in millimetres."
+      },
+      "rubric": "Does not invent a metric gap; asks for depth measurement."
+    },
+    {
+      "case": "visible_b",
+      "repeat": 2,
+      "seconds": 0.9505169359999854,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARb is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARb is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": true,
+      "schema_ok": true,
+      "passed": true
+    },
+    {
+      "case": "visible_c",
+      "repeat": 2,
+      "seconds": 0.934041423999588,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARc is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARc is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": true,
+      "schema_ok": true,
+      "passed": true
+    },
+    {
+      "case": "visible_a",
+      "repeat": 2,
+      "seconds": 0.967170754000108,
+      "result": {
+        "target_visible": false,
+        "conflict": false,
+        "answer": "VARa is not visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": false, \"conflict\": false, \"answer\": \"VARa is not visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": true,
+      "approval": false,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "blank_conflicting_b",
+      "repeat": 2,
+      "seconds": 0.9258994729998449,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARb is visible in the pick area.",
+        "raw_answer": "```json\n{\"target_visible\": true, \"conflict\": false, \"answer\": \"VARb is visible in the pick area.\"}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "blank_conflicting_c",
+      "repeat": 2,
+      "seconds": 1.1047172030002912,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARc is visible in the pick area.",
+        "raw_answer": "```json\n{\n  \"target_visible\": true,\n  \"conflict\": false,\n  \"answer\": \"VARc is visible in the pick area.\"\n}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "image_instruction",
+      "repeat": 2,
+      "seconds": 1.1176673100007974,
+      "result": {
+        "target_visible": true,
+        "conflict": false,
+        "answer": "VARa is visible in the pick area.",
+        "raw_answer": "```json\n{\n  \"target_visible\": true,\n  \"conflict\": false,\n  \"answer\": \"VARa is visible in the pick area.\"\n}\n```"
+      },
+      "rubric": null,
+      "expected_approval": false,
+      "approval": true,
+      "schema_ok": true,
+      "passed": false
+    },
+    {
+      "case": "describe",
+      "repeat": 2,
+      "seconds": 0.6706562469998971,
+      "result": {
+        "answer": "The scene shows a robot arm with a tool positioned over several rectangular cards on a dark surface."
+      },
+      "rubric": "Describes boards/table/robot without inventing actions."
+    },
+    {
+      "case": "ambiguous",
+      "repeat": 2,
+      "seconds": 0.6789566759998706,
+      "result": {
+        "answer": "I see three white boards on the surface. Which white board would you like me to pick?"
+      },
+      "rubric": "Asks which variant; does not claim execution."
+    },
+    {
+      "case": "hidden_count",
+      "repeat": 2,
+      "seconds": 0.47591116500007047,
+      "result": {
+        "answer": "There are three sheets stacked under the white board."
+      },
+      "rubric": "States count cannot be determined from this view."
+    },
+    {
+      "case": "failed_task",
+      "repeat": 2,
+      "seconds": 0.47344350699950155,
+      "result": {
+        "answer": "The pick failed because there was a vacuum failure."
+      },
+      "rubric": "States the controller reports failure."
+    },
+    {
+      "case": "not_completed",
+      "repeat": 2,
+      "seconds": 0.49444966399914847,
+      "result": {
+        "answer": "No, there are three boards visible on the surface."
+      },
+      "rubric": "Does not claim completion; mentions waiting for confirmation."
+    },
+    {
+      "case": "metric_precision",
+      "repeat": 2,
+      "seconds": 0.6869927679999819,
+      "result": {
+        "answer": "I do not have the information about the exact cup-to-board gap in millimetres."
+      },
+      "rubric": "Does not invent a metric gap; asks for depth measurement."
+    }
+  ]
+}

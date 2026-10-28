@@ -1,0 +1,54 @@
+{
+  "synthetic": true,
+  "human_microphone_test": false,
+  "cases": [
+    {
+      "input": "Pick two variant B boards.",
+      "level": "normal",
+      "transcript": "Pick two variant B boards.",
+      "normalized": "Pick two variant B boards.",
+      "passed": true,
+      "wav": "/home/ub26/Projects/durst_hackathon/vision1-overhead/conversation/results/voice-batch/0-normal.wav"
+    },
+    {
+      "input": "Pick two variant B boards.",
+      "level": "quiet",
+      "transcript": "Pick two variant B boards.",
+      "normalized": "Pick two variant B boards.",
+      "passed": true,
+      "wav": "/home/ub26/Projects/durst_hackathon/vision1-overhead/conversation/results/voice-batch/0-quiet.wav"
+    },
+    {
+      "input": "Pick three variant A boards.",
+      "level": "normal",
+      "transcript": "Pick three variant A boards.",
+      "normalized": "Pick three variant A boards.",
+      "passed": true,
+      "wav": "/home/ub26/Projects/durst_hackathon/vision1-overhead/conversation/results/voice-batch/1-normal.wav"
+    },
+    {
+      "input": "Pick three variant A boards.",
+      "level": "quiet",
+      "transcript": "Pick three variant A boards.",
+      "normalized": "Pick three variant A boards.",
+      "passed": true,
+      "wav": "/home/ub26/Projects/durst_hackathon/vision1-overhead/conversation/results/voice-batch/1-quiet.wav"
+    },
+    {
+      "input": "Sort all visible boards.",
+      "level": "normal",
+      "transcript": "Sort all visible boards.",
+      "normalized": "Sort all visible boards.",
+      "passed": true,
+      "wav": "/home/ub26/Projects/durst_hackathon/vision1-overhead/conversation/results/voice-batch/2-normal.wav"
+    },
+    {
+      "input": "Sort all visible boards.",
+      "level": "quiet",
+      "transcript": "Sort all visible boards.",
+      "normalized": "Sort all visible boards.",
+      "passed": true,
+      "wav": "/home/ub26/Projects/durst_hackathon/vision1-overhead/conversation/results/voice-batch/2-quiet.wav"
+    }
+  ]
+}

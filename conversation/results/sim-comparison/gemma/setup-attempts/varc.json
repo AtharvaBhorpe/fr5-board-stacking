@@ -1,0 +1,30 @@
+{
+  "variant": "VARc",
+  "chat": true,
+  "passed": false,
+  "seconds": 0.0,
+  "phases": [
+    "stopped"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "stopped",
+    "stamp": 1793117831.487,
+    "task_id": "a199cbdf-5d24-46ae-8fd2-25e120432590",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARc",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "I am still processing the previous question. Stop remains available.",
+      "phase": "ready"
+    }
+  ]
+}

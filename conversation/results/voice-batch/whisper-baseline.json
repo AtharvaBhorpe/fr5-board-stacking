@@ -1,0 +1,103 @@
+{
+  "health": {
+    "ready": true,
+    "model": "google/gemma-4-E2B-it-qat-q4_0-gguf",
+    "device": "external llama-server",
+    "backend": "llama",
+    "placement": "external llama-server",
+    "dtype": "QAT Q4_0",
+    "gpu_allocated_mib": null,
+    "speech_output": {
+      "engine": "phonon",
+      "model": "hf://gradium/phonon-31m-en@8c64b55ec301728e2d1695bfea87a08a267d0c2d",
+      "device": "cpu",
+      "voice": "default",
+      "active": false,
+      "playing": false,
+      "error": null
+    },
+    "last_capture": null,
+    "speech_recognition": "base.en / CPU int8"
+  },
+  "synthetic": true,
+  "human_microphone_test": false,
+  "cases": [
+    {
+      "fixture": "0-normal.wav",
+      "transcript": "Pick two variant B boards.",
+      "command": [
+        "count",
+        [
+          "VARb",
+          2
+        ]
+      ],
+      "seconds": 0.384,
+      "passed": true
+    },
+    {
+      "fixture": "0-quiet.wav",
+      "transcript": "Pick two variant B boards.",
+      "command": [
+        "count",
+        [
+          "VARb",
+          2
+        ]
+      ],
+      "seconds": 0.312,
+      "passed": true
+    },
+    {
+      "fixture": "1-normal.wav",
+      "transcript": "Pick three variant A boards.",
+      "command": [
+        "count",
+        [
+          "VARa",
+          3
+        ]
+      ],
+      "seconds": 0.313,
+      "passed": true
+    },
+    {
+      "fixture": "1-quiet.wav",
+      "transcript": "Pick three variant A boards.",
+      "command": [
+        "count",
+        [
+          "VARa",
+          3
+        ]
+      ],
+      "seconds": 0.296,
+      "passed": true
+    },
+    {
+      "fixture": "2-normal.wav",
+      "transcript": "Sort all visible boards.",
+      "command": [
+        "all",
+        null
+      ],
+      "seconds": 0.305,
+      "passed": true
+    },
+    {
+      "fixture": "2-quiet.wav",
+      "transcript": "Sort all visible boards.",
+      "command": [
+        "all",
+        null
+      ],
+      "seconds": 0.291,
+      "passed": true
+    },
+    {
+      "fixture": "two_seconds_silence",
+      "transcript": "",
+      "passed": true
+    }
+  ]
+}

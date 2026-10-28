@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "model": "hf://gradium/phonon-31m-en@8c64b55ec301728e2d1695bfea87a08a267d0c2d",
+    "runtime": "0.5.0",
+    "device": "cpu",
+    "threads": 4,
+    "quant": "q8",
+    "voice": "default",
+    "sample_rate": 24000,
+    "load_s": 0.3333605690004333
+  },
+  "cases": [
+    {
+      "case": "describe",
+      "text": "The image shows a robot workcell with several boards laid out on a surface.",
+      "first_chunk_s": 0.016169440999874496,
+      "synthesis_s": 0.22850349799955438,
+      "audio_s": 4.08,
+      "vlm_s": 0.21112114700008533,
+      "wav": "conversation/results/comparison/phonon/llama/describe.wav",
+      "estimated_vlm_plus_first_audio_s": 0.22729058799995983
+    },
+    {
+      "case": "ambiguous",
+      "text": "There are three white boards visible on the fixture. They are positioned in a row.",
+      "first_chunk_s": 0.01889402400047402,
+      "synthesis_s": 0.2541147230003844,
+      "audio_s": 4.8,
+      "vlm_s": 0.21574860700093268,
+      "wav": "conversation/results/comparison/phonon/llama/ambiguous.wav",
+      "estimated_vlm_plus_first_audio_s": 0.2346426310014067
+    },
+    {
+      "case": "hidden_count",
+      "text": "There are three sheets stacked under the white board.",
+      "first_chunk_s": 0.011490594000861165,
+      "synthesis_s": 0.1496472740000172,
+      "audio_s": 2.96,
+      "vlm_s": 0.17526391899991722,
+      "wav": "conversation/results/comparison/phonon/llama/hidden_count.wav",
+      "estimated_vlm_plus_first_audio_s": 0.1867545130007784
+    },
+    {
+      "case": "failed_task",
+      "text": "The pick failed because of a vacuum failure.",
+      "first_chunk_s": 0.015125789999729022,
+      "synthesis_s": 0.15442849499959266,
+      "audio_s": 2.88,
+      "vlm_s": 0.16962138000053528,
+      "wav": "conversation/results/comparison/phonon/llama/failed_task.wav",
+      "estimated_vlm_plus_first_audio_s": 0.1847471700002643
+    },
+    {
+      "case": "not_completed",
+      "text": "The system is waiting, and the boards are currently in their respective destinations.",
+      "first_chunk_s": 0.014608126000894117,
+      "synthesis_s": 0.2575049870010844,
+      "audio_s": 4.8,
+      "vlm_s": 0.20846407099998032,
+      "wav": "conversation/results/comparison/phonon/llama/not_completed.wav",
+      "estimated_vlm_plus_first_audio_s": 0.22307219700087444
+    },
+    {
+      "case": "metric_precision",
+      "text": "I do not have the exact cup-to-board gap in millimetres.",
+      "first_chunk_s": 0.015307449999454548,
+      "synthesis_s": 0.18786505999923975,
+      "audio_s": 3.52,
+      "vlm_s": 0.2157677529994544,
+      "wav": "conversation/results/comparison/phonon/llama/metric_precision.wav",
+      "estimated_vlm_plus_first_audio_s": 0.23107520299890894
+    }
+  ]
+}

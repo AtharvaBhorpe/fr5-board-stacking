@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "model": "hf://gradium/phonon-31m-en@8c64b55ec301728e2d1695bfea87a08a267d0c2d",
+    "runtime": "0.5.0",
+    "device": "cpu",
+    "threads": 4,
+    "quant": "q8",
+    "voice": "default",
+    "sample_rate": 24000,
+    "load_s": 0.30190497700004926
+  },
+  "cases": [
+    {
+      "case": "describe",
+      "text": "The FR5 robot workcell is positioned over a black table with several white and red boards, and a yellow-bordered board is being handled by the robot's arm.",
+      "first_chunk_s": 0.02971416099990165,
+      "synthesis_s": 0.46061741300036374,
+      "audio_s": 8.32,
+      "vlm_s": 0.5436210510006276,
+      "wav": "conversation/results/comparison/phonon/qwen/describe.wav",
+      "estimated_vlm_plus_first_audio_s": 0.5733352120005293
+    },
+    {
+      "case": "ambiguous",
+      "text": "Pick the white board with the yellow border.",
+      "first_chunk_s": 0.014836141999694519,
+      "synthesis_s": 0.1436978799993085,
+      "audio_s": 2.56,
+      "vlm_s": 0.22228361500037863,
+      "wav": "conversation/results/comparison/phonon/qwen/ambiguous.wav",
+      "estimated_vlm_plus_first_audio_s": 0.23711975700007315
+    },
+    {
+      "case": "hidden_count",
+      "text": "There are 2 sheets stacked under the white board.",
+      "first_chunk_s": 0.01336481599992112,
+      "synthesis_s": 0.173766126999908,
+      "audio_s": 2.96,
+      "vlm_s": 0.25357164399974863,
+      "wav": "conversation/results/comparison/phonon/qwen/hidden_count.wav",
+      "estimated_vlm_plus_first_audio_s": 0.26693645999966975
+    },
+    {
+      "case": "failed_task",
+      "text": "The pick failed because the vacuum failed.",
+      "first_chunk_s": 0.01608678200045688,
+      "synthesis_s": 0.17020189899994875,
+      "audio_s": 2.88,
+      "vlm_s": 0.20583969199924468,
+      "wav": "conversation/results/comparison/phonon/qwen/failed_task.wav",
+      "estimated_vlm_plus_first_audio_s": 0.22192647399970156
+    },
+    {
+      "case": "not_completed",
+      "text": "Yes, the board has been placed.",
+      "first_chunk_s": 0.010923910000201431,
+      "synthesis_s": 0.1439351760000136,
+      "audio_s": 2.72,
+      "vlm_s": 0.21045552600025985,
+      "wav": "conversation/results/comparison/phonon/qwen/not_completed.wav",
+      "estimated_vlm_plus_first_audio_s": 0.22137943600046128
+    },
+    {
+      "case": "metric_precision",
+      "text": "The exact cup-to-board gap is 100 millimetres.",
+      "first_chunk_s": 0.012078319000465854,
+      "synthesis_s": 0.1730744770002275,
+      "audio_s": 3.36,
+      "vlm_s": 0.30531430399969395,
+      "wav": "conversation/results/comparison/phonon/qwen/metric_precision.wav",
+      "estimated_vlm_plus_first_audio_s": 0.3173926230001598
+    }
+  ]
+}

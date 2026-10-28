@@ -1,0 +1,63 @@
+{
+  "variant": "VARa",
+  "chat": true,
+  "passed": true,
+  "seconds": 27.4,
+  "phases": [
+    "idle",
+    "running",
+    "waiting",
+    "completed"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793118731.531,
+    "task_id": "0d6cbd7e-7105-47a9-9673-1fc701c9639e",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARa",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARa. Confirm each descent in the panel.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is waiting for your Confirm button.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is waiting for your Confirm button.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    }
+  ]
+}

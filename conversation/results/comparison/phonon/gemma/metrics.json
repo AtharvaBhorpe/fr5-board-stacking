@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "model": "hf://gradium/phonon-31m-en@8c64b55ec301728e2d1695bfea87a08a267d0c2d",
+    "runtime": "0.5.0",
+    "device": "cpu",
+    "threads": 4,
+    "quant": "q8",
+    "voice": "default",
+    "sample_rate": 24000,
+    "load_s": 0.30190497700004926
+  },
+  "cases": [
+    {
+      "case": "describe",
+      "text": "The scene shows a robot arm with a tool positioned over several rectangular cards on a dark surface.",
+      "first_chunk_s": 0.01991526599977078,
+      "synthesis_s": 0.27232497699969826,
+      "audio_s": 5.44,
+      "vlm_s": 0.6723567520002689,
+      "wav": "conversation/results/comparison/phonon/gemma/describe.wav",
+      "estimated_vlm_plus_first_audio_s": 0.6922720180000397
+    },
+    {
+      "case": "ambiguous",
+      "text": "I see three white boards on the surface. Which white board would you like me to pick?",
+      "first_chunk_s": 0.017356848000417813,
+      "synthesis_s": 0.27495802599969466,
+      "audio_s": 4.88,
+      "vlm_s": 0.6619794110001749,
+      "wav": "conversation/results/comparison/phonon/gemma/ambiguous.wav",
+      "estimated_vlm_plus_first_audio_s": 0.6793362590005927
+    },
+    {
+      "case": "hidden_count",
+      "text": "There are three sheets stacked under the white board.",
+      "first_chunk_s": 0.015101230000254873,
+      "synthesis_s": 0.15701805299977423,
+      "audio_s": 2.96,
+      "vlm_s": 0.4811957660003827,
+      "wav": "conversation/results/comparison/phonon/gemma/hidden_count.wav",
+      "estimated_vlm_plus_first_audio_s": 0.4962969960006376
+    },
+    {
+      "case": "failed_task",
+      "text": "The pick failed because there was a vacuum failure.",
+      "first_chunk_s": 0.014466977000665793,
+      "synthesis_s": 0.15555553400008648,
+      "audio_s": 3.04,
+      "vlm_s": 0.4762319880001087,
+      "wav": "conversation/results/comparison/phonon/gemma/failed_task.wav",
+      "estimated_vlm_plus_first_audio_s": 0.4906989650007745
+    },
+    {
+      "case": "not_completed",
+      "text": "No, there are three boards visible on the surface.",
+      "first_chunk_s": 0.018356166000558005,
+      "synthesis_s": 0.1763868320003894,
+      "audio_s": 3.44,
+      "vlm_s": 0.492084868999882,
+      "wav": "conversation/results/comparison/phonon/gemma/not_completed.wav",
+      "estimated_vlm_plus_first_audio_s": 0.51044103500044
+    },
+    {
+      "case": "metric_precision",
+      "text": "I do not have the information about the exact cup-to-board gap in millimetres.",
+      "first_chunk_s": 0.017777218999981415,
+      "synthesis_s": 0.25807464700028504,
+      "audio_s": 4.4,
+      "vlm_s": 0.6809902379991399,
+      "wav": "conversation/results/comparison/phonon/gemma/metric_precision.wav",
+      "estimated_vlm_plus_first_audio_s": 0.6987674569991214
+    }
+  ]
+}

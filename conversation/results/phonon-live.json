@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "engine": "phonon",
+  "normal_playback": true,
+  "stop_seconds": 0.08868070700009412,
+  "replacement": true,
+  "microphone_captured": false,
+  "status": {
+    "engine": "phonon",
+    "model": "hf://gradium/phonon-31m-en@8c64b55ec301728e2d1695bfea87a08a267d0c2d",
+    "device": "cpu",
+    "voice": "default",
+    "active": false,
+    "playing": false,
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"ready": true, "model": "Qwen/Qwen3-VL-2B-Instruct", "device": "cuda:0", "backend": "qwen", "placement": "GPU", "dtype": "torch.bfloat16", "gpu_allocated_mib": 4091, "speech_recognition": "base.en / CPU int8"}

@@ -132,17 +132,23 @@ public:
     outer->addWidget(chat_);
     chat_status_ = new QLabel("Assistant: offline");
     outer->addWidget(chat_status_);
+    batch_status_ = new QLabel("Batch: idle");
+    batch_status_->setWordWrap(true);
+    outer->addWidget(batch_status_);
     auto * chat_row = new QHBoxLayout;
     chat_input_ = new QLineEdit;
     chat_input_->setPlaceholderText("Pick variant B / what do you see? / status / stop");
     auto * send = new QPushButton("Send");
     auto * talk = new QPushButton("Hold to talk");
     auto * clear = new QPushButton("Clear chat");
+    auto * cancel_batch = new QPushButton("Cancel batch");
+    cancel_batch->setToolTip("Cancel remaining queued picks and request stop of the current pick. Not an emergency stop.");
     chat_row->addWidget(chat_input_, 1);
     chat_row->addWidget(send);
     chat_row->addWidget(talk);
     chat_row->addWidget(clear);
     outer->addLayout(chat_row);
+    outer->addWidget(cancel_batch);
     auto submit = [this] {
         if (!chat_input_->text().trimmed().isEmpty() && chat_pub_) {
           std_msgs::msg::String m; m.data = chat_input_->text().toStdString();
@@ -154,8 +160,20 @@ public:
     connect(talk, &QPushButton::pressed, this, [this] {chatControl("ptt_start");});
     connect(talk, &QPushButton::released, this, [this] {chatControl("ptt_stop");});
     connect(clear, &QPushButton::clicked, this, [this] {chatControl("clear");});
+    connect(cancel_batch, &QPushButton::clicked, this, [this] {chatControl("stop");});
     if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {
       args_->setText("--speed 0.3 --no-wrist-height");
+      auto * demo_row = new QHBoxLayout;
+      for (const auto & entry : {std::make_pair("Reset 2 B", "two_b"), std::make_pair("Reset A/B/C", "mixed")}) {
+        auto * button = new QPushButton(entry.first);
+        demo_row->addWidget(button);
+        connect(button, &QPushButton::clicked, this, [this, command = QString(entry.second)] {
+          if (demo_pub_ && hw_kind_ == "SIMULATION" && !running()) {
+            std_msgs::msg::String m; m.data = command.toStdString(); demo_pub_->publish(m);
+          }
+        });
+      }
+      outer->addLayout(demo_row);
     }
     auto * t = new QTimer(this);
     connect(t, &QTimer::timeout, this, &PickPanel::refresh);
@@ -219,6 +237,17 @@ public:
     state_pub_ = node_->create_publisher<std_msgs::msg::String>("/pick_panel/state", 10);
     chat_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/input", 10);
     chat_control_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/control", 10);
+    if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {
+      demo_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/demo/control", 10);
+    }
+    batch_sub_ = node_->create_subscription<std_msgs::msg::String>("/conversation/batch_state", 10,
+      [this](std_msgs::msg::String::ConstSharedPtr m) {
+        QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->data)] {
+          const auto o = QJsonDocument::fromJson(s.toUtf8()).object();
+          batch_status_->setText(QString("Batch: %1 — %2 / %3 completed. %4")
+            .arg(o["phase"].toString()).arg(o["completed"].toInt()).arg(o["total"].toInt()).arg(o["reason"].toString()));
+        }, Qt::QueuedConnection);
+      });
     chat_sub_ = node_->create_subscription<std_msgs::msg::String>("/conversation/output", 20,
       [this](std_msgs::msg::String::ConstSharedPtr m) {
         QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->data)] {
@@ -425,7 +454,7 @@ private:
       b->setText(QString("%1\n%2 free%3\n%4").arg(v).arg(free_.value(v))
         .arg(u ? QString(", %1 under").arg(u) : "").arg(dests_.contains(v) ? "template seen" : "no template"));
       b->setEnabled(why.isEmpty());
-      b->setToolTip(why.isEmpty() ? "pick and place this variant (you confirm each descent)" : why);
+      b->setToolTip(why.isEmpty() ? "automatically pick, place, and release this variant" : why);
       b->setStyleSheet(why.isEmpty() ? "QPushButton{background:#2e7d32;color:white;font-weight:bold}" : "");
     }
     if (wrist_->isVisible() && QDateTime::currentMSecsSinceEpoch() - wrist_ms_ > 3000) {
@@ -566,13 +595,13 @@ private:
 
   QPlainTextEdit * chat_;
   QLineEdit * chat_input_;
-  QLabel * chat_status_;
+  QLabel * chat_status_, * batch_status_;
   QString task_id_, phase_ = "idle", detail_;
   QSet<QString> seen_tasks_;
   bool live_ = false;
   qint64 observed_ms_ = 0;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state_pub_, chat_pub_, chat_control_pub_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr chat_sub_, task_sub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state_pub_, chat_pub_, chat_control_pub_, demo_pub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr chat_sub_, task_sub_, batch_sub_;
   QLabel * cam_, * wrist_, * vision_, * run_;
   QImage img_, wrist_img_;
   qint64 wrist_ms_ = 0, joints_ms_ = 0;

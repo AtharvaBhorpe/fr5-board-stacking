@@ -1,14 +1,14 @@
 """Supervised single pick from /vision/boards. Run from the ROBOT workspace (needs hk_fr5_interfaces):
 
     cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py --hover-only   # 1st: check position
-    cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py                # hover, Enter, pick
+    cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py                # hover, pick
 
     cd fr5-board-stacking && pixi run python3 ../vision1-overhead/robot/pick_one.py --place        # pick -> template
 
-Sequence: park out of the overhead camera view (PARK), read vision, hover 10 cm above the board centre -> ENTER -> straight down to the board top -> grip -> lift 10 cm ->
-attach -> ENTER -> detach -> back down -> release -> lift. The board ends where it started. Ctrl+C any time = stop.
+Sequence: park out of the overhead camera view (PARK), read vision, hover 10 cm above the board centre -> straight down to the board top -> grip -> lift 10 cm ->
+attach -> detach -> back down -> release -> lift. The board ends where it started. Ctrl+C any time = stop.
 --place: (wrist D405: first look at the template's stack height, empty-handed) after the lift, carry it to the destination template of its variant (vision `destinations`: tag 1 / 2 / 16
-+ team offsets), ENTER, down onto the template (+ --stack boards already there), release, lift.
++ team offsets), down onto the template (+ --stack boards already there), release, lift.
 --variant X covered by other boards (learned model only: vision `occluded`): the covering top board goes to the
 --temp spot first (stacked there), vision looks again, repeat (max MAX_CLEAR), then X is picked.
 """
@@ -62,6 +62,9 @@ ap.add_argument("--place-press", type=float, default=1.0,
 ap.add_argument("--blow", type=float, default=2.0, help="s blow-off at release (gripper.yaml default 1.0 left boards stuck)")
 ap.add_argument("--no-wrist-height", action="store_true",
                 help="pick descent from the fixed one-board height, not from the wrist D405 depth")
+ap.add_argument("--fixed-pick-height", action="store_true",
+                help="use the configured one-board pick height; keep wrist placement measurements. "
+                     "Only for a confirmed single flat board, not a source stack")
 args = ap.parse_args()
 PRESS = args.press / 1000.0
 
@@ -96,7 +99,15 @@ def act(c, goal):
         else:
             print("cancel: acceptance unknown; check controller/pendant")
         raise SystemExit(130)
-def call(c, req): c.wait_for_service(); return wait(c.call_async(req))
+def call(c, req):
+    if not c.wait_for_service(timeout_sec=5.0):
+        raise SystemExit("scene service unavailable; stopping pick sequence")
+    future = c.call_async(req)
+    rclpy.spin_until_future_complete(node, future, timeout_sec=5.0)
+    if not future.done():
+        future.cancel()
+        raise SystemExit("scene service response timed out; stopping pick sequence")
+    return future.result()
 def check(step, r):
     print(f"  {step}: success={r.success} {r.message}")
     if not r.success:
@@ -217,7 +228,7 @@ def reachable(b, z_top):
 
 
 def transfer(b, to=None, what="put it back down"):
-    """Pick board b; put it at to = (x, y, top z, tool yaw) or back where it was. ENTER before every descent."""
+    """Automatically pick board b and put it at to = (x, y, top z, tool yaw) or back where it was."""
     print(f"board {b['variant']} at x={b['x']:.4f} y={b['y']:.4f} top z={b['z']:.3f} "
           f"yaw={math.degrees(b['yaw']):.1f} deg, size {b['size_mm']} mm, inside_calibration={b['inside_calibration']}")
     yaw = tool_yaw(b)
@@ -225,7 +236,10 @@ def transfer(b, to=None, what="put it back down"):
     check("hover", act(move_to, MoveTo.Goal(x=b["x"], y=b["y"], z=b["z"] + HOVER, yaw=yaw,
                                             velocity_scaling=args.speed)))
     down = HOVER + PRESS
-    if wd:  # measured board top instead of the fixed one-board height
+    if args.fixed_pick_height:
+        print(f"  fixed single-board pick: top z={b['z']:.4f}, press={args.press:.1f} mm, "
+              f"target z={b['z'] - PRESS:.4f}; wrist placement measurement remains enabled")
+    if wd and not args.fixed_pick_height:  # measured board top instead of the fixed one-board height
         m = wd.measure(b["x"], b["y"])
         top = None
         if m is not None:
@@ -245,7 +259,6 @@ def transfer(b, to=None, what="put it back down"):
     if args.hover_only:
         print("hover-only: check the cup is above the board centre (measure the offset in mm if not).")
         raise SystemExit(0)
-    input(">>> cup centred above the board? ENTER = go down and grip, Ctrl+C = stop ")
     # Down (LIN), grip, lift (LIN, rule 3), attach
     print(f"  going down {down * 1000:.0f} mm")
     check("down", lin(-down))
@@ -263,7 +276,7 @@ def transfer(b, to=None, what="put it back down"):
         x, y, z_top, tyaw = to
         # Carry (OMPL avoids the workcell, held board attached)
         check("carry", act(move_to, MoveTo.Goal(x=x, y=y, z=z_top + HOVER, yaw=tyaw, velocity_scaling=args.speed)))
-    input(f">>> ENTER = {what} and release ")
+    print(f"  {what} and release")
     # Detach the board MODEL first (the vacuum still holds it): with --press it would end inside the table and
     # MoveIt refuses the descent. Straight down, only the carry above needed it.
     call(detach, DetachBoard.Request(keep_as_obstacle=False))

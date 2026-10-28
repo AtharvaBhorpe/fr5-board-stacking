@@ -14,9 +14,10 @@ class Intent:
 
 def intent(text: str) -> Intent:
     text = re.sub(r"[.!?]+$", "", text.strip().lower()).strip()
-    if text in {"stop", "stop robot", "stop the robot", "cancel", "cancel pick", "stop please"}:
+    if text in {"stop", "stop robot", "stop the robot", "cancel", "cancel pick", "stop please",
+                "cancel batch", "stop batch", "cancel queue", "stop sorting"}:
         return Intent("stop")
-    if text in {"status", "robot status", "what is the status", "what's the status"}:
+    if text in {"status", "robot status", "what is the status", "what's the status", "batch status", "queue status"}:
         return Intent("status")
     if text in {"clear chat", "clear conversation"}:
         return Intent("clear")
@@ -74,11 +75,11 @@ def boundary_reply(text: str):
     if re.match(r"^(don't|do not|never)\b", words):
         return "No pick requested. To cancel a running task, say stop or use the Stop button."
     if re.match(r"^(confirm|approve|continue)\b", words):
-        return "Please use the Confirm button for each descent. Voice cannot confirm real-robot motion."
+        return "No confirmation is needed. An accepted pick request runs through pick, placement, and release automatically. Say stop to cancel."
     if re.match(r"^(move|jog|release|grip|rotate|turn|set speed)\b", words):
         return "I support one pick by variant, status, scene questions, and stop. Use the existing robot controls for other actions."
     if re.match(r"^(pick|stack|grab)\b", words):
         if re.search(r"\b(two|three|four|five|all|both|[2-9]|\d{2,})\b|\band\b", words):
-            return "MVP1 supports one pick at a time. Please request one variant: A, B, or C."
+            return "Use 'pick two variant B boards' or 'sort all visible boards'. I execute one pick at a time."
         return "Which variant do you mean: A, B, or C? Say 'pick variant B', for example. No pick requested."
     return None

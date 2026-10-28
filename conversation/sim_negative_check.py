@@ -1,10 +1,14 @@
 """Live ROS checks that conversation does not dispatch unsupported or negated requests."""
 import json
+import argparse
 import time
 from pathlib import Path
 import rclpy
 from std_msgs.msg import String
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--output", type=Path, default=Path(__file__).parent/'results/negative_ros.json')
+args = parser.parse_args()
 rclpy.init()
 node = rclpy.create_node("conversation_negative_check")
 state, output, task_messages = {}, [], []
@@ -23,7 +27,7 @@ while (pub).get_subscription_count() == 0 and time.time() < discovery_deadline:
 settle = time.time() + .5
 while time.time() < settle:
     rclpy.spin_once(node, timeout_sec=.05)
-cases = ["status", "do not pick VARb", "pick two VARa boards", "pick that white board",
+cases = ["status", "do not pick VARb", "pick eleven VARa boards", "pick that white board",
          "move down 10 mm", "confirm descent", "release vacuum", "pick variant D",
          "why did you pick VARa?", "stop"]
 results = []
@@ -42,7 +46,7 @@ for text in cases:
             answer=answers[-1]; break
     assert answer is not None, (text, output)
     results.append({"input": text, "response": answer, "seconds": time.time()-began, "dispatches": 0})
-path=Path(__file__).parent/'results/negative_ros.json'
+path=args.output
 path.parent.mkdir(exist_ok=True)
 path.write_text(json.dumps(results, indent=2)+'\n')
 print(json.dumps({"passed": len(results), "dispatches": len(task_messages)}, indent=2))

@@ -1,5 +1,9 @@
 # MVP1 verification — 2026-10-27
 
+Historical MVP snapshot. The development session described below has ended. Subsequent
+[Gemma/Qwen simulation results](sim-comparison/REPORT.md) and
+[VLM/Phonon comparison](comparison/REPORT.md) supersede the Gemma and session-status notes here.
+
 Implemented on `feat/robot-conversation`, based on vision commit `45b6a9f`. No real hardware commanded.
 
 - Policy/unit checks: **62 passed** (command parsing, refusal responses, stale/replay/invalid observations, model-result validation).

@@ -63,6 +63,12 @@ while time.time() < deadline:
         last_confirm = time.time()
     if started and state.get("phase") in {"completed", "failed", "stopped"}:
         break
+    if args.chat and not started and any(
+        m.get("phase") == "error" or
+        (m.get("role") == "assistant" and not m.get("text", "").startswith(("Requested one ", "Picking ")))
+        for m in output
+    ):
+        break
     if not args.chat and state.get("task_id") == task_id and state.get("phase") == "rejected":
         break
 passed = started and state.get("phase") == "completed"

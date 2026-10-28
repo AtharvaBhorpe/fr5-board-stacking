@@ -1,0 +1,62 @@
+{
+  "kind": "real_supervised_hover",
+  "variant": "VARb",
+  "seconds": 20.752168586999687,
+  "started": true,
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "REAL FR5",
+    "phase": "completed",
+    "stamp": 1793121029.186,
+    "task_id": "a1d65af3-0015-4c98-a66b-752b32388f5f",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARb",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARb. Confirm each descent in the panel.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    }
+  ],
+  "logs": [
+    "[panel] VARb requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARb --speed 0.1 --hover-only",
+    "robot hardware: REAL FR5",
+    "pick height: wrist D405 depth",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source 'C920', message age 0.09 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "  looking at the VARb template with the wrist camera (boards already on it?)",
+    "action: accepted",
+    "  template look: success=True SUCCESS: target reached",
+    "  D405: template stack top z=-0.0535, 1.5 mm above the empty template (~0 board(s) on it)",
+    "  destination VARb (tag 2) at x=-0.4118 y=0.2786 yaw=-94.4 deg, place top z=-0.048 (D405), median of 15 frames, seen 0.0 s ago",
+    "board VARb at x=-0.1958 y=-0.4304 top z=-0.055 yaw=-17.1 deg, size [150.8, 206.2] mm, inside_calibration=True",
+    "action: accepted",
+    "  hover: success=True SUCCESS: target reached",
+    "  D405: board top z=-0.0541 (+0.9 mm vs one board; 5.9 mm above the table), cup -> board 99.1 mm, then 4 mm press",
+    "hover-only: check the cup is above the board centre (measure the offset in mm if not)."
+  ]
+}

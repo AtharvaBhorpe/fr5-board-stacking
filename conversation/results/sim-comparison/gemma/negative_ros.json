@@ -1,0 +1,102 @@
+[
+  {
+    "input": "status",
+    "response": {
+      "role": "assistant",
+      "text": "SIMULATION. Controller: completed. ",
+      "phase": "ready"
+    },
+    "seconds": 0.0007557868957519531,
+    "dispatches": 0
+  },
+  {
+    "input": "do not pick VARb",
+    "response": {
+      "role": "assistant",
+      "text": "No pick requested. To cancel a running task, say stop or use the Stop button.",
+      "phase": "ready"
+    },
+    "seconds": 0.0010309219360351562,
+    "dispatches": 0
+  },
+  {
+    "input": "pick two VARa boards",
+    "response": {
+      "role": "assistant",
+      "text": "MVP1 supports one pick at a time. Please request one variant: A, B, or C.",
+      "phase": "ready"
+    },
+    "seconds": 0.0007150173187255859,
+    "dispatches": 0
+  },
+  {
+    "input": "pick that white board",
+    "response": {
+      "role": "assistant",
+      "text": "Which variant do you mean: A, B, or C? Say 'pick variant B', for example. No pick requested.",
+      "phase": "ready"
+    },
+    "seconds": 0.00034356117248535156,
+    "dispatches": 0
+  },
+  {
+    "input": "move down 10 mm",
+    "response": {
+      "role": "assistant",
+      "text": "I support one pick by variant, status, scene questions, and stop. Use the existing robot controls for other actions.",
+      "phase": "ready"
+    },
+    "seconds": 0.000396728515625,
+    "dispatches": 0
+  },
+  {
+    "input": "confirm descent",
+    "response": {
+      "role": "assistant",
+      "text": "Please use the Confirm button for each descent. Voice cannot confirm real-robot motion.",
+      "phase": "ready"
+    },
+    "seconds": 0.0005087852478027344,
+    "dispatches": 0
+  },
+  {
+    "input": "release vacuum",
+    "response": {
+      "role": "assistant",
+      "text": "I support one pick by variant, status, scene questions, and stop. Use the existing robot controls for other actions.",
+      "phase": "ready"
+    },
+    "seconds": 0.00039005279541015625,
+    "dispatches": 0
+  },
+  {
+    "input": "pick variant D",
+    "response": {
+      "role": "assistant",
+      "text": "Which variant do you mean: A, B, or C? Say 'pick variant B', for example. No pick requested.",
+      "phase": "ready"
+    },
+    "seconds": 0.00039505958557128906,
+    "dispatches": 0
+  },
+  {
+    "input": "why did you pick VARa?",
+    "response": {
+      "role": "assistant",
+      "text": "I cannot infer task history or a selection reason from the current image. Ask status for the current controller state, and check the task log for earlier actions.",
+      "phase": "ready"
+    },
+    "seconds": 0.0005521774291992188,
+    "dispatches": 0
+  },
+  {
+    "input": "stop",
+    "response": {
+      "role": "assistant",
+      "text": "Cancellation requested. This is not an emergency stop; check the controller confirms the stop.",
+      "phase": "ready"
+    },
+    "seconds": 0.0009758472442626953,
+    "dispatches": 0
+  }
+]

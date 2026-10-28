@@ -1,0 +1,49 @@
+{
+  "scenario": "cancel",
+  "seconds": 1.37,
+  "batch": {
+    "id": "a437a6db-be5c-43e9-a008-90426a7a2880",
+    "total": 2,
+    "completed": 0,
+    "phase": "failed",
+    "remaining": [
+      "VARb",
+      "VARb"
+    ],
+    "reason": "Pick validation failed; no further picks dispatched."
+  },
+  "panel": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793125390.439,
+    "task_id": "cc279e6b-17bc-4ab1-b04b-95f4b6222165",
+    "waiting": false
+  },
+  "tasks": [],
+  "logs": [],
+  "answers": [
+    {
+      "role": "user",
+      "text": "pick two variant B boards",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Starting 2 picks, one at a time. Say stop to cancel the remaining picks.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "No fresh overhead image is available to verify the pick.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Batch stopped. Pick validation failed; no further picks dispatched.",
+      "phase": "ready"
+    }
+  ],
+  "passed": false
+}

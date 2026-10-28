@@ -1,0 +1,40 @@
+{
+  "variant": "VARb",
+  "chat": true,
+  "passed": false,
+  "seconds": 0.2,
+  "phases": [
+    "stopped"
+  ],
+  "final": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "stopped",
+    "stamp": 1793117830.72,
+    "task_id": "a199cbdf-5d24-46ae-8fd2-25e120432590",
+    "waiting": false
+  },
+  "conversation": [
+    {
+      "role": "user",
+      "text": "pick VARb",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "user",
+      "text": "status",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "SIMULATION. Controller: stopped. ",
+      "phase": "ready"
+    }
+  ]
+}

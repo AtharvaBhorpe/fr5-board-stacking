@@ -1,0 +1,244 @@
+{
+  "scenario": "mixed",
+  "seconds": 70.46,
+  "batch": {
+    "id": "847ade04-5319-47e4-9e60-5e00f1ffc4b8",
+    "total": 3,
+    "completed": 3,
+    "phase": "completed",
+    "remaining": [],
+    "reason": ""
+  },
+  "panel": {
+    "busy": false,
+    "detail": "",
+    "hardware": "SIMULATION",
+    "phase": "completed",
+    "stamp": 1793125372.439,
+    "task_id": "cc279e6b-17bc-4ab1-b04b-95f4b6222165",
+    "waiting": false
+  },
+  "tasks": [
+    {
+      "id": "57de268c-5f4d-4244-99bf-cb3edbe292d0",
+      "variant": "VARa",
+      "stamp": 1793125303.1087236
+    },
+    {
+      "id": "283449c9-c3d5-4194-b306-eb31ef33a14c",
+      "variant": "VARb",
+      "stamp": 1793125328.4004574
+    },
+    {
+      "id": "cc279e6b-17bc-4ab1-b04b-95f4b6222165",
+      "variant": "VARc",
+      "stamp": 1793125350.244306
+    }
+  ],
+  "logs": [
+    "[panel] VARa requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARa --speed 0.3 --no-wrist-height",
+    "robot hardware: MOCK (simulation, arm will NOT move)",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source '/tmp/robot-batch-demo/scene.png', message age 0.12 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "  destination VARa (tag 1) at x=-0.3433 y=0.8315 yaw=-92.8 deg, place top z=-0.050 (--stack), median of 15 frames, seen 0.0 s ago",
+    "board VARa at x=-0.4197 y=-0.3648 top z=-0.055 yaw=84.0 deg, size [204.6, 290.0] mm, inside_calibration=True",
+    "action: accepted",
+    "  hover: success=True SUCCESS: target reached",
+    "  going down 104 mm",
+    "action: accepted",
+    "  down: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  grip: success=True SUCCESS: vacuum achieved in 0.61 s time_to_vacuum=0.61s",
+    "action: accepted",
+    "  lift: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  carry: success=True SUCCESS: target reached",
+    "  put it down on its template and release",
+    "action: accepted",
+    "  down again: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  release: success=True SUCCESS: released (blow-off 2.0 s)",
+    "action: accepted",
+    "  lift empty: success=True SUCCESS: target reached",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "done",
+    "[panel] pick_one finished, exit code 0",
+    "[panel] VARb requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARb --speed 0.3 --no-wrist-height",
+    "robot hardware: MOCK (simulation, arm will NOT move)",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source '/tmp/robot-batch-demo/scene.png', message age 0.11 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "  destination VARb (tag 2) at x=-0.3455 y=0.3283 yaw=-88.1 deg, place top z=-0.050 (--stack), median of 15 frames, seen 0.0 s ago",
+    "board VARb at x=-0.1798 y=-0.4001 top z=-0.055 yaw=-4.0 deg, size [147.8, 205.1] mm, inside_calibration=True",
+    "action: accepted",
+    "  hover: success=True SUCCESS: target reached",
+    "  going down 104 mm",
+    "action: accepted",
+    "  down: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  grip: success=True SUCCESS: vacuum achieved in 0.61 s time_to_vacuum=0.61s",
+    "action: accepted",
+    "  lift: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  carry: success=True SUCCESS: target reached",
+    "  put it down on its template and release",
+    "action: accepted",
+    "  down again: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  release: success=True SUCCESS: released (blow-off 2.0 s)",
+    "action: accepted",
+    "  lift empty: success=True SUCCESS: target reached",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "done",
+    "[panel] pick_one finished, exit code 0",
+    "[panel] VARc requested (conversation): python3 -u /home/ub26/Projects/durst_hackathon/vision1-overhead/robot/pick_one.py --place --variant VARc --speed 0.3 --no-wrist-height",
+    "robot hardware: MOCK (simulation, arm will NOT move)",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "waiting for /vision/boards ...",
+    "vision source '/tmp/robot-batch-demo/scene.png', message age 0.11 s",
+    "destinations seen: ['VARa', 'VARb', 'VARc']",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "action: accepted",
+    "  destination VARc (tag 16) at x=-0.3520 y=0.5243 yaw=-89.7 deg, place top z=-0.050 (--stack), median of 15 frames, seen 0.0 s ago",
+    "board VARc at x=-0.3505 y=-0.5899 top z=-0.055 yaw=83.4 deg, size [138.3, 205.2] mm, inside_calibration=True",
+    "action: accepted",
+    "  hover: success=True SUCCESS: target reached",
+    "  going down 104 mm",
+    "action: accepted",
+    "  down: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  grip: success=True SUCCESS: vacuum achieved in 0.61 s time_to_vacuum=0.61s",
+    "action: accepted",
+    "  lift: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  carry: success=True SUCCESS: target reached",
+    "  put it down on its template and release",
+    "action: accepted",
+    "  down again: success=True SUCCESS: target reached",
+    "action: accepted",
+    "  release: success=True SUCCESS: released (blow-off 2.0 s)",
+    "action: accepted",
+    "  lift empty: success=True SUCCESS: target reached",
+    "parking the arm out of the overhead camera view",
+    "action: accepted",
+    "  park: success=True SUCCESS: target reached",
+    "done",
+    "[panel] pick_one finished, exit code 0"
+  ],
+  "answers": [
+    {
+      "role": "user",
+      "text": "sort all visible boards",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Starting 3 picks, one at a time. Say stop to cancel the remaining picks.",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARa. Pick, placement, and release will proceed automatically.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller reports the task completed.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Batch progress: 1 of 3 picks completed and source removal verified.",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARb. Pick, placement, and release will proceed automatically.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller reports the task completed.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Batch progress: 2 of 3 picks completed and source removal verified.",
+      "phase": "ready"
+    },
+    {
+      "role": "system",
+      "text": "Checking the scene locally...",
+      "phase": "thinking"
+    },
+    {
+      "role": "assistant",
+      "text": "Requested one VARc. Pick, placement, and release will proceed automatically.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller is executing the pick sequence.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "The controller reports the task completed.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Batch progress: 3 of 3 picks completed and source removal verified.",
+      "phase": "ready"
+    },
+    {
+      "role": "assistant",
+      "text": "Batch completed. Please inspect the placements.",
+      "phase": "ready"
+    }
+  ],
+  "passed": true
+}

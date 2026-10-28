@@ -12,22 +12,31 @@ import cv2
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
 from policy import block_reason, intent, visual_agreement, boundary_reply
+from scheduler import batch_request, make_plan, visible_counts, ordinal
+from speech_input import normalize_voice_command
 
 
 class Conversation(Node):
     def __init__(self):
         super().__init__("robot_conversation")
         self.allow_replay = self.declare_parameter("allow_replay", False).value
+        self.enable_real_batches = self.declare_parameter("enable_real_batches", False).value
+        self.browser_speech = self.declare_parameter("browser_speech", False).value
+        self.batch = None
+        self.batch_task_id = None
+        self.batch_worker_active = False
         self.scene, self.state, self.images = {}, {}, {}
         self.history = []
         self.lock = threading.RLock()
         self.epoch = 0
         self.audio_queue = queue.Queue()
+        self.speech_queue = queue.Queue()
         threading.Thread(target=self.audio_loop, daemon=True).start()
         self.busy = False
         self.pending = None
@@ -35,6 +44,7 @@ class Conversation(Node):
         self.out = self.create_publisher(String, "/conversation/output", 20)
         self.tasks = self.create_publisher(String, "/conversation/task", 10)
         self.requests = self.create_publisher(String, "/pick_panel/request", 10)
+        self.batch_out = self.create_publisher(String, "/conversation/batch_state", 10)
         self.create_subscription(String, "/vision/boards", self.boards, 1)
         self.create_subscription(String, "/pick_panel/state", self.panel_state, 10)
         self.create_subscription(String, "/conversation/input", lambda m: self.submit(m.data), 10)
@@ -43,6 +53,7 @@ class Conversation(Node):
             self.create_subscription(Image, topic, lambda m, k=key: self.picture(m, k), qos_profile_sensor_data)
         self.create_timer(0.5, self.watchdog)
         self.emit("system", "Local conversation bridge ready. Start the model server before chatting.", "ready")
+        threading.Thread(target=self.speech_loop, daemon=True).start()
 
     def emit(self, role, text, phase="ready"):
         self.out.publish(String(data=json.dumps({"role": role, "text": text, "phase": phase})))
@@ -56,12 +67,37 @@ class Conversation(Node):
 
     def say(self, text):
         self.emit("assistant", text)
-        def speak():
+        if self.browser_speech:
+            return
+        with self.lock:
+            self.speech_queue.put((text, self.epoch))
+
+    def speech_loop(self):
+        while True:
+            text, epoch = self.speech_queue.get()
             try:
-                self.http("/speak", {"text": text}, timeout=2)
-            except Exception:
-                pass  # text remains available if audio output fails
-        threading.Thread(target=speak, daemon=True).start()
+                with self.lock:
+                    if epoch != self.epoch:
+                        continue
+                self.http("/speak", {"text": text}, timeout=3)
+                deadline = time.monotonic()+30
+                while time.monotonic() < deadline:
+                    with self.lock:
+                        interrupted = epoch != self.epoch
+                    if interrupted:
+                        self.http("/silence", {}, timeout=2)
+                        break
+                    status = self.http("/speech/status", {}, timeout=2)
+                    if status.get("error"):
+                        raise RuntimeError(status['error'])
+                    if not status.get("active"):
+                        break
+                    time.sleep(.05)
+                else:
+                    self.http("/silence", {}, timeout=2)
+                    raise RuntimeError("Speech playback timed out")
+            except Exception as exc:
+                self.emit("system", "Speech output unavailable: " + str(exc)[:160], "error")
 
     def boards(self, message):
         try:
@@ -106,9 +142,11 @@ class Conversation(Node):
                 self.last_phase = phase
                 if phase in {"completed", "failed", "rejected", "stopped"}:
                     self.pending = None
+                if self.batch_worker_active and state.get("task_id") == self.batch_task_id:
+                    return  # Batch worker narrates these transitions once, in sequence.
             phrases = {"running": "The controller is executing the pick sequence.",
                        "waiting": "The controller is waiting for your Confirm button.",
-                       "completed": "The controller reports the pick and place completed.",
+                       "completed": "The controller reports the task completed.",
                        "failed": "The controller reports failure. Review the log; I will not retry.",
                        "rejected": "The controller rejected the request: " + state.get("detail", ""),
                        "stopped": "The pick script stopped. Check the controller log for action cancellation confirmation; this is not an emergency stop."}
@@ -119,11 +157,16 @@ class Conversation(Node):
 
     def watchdog(self):
         with self.lock:
+            if self.batch:
+                self.batch_out.publish(String(data=json.dumps(self.batch.snapshot())))
             if self.pending and time.time() - self.pending[1] > 5 and self.last_phase is None:
                 self.pending = None
                 self.say("No controller acknowledgement. I will not retry; check the panel before another request.")
 
     def control(self, command):
+        if command == "stop":
+            self.submit("stop")
+            return
         if command == "clear":
             with self.lock:
                 self.epoch += 1
@@ -152,9 +195,13 @@ class Conversation(Node):
                         if epoch != self.epoch:
                             continue
                     if result.get("text"):
-                        self.submit(result["text"])
+                        heard = result["text"]
+                        text = normalize_voice_command(heard)
+                        if text != heard:
+                            self.emit("system", f'Heard "{heard}"; interpreted board vocabulary as "{text}".')
+                        self.submit(text)
                     else:
-                        self.say("I did not hear a command. Please try again or type it.")
+                        self.say(result.get("hint", "I did not hear a command. Please try again or type it."))
             except Exception as exc:
                 self.emit("system", "Microphone/transcription unavailable: " + str(exc)[:180], "error")
 
@@ -170,8 +217,14 @@ class Conversation(Node):
         if parsed.kind == "stop":
             with self.lock:
                 self.epoch += 1
+                if self.batch and self.batch.phase not in {"completed", "stopped", "failed"}:
+                    self.batch.finish("stopped", "Operator cancellation; remaining picks discarded.")
             self.requests.publish(String(data="stop"))
             self.say("Cancellation requested. This is not an emergency stop; check the controller confirms the stop.")
+            return
+        requested_batch = batch_request(text)
+        if requested_batch:
+            self.start_batch(requested_batch)
             return
         boundary = boundary_reply(text) if parsed.kind == "chat" else None
         if boundary:
@@ -179,6 +232,10 @@ class Conversation(Node):
             return
         with self.lock:
             if parsed.kind == "status":
+                if self.batch:
+                    self.say(f"Batch {self.batch.phase}: {self.batch.completed} of {len(self.batch.items)} completed. "
+                             + self.batch.reason)
+                    return
                 if time.time() - self.state.get("stamp", 0) > 2:
                     self.say("Controller status is unavailable or stale.")
                 else:
@@ -190,6 +247,9 @@ class Conversation(Node):
                 self.say("I am still processing the previous question. Stop remains available.")
                 return
             if parsed.kind == "pick":
+                if self.batch_worker_active:
+                    self.say("A batch is active. Say status or stop; another pick will not be queued.")
+                    return
                 reason = block_reason(self.scene, self.state, time.time(), parsed.variant, self.allow_replay)
                 if self.pending:
                     reason = "A task request is already pending. I will not queue another."
@@ -235,10 +295,12 @@ class Conversation(Node):
                     else:
                         task_id = str(uuid.uuid4())
                         self.pending = (task_id, time.time())
+                        self.batch_task_id = task_id
                         self.last_phase = None
                         self.tasks.publish(String(data=json.dumps({"id": task_id, "variant": parsed.variant,
                                                                    "stamp": time.time()})))
-                        answer = f"Requested one {parsed.variant}. Confirm each descent in the panel."
+                        answer = (f"Picking the {ordinal(self.batch.completed+1)} board, variant {parsed.variant[-1].upper()}."
+                                  if self.batch_worker_active else f"Picking variant {parsed.variant[-1].upper()}.")
                 self.history.extend([{"role": "user", "content": text}, {"role": "assistant", "content": answer}])
                 self.history = self.history[-8:]
             self.say(answer)
@@ -248,15 +310,125 @@ class Conversation(Node):
             with self.lock:
                 self.busy = False
 
+    def start_batch(self, request):
+        with self.lock:
+            if self.busy or self.pending or self.batch_worker_active:
+                self.say("A request or batch is already active. Say status or stop.")
+                return
+            try:
+                batch = make_plan(request, self.scene)
+                for variant in set(batch.items):
+                    reason = block_reason(self.scene, self.state, time.time(), variant, self.allow_replay)
+                    if reason:
+                        raise ValueError(reason)
+                if self.state.get("hardware") == "REAL FR5" and not self.enable_real_batches:
+                    raise ValueError("Real-robot batches are disabled pending supervised batch validation. Single picks remain available.")
+            except (ValueError, TypeError) as exc:
+                self.say(str(exc))
+                return
+            self.batch = batch
+            self.batch_worker_active = True
+            epoch = self.epoch
+        self.say(f"I'll pick these {len(batch.items)} boards, one at a time. You can say cancel batch to stop.")
+        threading.Thread(target=self.run_batch, args=(batch, epoch), daemon=True).start()
+
+    def run_batch(self, batch, epoch):
+        """Wait for each correlated result and observed source removal before advancing."""
+        try:
+            for variant in batch.items:
+                with self.lock:
+                    if epoch != self.epoch or batch.phase == "stopped":
+                        raise ValueError("Batch interrupted; remaining picks discarded.")
+                    before = visible_counts(self.scene)
+                    hardware = self.state.get("hardware")
+                    batch.phase = "checking"
+                    self.busy = True
+                    self.batch_task_id = None
+                # Reuse the complete single-pick visual and deterministic dispatch gates.
+                self.respond("pick " + variant, intent("pick " + variant), epoch)
+                with self.lock:
+                    task_id = self.batch_task_id
+                if not task_id:
+                    raise ValueError("Pick validation failed; no further picks dispatched.")
+                deadline = time.monotonic() + 180
+                while True:
+                    with self.lock:
+                        if epoch != self.epoch or batch.phase == "stopped":
+                            raise ValueError("Batch interrupted; remaining picks discarded.")
+                        state = copy.deepcopy(self.state)
+                        if state.get("hardware") != hardware:
+                            raise ValueError("Controller hardware identity changed; batch stopped.")
+                        phase = state.get("phase") if state.get("task_id") == task_id else None
+                        batch.phase = "executing"
+                        if phase in {"completed", "failed", "rejected", "stopped"}:
+                            break
+                        if time.time() - state.get("stamp", 0) > 2:
+                            raise ValueError("Controller status lost; batch stopped without retry.")
+                        if time.monotonic() > deadline:
+                            raise ValueError("Controller completion timed out; inspect the robot before another request.")
+                        if phase is None and time.monotonic() > deadline - 175:
+                            raise ValueError("No matching controller acknowledgement; batch stopped without retry.")
+                    time.sleep(.05)
+                if phase != "completed" or state.get("busy"):
+                    raise ValueError("Controller reported " + str(phase) + "; remaining picks discarded.")
+                completed_at = time.time()
+                expected = before.copy()
+                expected[variant] -= 1
+                expected = +expected
+                stable, last_stamp = 0, None
+                deadline = time.monotonic() + 10
+                while time.monotonic() < deadline:
+                    with self.lock:
+                        if epoch != self.epoch or batch.phase == "stopped":
+                            raise ValueError("Batch interrupted; remaining picks discarded.")
+                        batch.phase = "verifying"
+                        scene = copy.deepcopy(self.scene)
+                        stamp = scene.get("stamp", 0)
+                        if stamp > completed_at and stamp != last_stamp and 0 <= time.time()-stamp <= 2:
+                            last_stamp = stamp
+                            if scene.get("calibrated") is not True or (scene.get("live") is not True and not
+                                    (self.state.get("hardware") == "SIMULATION" and self.allow_replay)):
+                                raise ValueError("Fresh verified perception unavailable.")
+                            stable = stable+1 if visible_counts(scene) == expected else 0
+                            if stable >= 3:
+                                break
+                    time.sleep(.05)
+                else:
+                    raise ValueError("Source-board removal was not verified in three fresh frames. Inspect the scene; no retry.")
+                with self.lock:
+                    if epoch != self.epoch or batch.phase == "stopped":
+                        raise ValueError("Batch interrupted; remaining picks discarded.")
+                    batch.completed += 1
+                    batch.events.append({"task_id": task_id, "variant": variant, "completed_at": completed_at})
+                placed = f"{ordinal(batch.completed).capitalize()} board placed."
+                self.say(placed if batch.completed < len(batch.items) else
+                         placed + f" All {len(batch.items)} boards are done.")
+            with self.lock:
+                if epoch != self.epoch or batch.phase == "stopped":
+                    raise ValueError("Batch interrupted; remaining picks discarded.")
+                batch.finish("completed")
+        except Exception as exc:
+            with self.lock:
+                if batch.phase != "stopped":
+                    batch.finish("failed", str(exc))
+            self.say("Batch stopped. " + str(exc))
+        finally:
+            with self.lock:
+                self.batch_worker_active = False
+
 
 def main():
     rclpy.init()
     node = Conversation()
     try:
         rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     finally:
+        with node.lock:
+            node.epoch += 1
         node.destroy_node()
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":
