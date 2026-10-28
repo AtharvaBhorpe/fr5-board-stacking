@@ -11,6 +11,12 @@ Turns a **camera pixel** (fixed camera above the table, Logitech C920) into a **
 Model: one radial lens term + homography (table plane), fitted from 8 tags. Sim: ~0.5-1 mm mean error inside the tag
 area (decision-log V-17 / V-18). Real accuracy = the verification result stored in `calib.yaml`.
 
+**Role today (2026-10-28):** the calibration is done (`config/calib.yaml`: 10 tags, rms 1.36 mm, verification mean 1.73 /
+max 2.14 mm). Vision 1 (branch `feat/vision1-overhead`) uses an identical copy and outputs `base_link` directly, so the
+main controller does not call `/vision/pixel_to_table`; the service stays for any pixel -> table conversion. The
+read-only probe (`pixi run probe`) is also the way to read the cup tip pose while hand-guiding (e.g. the fault zone).
+Camera and table must not move, else recalibrate.
+
 ## Quick start
 
 ```bash
@@ -179,7 +185,7 @@ Fit errors per tag are shown in the rows and as rings on the image (green < 1 mm
 | record refused "not seen long enough" | the camera has not seen that tag for 10 frames yet: lift the cup, wait, retry |
 
 Robot pose source: joints from the controller state port 20004 + our own forward kinematics (same chain as the
-motion branch URDF, flange -> cup tip 112.9 mm). Alternatives in the page: *Pendant* (web-app x / y in mm; negated
+motion branch URDF, flange -> cup tip 107.4 mm since V-27: the teammate's real-robot contact tests). Alternatives in the page: *Pendant* (web-app x / y in mm; negated
 automatically; flange only, so the tool must point straight down) or *Manual* (base_link metres).
 First lab check of the robot link: `pixi run probe 20` while hand-guiding: `fresh True`, `mode manual`, **flange
 check < 5 mm** (ours vs the controller's own flange pose; large = wrong packet layout / frame).
