@@ -46,10 +46,68 @@ idle until job A was completely done had serialised the jobs: job B was only add
    is named); zones `processing_1`, `drop_off_a`, `drop_off_b` (from the camera, see `tc world`); the fault zone is
    automatic.
 
+## Changes since this recording (2026-10-28, TM-36 / TM-37)
+
+The timeline below was recorded before these changes: it shows a home move after every place. Now:
+
+1. **No home between moves.** When another board is queued, the robot goes straight from the place (after the
+   retract) to the next pick; home + camera check only when nothing is queued. The decision is made when the place
+   starts: a job added later cannot skip that home move (~5 s + camera check lost). **Rule 1 matters even more.**
+2. **Hidden boards still count.** A board hidden by the arm stays in the world and is picked in priority order (a
+   hidden high-priority board goes before a visible low one). Do not cancel / resubmit a job because a board is not
+   visible right now; a board really taken away is dropped by the world after 2 s of free view.
+3. **Late camera check.** A place without home is confirmed when the camera sees the board later. Warning
+   `placed but not confirmed by the camera within 15 s - continuing` = information only, the board counts as
+   delivered; never re-run the job for it.
+4. **Faster, same API.** Lower hover (100 mm above the table), faster vertical moves, `carry_speed` for moves with a
+   board. Times in the timeline below are now shorter; commands and job fields are unchanged.
+
+## Controller abilities (for the agent's tools)
+
+| Job (bridge / `tc` command) | Does | Notes |
+|---|---|---|
+| `transfer VARIANT\|any TO [COUNT] [PRIO]` | input boards of a variant -> zone `TO` | COUNT = boards to deliver, default 1, `0` = all matching |
+| `board ID TO [PRIO]` | exactly this board (id from the world) -> `TO` | the only way to move an `UNKWN` board |
+| `process VARIANT\|any ZONE [TO] [COUNT] [PRIO]` | input board -> processing `ZONE`, wait for the operator, then -> `TO` | one job for the whole chain; no `TO` = done when processed |
+| `clear FROM TO [COUNT] [PRIO]` | boards of zone `FROM` -> `TO` | not from the fault zone |
+
+| Control | Effect |
+|---|---|
+| `pause [JOB]` / `resume [JOB]` | whole controller (finishes the current skill, a held board is placed first) or one job |
+| `stop` | smooth stop now; a held board goes to the fault zone on `resume` |
+| `cancel JOB` | a held board of it is placed at its target first |
+| `prio JOB N` | new priority, effective at the next skill |
+| `clear_queue` | cancel all jobs |
+| `home` | only while paused / idle |
+| `reset_zone ZONE` | the operator emptied ZONE by hand (world only, no motion) |
+
+Limits: input stacks <= 5 boards; drop-off stacks <= 10 (then FULL: the job waits, the held board goes to the fault
+zone after 20 s); jobs pick only input boards (`clear` for zone boards); targets are zones only (no free poses); the
+fault zone (behind the robot) is used automatically, never as a target; one skill at a time (the controller orders).
+
+Job result: `delivered`, `to_fault`, `lost`, `skipped` + `message`; DONE can be partial (reason in `message`).
+The controller handles by itself: retries, a board without vacuum (skipped for good), a hand in the work area (waits),
+stale camera (waits), a board lost on the way (counted `lost`; when it falls on the table it is a new input board that
+a job with deliveries still missing picks again; not yet tested end-to-end).
+
+Alerts that need a **person** (tell the human, do not cancel the job):
+
+| Alert (events.txt / status) | Meaning -> what the human does |
+|---|---|
+| `processing_1 LOADED: ... placed, not taken for processing (since 30 s)` | operator: take the board for processing (only after the arm has left the zone, keep it away >= 2 s) |
+| `... PROCESSING: ... overdue, not back yet` | operator: put the processed board back inside the zone |
+| `... DONE: processed, but no active job will take it` | add a `clear` job, or remove it by hand + `reset_zone` |
+| `... FAULT: ...` | a board was put into an empty processing zone by hand: remove it |
+| `holding ... for TARGET: ... - the board goes to the fault zone in N s` | target full / not seen: empty it or fix the camera view |
+| `TARGET not seen for N s` | the camera cannot see the zone (tag covered?) |
+| `work area still not clear` | remove the obstacle / hand |
+| `HALTED: ...` | check the robot / gripper as the text says, then `resume` |
+
 ## Notes from this run
 
 - The last place (VARa on drop_off_a) reported NOT_VERIFIED (the camera did not confirm it within 3 s): logged as a
-  warning, the job continues and counts it delivered (by design).
+  warning, the job continues and counts it delivered (by design). Now only the last place before home is checked
+  like this; places followed by a pick are checked later (change 3).
 - j2 shows DONE only when the controller finishes its current action (here at t 107), although it delivered its
   board at t 68: check `delivered == count`, not only the state.
 

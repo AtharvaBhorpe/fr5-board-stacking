@@ -133,5 +133,6 @@ Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 40, fuz
 
 `notes/decision-log.md` (every decision TM-*, open items TM-O*), `notes/control-loop.md` (design CL-*),
 `notes/trial-1.md` (first real-robot trial: setup, tests, results), `notes/vision1-changes.md` (Vision 1 contract),
-`notes/scheduling-example.md` (how to give the controller parallel work: rules for an agent / VLM).
+`notes/scheduling-example.md` (how to give the controller parallel work: rules for an agent / VLM, the controller's
+abilities and limits, the alerts that need a person).
 Scheduling timeline recorder: `pixi run python3 tools/schedule_log.py <file>`.
