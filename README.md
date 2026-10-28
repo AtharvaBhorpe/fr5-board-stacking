@@ -51,7 +51,9 @@ tools/trial_down.sh                # stop everything cleanly, in the right order
 tools/trial_attach.sh              # attach a terminal (Ctrl+b <n> = window n, Ctrl+b d = detach, keeps running)
 ```
 
-Windows: 0 monitor, 1 motion, 2 vision (or fake), 3 world, 4 skills, 5 ctrl, 6 cli (`tc ...`), 7 bridge, 8 demo-ui.
+Windows: 0 monitor, 1 motion, 2 vision (or fake), 3 world, 4 skills, 5 ctrl, 6 cli (`tc ...`), 7 bridge, 8 demo-ui,
+9 dashboard (optional: the presentation web app from `<ws>/demo_webapp` or `HK_DASHBOARD_DIR`, http://localhost:8080;
+skipped with a note if that folder does not exist).
 **Vacuum-failure demo page:** http://localhost:8765, opened in the browser by `trial_up.sh` (not with `--no-gui`) and
 written to `<session>/demo_ui_url.txt` (`tools/vacuum_demo_ui.py`, `--lan` for a phone on the same network): *Simulate vacuum failure* arms it (fires 1.5 s into the next carry), *Now* fires at once while holding; *Pause* / *Resume* / *Stop* = `tc pause` / `tc resume` / `tc stop` (whole controller; Stop is a smooth software stop,
 not an e-stop).
