@@ -274,8 +274,9 @@ class SkillServer(Node):
         raise SkillError(code, f"{what}: {r.message}")
 
     def _goto(self, gh, x, y, z, yaw, holding=False, what="move", retries=None):
+        v = self.c.get("carry_speed", self.c["speed"]) if holding else self.c["speed"]   # TM-37: carry slower
         g = MoveTo.Goal(x=float(x), y=float(y), z=float(z), yaw=float(yaw), mode=MoveTo.Goal.MODE_DOWN_YAW,
-                        velocity_scaling=float(self.c["speed"]))
+                        velocity_scaling=float(v))
         for k in range((self.c["retries"] if retries is None else retries) + 1):
             try:
                 return self._motion(self.move_to, g, gh, holding=holding, what=what, timeout=self.c["move_timeout"])
@@ -306,8 +307,8 @@ class SkillServer(Node):
             raise SkillError(C.ALREADY_HOLDING, "a board is already held")
         w = self._fresh_world()
         b = next((b for b in w.boards if b.id == req.board_id), None)
-        if b is None or b.location == "held" or b.age > self.c["fresh"]:
-            raise SkillError(C.BOARD_NOT_FOUND, f"board '{req.board_id}' not seen recently")
+        if b is None or b.location == "held":                 # TM-36: a board the world still holds counts, also
+            raise SkillError(C.BOARD_NOT_FOUND, f"board '{req.board_id}' not in the world")   # one hidden by the arm
         board = {"x": b.x, "y": b.y, "top_z": b.top_z}
         thick = b.thickness if not math.isnan(b.thickness) else self.c["default_thickness"]
         yaw = sm.tcp_yaw_for(b.yaw, self.c["ref_yaw"])
@@ -472,6 +473,17 @@ class SkillServer(Node):
             self._home_move(gh)
             res.target, res.stack_count = target, 0
             return f"dropped {held} into the fault zone {target} (void)"
+        if getattr(req, "skip_home", False):              # TM-36: the next pick starts from here; the controller
+            def zone_now():                               # confirms the place later
+                return next((z for z in self.world.zones if z.name == target), None) if target and self.world else None
+            end = time.monotonic() + 1.0                  # the world applies the 'placed' event within ms: report its
+            while (target and zd["kind"] == "drop_off" and time.monotonic() < end   # count (no home move to wait for)
+                   and (zone_now() is None or zone_now().stack_count <= zd["stack_count"])):
+                time.sleep(0.02)
+            z = zone_now()
+            res.target, res.stack_count = target, z.stack_count if z is not None else 0
+            self._update_stacks()                        # the stack now includes this board
+            return f"placed {held} in {target or 'the pose'} (no home: the next pick follows)"
         self._phase(gh, Place, "VERIFY")
         self._home_move(gh)                              # out of the camera's way (CL-20 settle check)
         t_end, t_placed = time.monotonic() + self.c["verify_timeout"], time.monotonic()

@@ -59,7 +59,7 @@ Commands (window 6, or `pixi run python3 tools/task_cli.py ...`; `help` lists al
 | Command | What |
 |---|---|
 | `tc status` / `tc world` / `tc list` / `tc wait j3` | controller state, boards + zones, jobs, follow a job |
-| `tc transfer VARa drop_off_a 2` | 2 input VARa boards -> drop_off_a (`0` = all, `any` = any variant) |
+| `tc transfer VARa drop_off_a 2` | 2 input VARa boards -> drop_off_a (no count = 1, `0` = all, `any` = any variant) |
 | `tc process VARa processing_1 drop_off_a 1` | input board -> processing zone; after the operator processed it -> drop_off_a |
 | `tc board b7 drop_off_b` / `tc clear drop_off_a drop_off_b` | one board by id / move boards of a zone |
 | `tc pause` `tc resume` `tc stop` `tc home` `tc cancel j3` `tc prio j3 10` | control (stop holds a board, resume drops it into the fault zone) |
@@ -90,10 +90,14 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
   are ignored (hands); a board the robot placed keeps its known variant. Drop-off stack height = sheet top + count x
   board thickness (the camera cannot count a stack).
 - **Processing zone:** EMPTY -> LOADED (robot placed) -> PROCESSING (operator took it, 2 s) -> DONE (a board back, 2 s)
-  -> picked -> EMPTY. A board put by hand into an empty processing zone = FAULT, clears itself when removed.
+  -> picked -> EMPTY. A board put by hand into an empty processing zone = FAULT, clears itself when removed. **Operator rule:** take the board only after the arm has left the zone and keep it away >= 2 s (the camera
+  must see the zone empty; while the arm covers it the zone state is frozen).
 - **Pick:** hover, then a slow contact search until the vacuum seals (input stacks: height unknown) or a known height
   (zone boards). **Place:** 1 mm into the stack top, vacuum off + 4 s blow-off, the retract starts 0.5 s into it.
-  Then home (park pose above the robot's aluminium profile, out of the camera view) and a camera check.
+  If another board is queued (by priority) the next pick starts right there; otherwise home (park pose above the
+  robot's aluminium profile, out of the camera view) and a camera check. Boards hidden by the arm are remembered by the
+  world and count as pickable (priority is never changed by occlusion); a place not followed by home is confirmed by
+  the camera later (warning only if not).
 - **Failures:** grip failed -> the board is skipped (problem board), vision stale -> wait, obstacle -> wait_clear,
   board lost -> counted, 3 motion failures in a row or a failed release -> HALTED (check, then `tc resume`). A board
   that cannot go anywhere is dropped into the **fault zone** (fixed spot behind the base, a void).
@@ -103,8 +107,8 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
 | File | Main values |
 |---|---|
 | `world.yaml` | variants VARa 0.295 x 0.210, VARb 0.210 x 0.150, VARc 0.210 x 0.135 (5 mm), table_z -0.060, zone margin, timers (gone / back / unknown_after 2 s, stale_after 1.5 s, lost_after 2 s), **fault zone position**, zone_unknown_boards |
-| `skills.yaml` | speeds (0.15 / approach 0.075 / search 0.015), press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, hover_z, fault_drop_z, timeouts |
-| `main.yaml` | home_xy (= home_pose x / y), retry / halt policy, alert times, per-skill timeouts |
+| `skills.yaml` | speeds (free moves 0.20 / carry with a board 0.15 / approach 0.10 / search 0.015), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
+| `main.yaml` | home_xy (= home_pose x / y), retry / halt policy, alert times, per-skill timeouts, deferred_verify |
 | `scenario_demo.yaml` | the simulated table for `--sim` and the tests |
 
 Zone geometry (tag id -> name, offset, size, sheet top) lives in Vision 1 (`vision1/table.py` `ZONES`).
@@ -114,7 +118,7 @@ Logging: `tools/live_env.sh` (sessions, `debug` / `demo`), `tools/live_monitor.p
 
 `tests/README.md`. Logic tests run in seconds without ROS (`pixi run python3 tests/world_core_check.py`, ...); ROS /
 sim tests need a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 pixi run python3 tests/skills_ros_check.py`).
-Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 34, fuzz 21, skills_ros 28, main_ros 17, ...).
+Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 40, fuzz 21, skill_math 17, fake_world 24, skills_ros 29, main_ros 17, ...).
 
 ## Limitations / open
 
@@ -128,4 +132,6 @@ Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 34, fuz
 ## More
 
 `notes/decision-log.md` (every decision TM-*, open items TM-O*), `notes/control-loop.md` (design CL-*),
-`notes/trial-1.md` (first real-robot trial: setup, tests, results), `notes/vision1-changes.md` (Vision 1 contract).
+`notes/trial-1.md` (first real-robot trial: setup, tests, results), `notes/vision1-changes.md` (Vision 1 contract),
+`notes/scheduling-example.md` (how to give the controller parallel work: rules for an agent / VLM).
+Scheduling timeline recorder: `pixi run python3 tools/schedule_log.py <file>`.

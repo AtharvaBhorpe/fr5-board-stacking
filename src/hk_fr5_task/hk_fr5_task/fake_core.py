@@ -11,6 +11,7 @@ import math
 
 import numpy as np
 
+from hk_fr5_task import mask
 from hk_fr5_task.world_core import rect_corners
 
 VISION1_ZONE_KINDS = ("drop_off", "processing")
@@ -27,6 +28,8 @@ class FakeWorld:
             self._add(b["variant"], b["x"], b["y"], b.get("yaw", 0.0), b.get("count", 1))
         self.held = None
         self.pending = []                       # (t, action, data) operator actions
+        self.tcp = None                         # tcp (x, y) from TF (fake_world); None = no arm known
+        self.free_since = {}                    # zone -> t since the arm has not covered it
         self.hands = [dict(h) for h in scenario.get("hands", [])]
         self.log = []
 
@@ -95,22 +98,47 @@ class FakeWorld:
             z = self.zone_at(x, y)
             if z and z["kind"] == "processing":
                 op = self.s.get("operator", {})
-                self.pending.append((t + op.get("take_after", 1.5), "take", z["name"]))
-                self.pending.append((t + op.get("take_after", 1.5) + op.get("return_after", 3.0), "return", z["name"]))
+                self.pending.append((t + op.get("take_after", 1.5), "take", z["name"]))   # return: after the take
             self.log.append((t, f"placed {variant} at ({x:.3f}, {y:.3f})" + (f" in {z['name']}" if z else "")))
         elif typ == "dropped":
             self.held = None
         else:
             raise ValueError(f"unknown event type '{typ}'")
 
+    def _covered(self, z):
+        """The arm (band base -> tcp, + the held board) covers zone z in the camera view (same shape as the world
+        model's mask, CL-31)."""
+        if self.tcp is None:
+            return False
+        r = 0.0
+        if self.held:
+            l, w = self._size(self.held["variant"])
+            r = math.hypot(l, w) / 2 + 0.03
+        band = mask.band(self.tcp, self.s.get("operator", {}).get("arm_radius", 0.12), r)
+        return mask.hits(band.get("arm"), rect_corners(z["x"], z["y"], z["yaw"], z["length"], z["width"])) or \
+            mask.hits(band.get("tool"), rect_corners(z["x"], z["y"], z["yaw"], z["length"], z["width"]))
+
     def _operator(self, t):
-        mode = self.s.get("operator", {}).get("return_variant", "same")    # same | nonvariant (printed board, CL-19)
+        """TM-37: the operator follows the demo routine: takes the board only when the arm does not cover the zone,
+        and puts it back return_after s later, only after the zone was in free view for free_view s (the world must
+        see it empty, gone_after 2 s). Before, fixed times raced with the arm (no home after a place, TM-36)."""
+        op = self.s.get("operator", {})
+        mode = op.get("return_variant", "same")    # same | nonvariant (printed board, CL-19)
+        for z in self.zones:
+            if self._covered(z):
+                self.free_since[z["name"]] = None
+            elif self.free_since.get(z["name"]) is None:
+                self.free_since[z["name"]] = t
         for item in [p for p in self.pending if p[0] <= t]:
-            self.pending.remove(item)
             _, action, zname = item
             z = next(z for z in self.zones if z["name"] == zname)
+            since = self.free_since.get(zname)
+            if since is None or (action == "return" and t - since < op.get("free_view", 3.0)):
+                continue                                      # the arm covers the zone: wait
+            self.pending.remove(item)
             here = [b for b in self.boards if self.zone_at(b["x"], b["y"]) is z]
             if action == "take" and here:
+                self.pending.append((t + op.get("return_after", 3.0), "return", zname))
                 self._taken = getattr(self, "_taken", {}); self._taken[zname] = here[0]["variant"]
                 self.boards.remove(here[0])
                 self.log.append((t, f"operator took the board out of {zname}"))

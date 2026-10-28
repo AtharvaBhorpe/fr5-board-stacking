@@ -5,6 +5,7 @@ that can be provoked. ~2-3 min.
     ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=83 pixi run python3 tests/skills_ros_check.py
 """
 import math
+import re
 import os
 import shutil
 import signal
@@ -46,11 +47,11 @@ def exe(pkg, name):
     return os.path.join(get_package_prefix(pkg), "lib", pkg, name)
 LOG_DIR = os.environ.get("HK_TEST_LOG_DIR", tempfile.gettempdir())
 os.makedirs(LOG_DIR, exist_ok=True)
-def start(name, cmd, cwd=None):
+def start(name, cmd, cwd=None, env=None):
     """Output straight into a log file. NEVER stdout=PIPE read only at the end: move_group logs > 64 KB, the full pipe
     blocks its next log write and freezes planning / execution (that was the 'move_group hang', TM-11 / TM-13)."""
     log = open(os.path.join(LOG_DIR, f"skills_check_{name}.log"), "w")
-    p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, cwd=cwd)
+    p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, cwd=cwd, env=env)
     p.log_path = log.name
     log.close()
     return p
@@ -67,13 +68,15 @@ def stop(p):
 
 tmp = tempfile.mkdtemp(prefix="skills_check_")
 cfg = yaml.safe_load(open(os.path.join(get_package_share_directory("hk_fr5_task"), "config", "skills.yaml")))
-cfg.update(speed=float(os.environ.get("HK_SPEED", "1.0")), approach_speed=0.25, search_speed=0.02, verify_timeout=3.0)     # sim: fast (TM-4)
+cfg.update(speed=float(os.environ.get("HK_SPEED", "1.0")), approach_speed=0.25, search_speed=0.02, verify_timeout=3.0,
+           carry_speed=0.6)      # TM-37: distinct from speed (checked in the skill_server step log)     # sim: fast (TM-4)
 yaml.safe_dump(cfg, open(os.path.join(tmp, "skills.yaml"), "w"))
 procs = {"motion": start("motion", [PIXI, "run", "--manifest-path", os.path.join(MOTION_WT, "pixi.toml"), "ros2", "launch",
                                     "hk_fr5_moveit_config", "bringup.launch.py", "use_rviz:=false"], cwd=MOTION_WT),
          "fake": start("fake", [exe("hk_fr5_task", "fake_world"), "--ros-args", "-p", "contact_sim:=true", "-p", "seed:=2"]),
          "world": start("world", [exe("hk_fr5_task", "world_model")]),
-         "skills": start("skills", [exe("hk_fr5_task", "skill_server"), "--ros-args", "-p", f"config:={tmp}/skills.yaml"])}
+         "skills": start("skills", [exe("hk_fr5_task", "skill_server"), "--ros-args", "-p", f"config:={tmp}/skills.yaml"],
+                         env=dict(os.environ, HK_VERBOSE="1"))}     # step log with the speed of every goal (TM-37)
 rclpy.init(); n = rclpy.create_node("skills_test")
 L = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 S = {"w": None, "g": None, "seal_z": None}
@@ -240,8 +243,16 @@ try:
     sz = S["seal_z"]
     check("pick from an input stack of 3: contact search sealed on the stack top (table + 15 mm)", r and r.success
           and sz is not None and TABLE + 3 * TH - 0.015 <= sz <= TABLE + 3 * TH + 0.001, f"{desc(r)}; seal z {sz}")
-    r = run("place", Place.Goal(target="drop_off_b"))
-    check("place on drop_off_b: success, stack count 1", r and r.success and r.stack_count == 1, desc(r))
+    r = run("place", Place.Goal(target="drop_off_b", skip_home=True))
+    try:
+        tp = tfb.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation
+    except Exception:
+        tp = None
+    zb = zone("drop_off_b")
+    check("TM-36 place on drop_off_b with skip_home: success, stack count 1, the arm stays at hover over the zone "
+          "(no home move, no blocking camera check)", r and r.success and r.stack_count == 1 and "no home" in r.message
+          and tp is not None and abs(tp.x - zb.x) < 0.01 and abs(tp.y - zb.y) < 0.01 and abs(tp.z - cfg["hover_z"]) < 0.01,
+          f"{desc(r)}; tcp {tp and (round(tp.x, 3), round(tp.y, 3), round(tp.z, 3))}")
 
     r = run("place", Place.Goal(target="drop_off_b"))
     check("place without a board: NOT_HOLDING", r and r.code.value == C.NOT_HOLDING, desc(r))
@@ -341,6 +352,11 @@ finally:
         outs[k] = stop(procs[k])                     # every started process (motion last); logs in LOG_DIR/skills_check_<k>.log
     n.destroy_node(); rclpy.shutdown()
     shutil.rmtree(tmp, ignore_errors=True)
+carry = re.findall(r"\] carry to [^:]*: move_to .* speed (\d+\.\d+)", outs["skills"])
+hov = re.findall(r"\] hover over the board: move_to .* speed (\d+\.\d+)", outs["skills"])
+check(f"TM-37: carries at carry_speed {cfg['carry_speed']}, hover moves at speed {cfg['speed']}",
+      carry and hov and all(float(v) == round(cfg["carry_speed"], 2) for v in carry)
+      and all(float(v) == round(cfg["speed"], 2) for v in hov), f"carry {sorted(set(carry))} hover {sorted(set(hov))}")
 for k in ("skills", "world", "fake"):
     check(f"{k}: no traceback, clean exit", "Traceback" not in outs[k] and "[KILLED]" not in outs[k], outs[k][-300:])
 print(f"total {time.time() - t0:.0f} s")

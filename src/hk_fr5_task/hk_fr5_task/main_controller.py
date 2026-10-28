@@ -97,7 +97,7 @@ def goal_for(action):
     if skill == "pick":
         return skill, Pick.Goal(board_id=action["board"], contact_search=False, velocity_scaling=0.0)
     if skill == "place":
-        return skill, Place.Goal(target=action["target"], velocity_scaling=0.0)
+        return skill, Place.Goal(target=action["target"], velocity_scaling=0.0, skip_home=bool(action.get("skip_home")))
     if skill == "release_safe":
         return skill, ReleaseSafe.Goal(target=action.get("target", ""))
     if skill == "wait_clear":

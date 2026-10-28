@@ -7,10 +7,10 @@ Look (no effect on the robot):
     wait JOB [TIMEOUT_S]           follow a job until DONE / CANCELLED (prints every change)
 
 Jobs (queued; the controller decides when they run):
-    transfer VARIANT|any TO [COUNT] [PRIO]          input boards of a variant -> zone TO (COUNT 0 = all)
+    transfer VARIANT|any TO [COUNT] [PRIO]          input boards of a variant -> zone TO (COUNT default 1, 0 = all)
     board BOARD_ID TO [PRIO]                        exactly this board -> TO (also an UNKWN board)
     process VARIANT|any ZONE [TO] [COUNT] [PRIO]    input board -> processing ZONE -> (after processing) TO
-    clear FROM TO [COUNT] [PRIO]                    boards of zone FROM -> TO (not the fault zone)
+    clear FROM TO [COUNT] [PRIO]                    boards of zone FROM -> TO (COUNT default 1, 0 = all; not the fault zone)
     add k=v ...                                     any Job field (type, select_variant, select_board, from_zone, zone,
                                                     to, count, max_attempts, priority)
 Control:
@@ -183,14 +183,14 @@ def main():
                     break
                 time.sleep(1.0)
         elif c == "transfer":
-            add(n, type="transfer", select_variant=var(a[1]), to=a[2], count=opt(a, 3, 0), priority=opt(a, 4, 0))
+            add(n, type="transfer", select_variant=var(a[1]), to=a[2], count=opt(a, 3, 1), priority=opt(a, 4, 0))
         elif c == "board":
             add(n, type="transfer", select_board=a[1], to=a[2], count=1, priority=opt(a, 3, 0))
         elif c == "process":
             add(n, type="process", select_variant=var(a[1]), zone=a[2], to=opt(a, 3, ""), count=opt(a, 4, 1),
                 priority=opt(a, 5, 0))
         elif c == "clear":
-            add(n, type="clear_zone", from_zone=a[1], to=a[2], count=opt(a, 3, 0), priority=opt(a, 4, 0))
+            add(n, type="clear_zone", from_zone=a[1], to=a[2], count=opt(a, 3, 1), priority=opt(a, 4, 0))
         elif c == "add":
             add(n, **dict(kv.partition("=")[::2] for kv in a[1:]))
         elif c in ("pause", "resume"):

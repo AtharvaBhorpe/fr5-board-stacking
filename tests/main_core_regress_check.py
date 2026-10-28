@@ -440,6 +440,98 @@ def held_visible():
     check("CL-31 held board seen by the camera at the tcp: no phantom board created (ids <= physical boards)",
           sim.world._next - 1 <= 5 and sim.zone("drop_off_2")["stack_count"] == 3, f"ids {sim.world._next - 1}")
 
+# ---------- TM-36: no home between a place and a queued pick; hidden boards from the world's memory ----------
+from hk_fr5_task import mask as _M
+from hk_fr5_task.world_core import rect_corners as _rc
+from main_sim import OCCLUDE_R as _OR, ZONES as _Z
+_D1 = next(z for z in _Z if z["name"] == "drop_off_1")
+_HIDDEN = (-0.10, 0.37)                                  # on the arm's line base -> drop_off_1: hidden while it hovers there
+
+
+def _hidden_under_arm(x, y, l=0.10, w=0.07):
+    return _M.hits([_M.capsule((0.0, 0.0), (_D1["x"], _D1["y"]), _OR)], _rc(x, y, 0.0, l, w))
+
+
+def _between(sim, first, second):
+    """Skills started between the first and the second index of the SUCCESS picks / places in sim.seq."""
+    return [s for s, j, b, tg, c in sim.seq[first + 1:second]]
+
+
+@case("TM-36 visible")
+def tm36_visible():
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2}, {"variant": "red", "x": -0.62, "y": 0.20, "yaw": 0.0}])
+    a = red_transfer(sim, 2)
+    sim.loop(max_t=200)
+    sk = [x[0] for x in sim.seq]
+    i1 = sk.index("place"); i2 = sk.index("pick", i1)
+    check("TM-36 next board visible: place (no home) -> pick directly; the last place goes home",
+          "home" not in _between(sim, i1, i2) and sim.skip_homes == 1 and jobs(sim)[a]["state"] == "DONE"
+          and cnt(jobs(sim)[a], "delivered") == 2, f"{sk}, skip_homes {sim.skip_homes}")
+    check("TM-36 the deferred camera check confirms both places (no 'not confirmed' warning)",
+          not events(sim, "not confirmed by the camera") and not sim.core.unverified)
+
+
+@case("TM-36 hidden")
+def tm36_hidden():
+    assert _hidden_under_arm(*_HIDDEN), "layout: the second board must be under the arm over drop_off_1"
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2},
+                      {"variant": "red", "x": _HIDDEN[0], "y": _HIDDEN[1], "yaw": 0.0}])
+    a = red_transfer(sim, 2)
+    sim.loop(max_t=200, until=lambda s: s.skip_homes >= 1)          # first board placed, arm over drop_off_1
+    hid = [b for b in sim.wd()["boards"] if b["location"] == "input"]
+    hidden_now = len(hid) == 1 and hid[0]["age"] > MCFG["fresh"] - 1.0
+    sim.loop(max_t=200)
+    sk = [x[0] for x in sim.seq]
+    i1 = sk.index("place"); i2 = sk.index("pick", i1)
+    check("TM-36 next board hidden by the arm: it stays in the world and is picked directly (no home first)",
+          len(hid) == 1 and "home" not in _between(sim, i1, i2) and cnt(jobs(sim)[a], "delivered") == 2,
+          f"hidden board {hid and (hid[0]['id'], round(hid[0]['age'], 1))}, unseen now {hidden_now}, {sk}")
+
+
+@case("TM-36 priority")
+def tm36_priority():
+    assert _hidden_under_arm(*_HIDDEN), "layout"
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2},
+                      {"variant": "white_small", "x": _HIDDEN[0], "y": _HIDDEN[1], "yaw": 0.0},
+                      {"variant": "white_large", "x": -0.45, "y": -0.25, "yaw": 0.0}])
+    hi = sim.add(type="transfer", select_variant="red", to="drop_off_1", count=1, priority=10)[2]
+    me = sim.add(type="transfer", select_variant="white_small", to="drop_off_2", count=1, priority=5)[2]
+    lo = sim.add(type="transfer", select_variant="white_large", to="drop_off_2", count=1, priority=1)[2]
+    sim.loop(max_t=300)
+    picks = [j for s, j, b, tg, c in sim.seq if s == "pick" and c == "SUCCESS"]
+    sk = [x[0] for x in sim.seq]
+    i1 = sk.index("place")
+    check("TM-36 high / medium / low: after the high place the hidden MEDIUM board goes before the visible LOW one, "
+          "directly (no home)", picks == [hi, me, lo] and sk[i1 + 1] == "pick", f"picks {picks}, skills {sk}")
+
+
+@case("TM-36 gone")
+def tm36_gone():
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2},
+                      {"variant": "red", "x": _HIDDEN[0], "y": _HIDDEN[1], "yaw": 0.0}])
+    a = red_transfer(sim, 2)
+    sim.loop(max_t=200, until=lambda s: s.skip_homes >= 1)
+    sim.fake.boards = [b for b in sim.fake.boards if abs(b["x"] - _HIDDEN[0]) > 0.03 or abs(b["y"] - _HIDDEN[1]) > 0.03]
+    sim.loop(max_t=200)                                               # removed by hand while hidden by the arm
+    J = jobs(sim)[a]
+    check("TM-36 a remembered board removed while hidden: the pick finds nothing (GRIP_FAILED), it is skipped, the "
+          "job ends partial (no crash, no loop)", fails(sim, "GRIP_FAILED") >= 1 and cnt(J, "skipped") == 1
+          and cnt(J, "delivered") == 1 and J["state"] == "DONE", f"{codes(sim)}, {J['state']} {J['message']}")
+
+
+@case("TM-36 deferred verify")
+def tm36_unconfirmed():
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2}, {"variant": "red", "x": -0.62, "y": 0.20, "yaw": 0.0}])
+    a = red_transfer(sim, 2)
+    sim.loop(max_t=200, until=lambda s: s.skip_homes >= 1)            # first board placed, no home, not confirmed yet
+    sim.fake.boards = [b for b in sim.fake.boards if abs(b["x"] - _D1["x"]) > 0.03 or abs(b["y"] - _D1["y"]) > 0.03]
+    t0 = sim.t                                                        # taken away before the camera saw it
+    sim.loop(max_t=t0 + MCFG["deferred_verify"] + 30, until=lambda s: s.t > t0 + MCFG["deferred_verify"] + 3)
+    check("TM-36 deferred camera check: a skip_home place never seen in its zone -> one warning after "
+          "deferred_verify, the job goes on", len(events(sim, "not confirmed by the camera within")) == 1
+          and cnt(jobs(sim)[a], "delivered") == 2, str([e[2] for e in events(sim, "not confirmed")]))
+
+
 check(*invariant_summary())
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

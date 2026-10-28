@@ -86,6 +86,12 @@ class FakeWorldNode(Node):
             self.sent = self.sealed
 
     def _tick(self):
+        if hasattr(self, "tf"):                                         # TM-37: the operator waits for the arm
+            try:
+                tr = self.tf.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation
+                self.world.tcp = (tr.x, tr.y)
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                pass
         h = self.get_parameter("hand_now").value
         if h and h != self._hand_req:
             x, y, dur = (float(v) for v in h.split())

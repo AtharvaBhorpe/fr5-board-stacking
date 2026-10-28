@@ -1,5 +1,6 @@
 # Main controller (T5, control-loop.md CL-21..CL-32, review fixes TM-16, failure policies section 6). Seconds.
-fresh: 1.5                # boards / zones seen longer ago are not chosen
+fresh: 1.5                # zones seen longer ago are not targets (boards: every board in the world counts, TM-36)
+deferred_verify: 15.0     # TM-36: s for the camera to confirm a skip_home place, else a warning (job goes on)
 end_wait: 3.0             # CL-24: count 0 (all) ends after this long without a candidate
 partial_after: 30.0       # count n: give up waiting for more matching boards after this long
 lookup_retries: 2         # BOARD_NOT_FOUND / BOARD_MOVED / VISION_STALE: retries before the board is skipped;

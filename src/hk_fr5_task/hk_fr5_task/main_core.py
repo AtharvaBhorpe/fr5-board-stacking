@@ -70,6 +70,7 @@ class MainCore:
         self._wait_since = {}          # CL-28: (job, target) -> since when the target is not seen (no board held)
         self._last_pick = None         # A2: the last pick action started (its board may be on the cup after a failure)
         self._homed = False            # CL-30: the last move ended at home (home / place / release_safe succeeded)
+        self.unverified = []           # TM-36: skip_home places still waiting for the camera
         self.problem_why = {}          # board -> why it was skipped (CL-29 alerts)
         self.decide = lambda point, ctx, default: default    # LLM decision hook (T8)
 
@@ -229,10 +230,12 @@ class MainCore:
         j["attempts"] = len(j["_items"])
 
     def _candidates(self, j, world):
-        """Boards this job could pick now (not held, not claimed by another job, not problem, recently seen)."""
+        """Boards this job could pick now (not held, not claimed by another job, not problem). TM-36: every board the
+        world still holds counts, also one not seen for a while: the world keeps boards hidden by the robot (arm
+        mask) and drops really vanished ones after lost_after, so occlusion never changes the priority order."""
         out = []
         for b in world["boards"]:
-            if b["location"] == "held" or b["id"] in self.problem or b["age"] > self.c["fresh"]:
+            if b["location"] == "held" or b["id"] in self.problem:
                 continue
             if self.claims.get(b["id"], j["id"]) != j["id"] or b["id"] in j["_items"]:
                 continue
@@ -413,6 +416,7 @@ class MainCore:
             self._vision_down = False
             self._log(t, "info", "Vision 1 data back - continuing")
         self._zone_alerts(world, t)
+        self._check_placed(world, t)                                         # TM-36
         if t < self.hold_until:                                              # P: retry wait
             return None
         if self.recovery:                                                    # E3: before the held board
@@ -467,12 +471,47 @@ class MainCore:
         ok, why = self._target_ok(world, target)                             # CL-28
         if ok:
             self._hold.pop(held, None)
-            return {"skill": "place", "job": owner["id"], "board": held, "target": target}
+            return {"skill": "place", "job": owner["id"], "board": held, "target": target,
+                    "skip_home": self._has_next(world)}                     # TM-36: no home if the next pick waits
         if not self._at_home(tcp):                                           # CL-35: park (= home) before waiting,
             self._hold.pop(held, None)                                       # so the camera sees the zones; the
             owner["message"] = f"holding {held}: {target} is {why} - parking at home to wait"   # timer starts there
             return {"skill": "home", "job": "", "board": ""}
         return self._hold_wait(owner, held, target, why, world, t)
+
+    def _has_next(self, world):
+        """TM-36: is there a next pick right after the current place? (no side effects) A processed board ready to
+        go out, or an active job that may start a board, whose target can take it and that has a board in the world.
+        Yes -> the place skips its home move (and the blocking camera check); the pick starts from where the arm is."""
+        for j in self._active():
+            if j["type"] == "home":
+                return False                                                 # a queued home job: go home
+            if j["type"] == "process":
+                z = self._zone(world, j["zone"])
+                if z is not None and z["state"] in ("DONE", "FAULT") and z["board_id"] in j["_items"]:
+                    return True
+            if j["type"] == "process" and self._in_flight(j):
+                continue                                                     # its board is in processing / on the cup
+            if not self._may_start(j):
+                continue
+            if not self._target_ok(world, j["zone"] if j["type"] == "process" else j["to"])[0]:
+                continue
+            if self._candidates(j, world):
+                return True
+        return False
+
+    def _check_placed(self, world, t):
+        """TM-36: a place with skip_home did not wait for the camera: confirm it later (the board seen in its target
+        zone after the place), else the same warning as NOT_VERIFIED after deferred_verify s (the job goes on)."""
+        boards = {b["id"]: b for b in world["boards"]}
+        for u in list(self.unverified):
+            b = boards.get(u["board"])
+            if b is not None and b["location"] == "zone" and b["zone"] == u["target"] and t - b["age"] > u["t"]:
+                self.unverified.remove(u)
+            elif t - u["t"] > self.c["deferred_verify"]:
+                self.unverified.remove(u)
+                self._log(t, "warn", f"{u['board']}: placed but not confirmed by the camera within "
+                                     f"{self.c['deferred_verify']:.0f} s - continuing")
 
     def _hold_wait(self, j, b, target, why, world, t):
         """CL-28 hold timer: the held board's target cannot take it. Wait; alert after hold_alert_after; after
@@ -566,7 +605,9 @@ class MainCore:
             self.recovery.remove(action)
         until = t + self.c["world_wait"]
         if code in ("SUCCESS", "NOT_VERIFIED") and skill in ("home", "place", "release_safe"):
-            self._homed = True                                               # these end at home (CL-30)
+            self._homed = not action.get("skip_home")                        # these end at home (CL-30), not a
+            if code == "SUCCESS" and action.get("skip_home"):                # skip_home place (TM-36): camera check
+                self.unverified.append({"board": b, "target": action.get("target", ""), "t": t})   # follows later
         if code == "SUCCESS":
             self.streak = 0
             self.retries.pop((b, skill), None)

@@ -76,6 +76,7 @@ scn["boards"] = scn["boards"] + [{"variant": "VARc", "x": 0.02, "y": -0.60, "yaw
 yaml.safe_dump(scn, open(os.path.join(tmp, "scenario.yaml"), "w"))
 sk = yaml.safe_load(open(os.path.join(SHARE, "config", "skills.yaml")))
 sk.update(speed=float(os.environ.get("HK_SPEED", "1.0")), approach_speed=0.25, search_speed=0.02, verify_timeout=3.0)
+sk.update(carry_speed=sk["speed"])                          # TM-37: sim carries as fast as the other moves
 yaml.safe_dump(sk, open(os.path.join(tmp, "skills.yaml"), "w"))
 mc = yaml.safe_load(open(os.path.join(SHARE, "config", "main.yaml")))
 mc.update(end_wait=3.0, partial_after=6.0)

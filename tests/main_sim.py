@@ -179,6 +179,7 @@ class Sim:
         self.expect_bad = False        # True: this scenario shows a violation on purpose (left out of the summary)
         self.chaos = None              # fuzz: fn(action) -> failure code to inject, or None
         self.fault_drops = 0           # boards put into the fault zone (a void: the world forgets them, CL-39)
+        self.skip_homes = 0            # TM-36: places that stayed over the zone (no home move)
         ALL.append(self)
         self.frames(0.5)
 
@@ -257,7 +258,7 @@ class Sim:
             if self.cup or w["held_board_id"]:
                 return "ALREADY_HOLDING"
             b = self.board(a["board"])
-            if b is None or b["location"] == "held" or b["age"] > SCFG["fresh"]:
+            if b is None or b["location"] == "held":           # TM-36: boards the world still holds count
                 return "BOARD_NOT_FOUND"
         if skill == "release_safe" and w["held_board_id"] and not self.cup and not self.old_release_safe:
             return "NOT_HOLDING"                                 # CL-32: the world holds a board, the cup is empty
@@ -323,6 +324,9 @@ class Sim:
         self.frames(pre)
         if skill == "pick":
             bd = self.board(b)
+            if not any(abs(fb["x"] - bd["x"]) < 0.05 and abs(fb["y"] - bd["y"]) < 0.05 for fb in self.fake.boards):
+                self.frames(DUR[skill] - pre)                # TM-36: the remembered board is gone: the contact
+                return "GRIP_FAILED", "no vacuum (nothing there)"   # search finds nothing -> no seal
             self.fake.event(self.t, {"type": "picked", "x": bd["x"], "y": bd["y"]})
             self.wev({"type": "picked", "board": b}, delay)
             self.cup = b
@@ -336,6 +340,10 @@ class Sim:
             self.cup = ""
             if z["kind"] == "fault":
                 self.fault_drops += 1
+        if skill == "place" and a.get("skip_home"):         # TM-36: release + retract, the arm stays over the zone
+            self.frames(min(1.0, DUR[skill] - pre))
+            self.skip_homes += 1
+            return ret, "ok (no home)"
         if skill in ("place", "release_safe"):
             self.frames(min(1.0, DUR[skill] - pre))         # release + lift, then the skill's home move
             self.tcp = tuple(MCFG["home_xy"])

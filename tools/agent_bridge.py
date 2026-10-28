@@ -5,7 +5,7 @@
 DIR/state.txt   compact current state, rewritten on every change (controller, current skill, jobs, zones, boards)
 DIR/events.txt  one line per command result, job change, alert (append)
 DIR/cmd         named pipe: echo "<command>" > DIR/cmd
-Commands (as tools/task_cli.py): transfer VARIANT|any TO [COUNT] [PRIO] | board ID TO [PRIO] |
+Commands (as tools/task_cli.py; COUNT default 1, 0 = all): transfer VARIANT|any TO [COUNT] [PRIO] | board ID TO [PRIO] |
 process VARIANT|any ZONE [TO] [COUNT] [PRIO] | clear FROM TO [COUNT] [PRIO] | pause [JOB] | resume [JOB] | stop | home |
 cancel JOB | prio JOB N | clear_queue | reset_zone ZONE
 """
@@ -132,14 +132,14 @@ def main():
         try:
             c = a[0]
             if c == "transfer":
-                send_job(cmd, type="transfer", select_variant=var(a[1]), to=a[2], count=g(3, 0), priority=g(4, 0))
+                send_job(cmd, type="transfer", select_variant=var(a[1]), to=a[2], count=g(3, 1), priority=g(4, 0))
             elif c == "board":
                 send_job(cmd, type="transfer", select_board=a[1], to=a[2], count=1, priority=g(3, 0))
             elif c == "process":
                 send_job(cmd, type="process", select_variant=var(a[1]), zone=a[2], to=g(3, ""), count=g(4, 1),
                          priority=g(5, 0))
             elif c == "clear":
-                send_job(cmd, type="clear_zone", from_zone=a[1], to=a[2], count=g(3, 0), priority=g(4, 0))
+                send_job(cmd, type="clear_zone", from_zone=a[1], to=a[2], count=g(3, 1), priority=g(4, 0))
             elif c in ("pause", "resume"):
                 send_ctl(cmd, c, g(1, ""))
             elif c in ("stop", "home", "clear_queue"):

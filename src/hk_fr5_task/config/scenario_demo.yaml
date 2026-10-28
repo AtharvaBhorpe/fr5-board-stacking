@@ -16,6 +16,8 @@ operator:                        # simulated processing (CL-4)
   take_after: 5.0                # s after the robot placed a board in a processing zone: operator takes it away (the
                                  #   demo routine: wait until the arm has left - with gone_after 2 s, CL-40)
   return_after: 5.0              # s later: a board comes back (> gone_after + margin)
+  free_view: 3.0                 # TM-37: take only while the arm does not cover the zone; return only after the
+                                 #   zone was in free view this long (sim operator = demo routine)
   return_variant: same           # same | nonvariant (CL-19 demo: a printed, non-variant board comes back)
 nonvariant_label: UNKWN          # Vision 1 label of a board matching no variant (TM-22)
 nonvariant_size: [0.25, 0.18]    # its size
