@@ -191,6 +191,12 @@ class World:
                     #   the most recently placed / seen wins (top of a stack, not the hidden board under it)
                     if bd is None or key < bd:                          # (top board of a stack, not the hidden one)
                         best, bd = i, key
+            pz = self.zones.get(zf) if zf else None
+            own = pz["board_id"] if pz is not None and pz["kind"] == "processing" else ""
+            if own and own in self.boards and self.boards[own]["location"] == "zone" and best != own:
+                if own in matched:                           # TM-42: a processing zone holds ONE board: a 2nd
+                    continue                                 # detection of it in the same frame is a duplicate
+                best = own                                   # its board (also when it comes back after processing)
             if under_arm and not self._full_view(best, label, l, wd):
                 continue                                     # CL-31: under the arm only full views of known boards
             if best is None:

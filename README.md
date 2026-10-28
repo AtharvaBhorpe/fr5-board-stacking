@@ -91,7 +91,8 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
   are ignored (hands); a board the robot placed keeps its known variant. Drop-off stack height = sheet top + count x
   board thickness (the camera cannot count a stack).
 - **Processing zone:** EMPTY -> LOADED (robot placed) -> PROCESSING (operator took it, 2 s) -> DONE (a board back, 2 s)
-  -> picked -> EMPTY. A board put by hand into an empty processing zone = FAULT, clears itself when removed. **Operator rule:** take the board only after the arm has left the zone and keep it away >= 2 s (the camera
+  -> picked -> EMPTY. A board put by hand into an empty processing zone = FAULT, clears itself when removed. A busy processing zone
+  holds one board: every detection in it is that board (duplicate detections ignored, TM-42). **Operator rule:** take the board only after the arm has left the zone and keep it away >= 2 s (the camera
   must see the zone empty; while the arm covers it the zone state is frozen).
 - **Pick:** hover, then a slow contact search until the vacuum seals (input stacks: height unknown) or a known height
   (zone boards). **Place:** 1 mm into the stack top, vacuum off + 4 s blow-off, the retract starts 0.5 s into it.
@@ -120,7 +121,7 @@ Logging: `tools/live_env.sh` (sessions, `debug` / `demo`), `tools/live_monitor.p
 
 `tests/README.md`. Logic tests run in seconds without ROS (`pixi run python3 tests/world_core_check.py`, ...); ROS /
 sim tests need a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 pixi run python3 tests/skills_ros_check.py`).
-Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 50, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
+Last full run 2026-10-28: all pass (world_core 82, main_core 49, regress 50, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
 
 ## Limitations / open
 

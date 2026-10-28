@@ -395,5 +395,32 @@ run([det("board/red", -0.6, 0.0), det("board/white_large", -0.4, -0.3)], 0.5)
 check("TM-33 input area: a board taken away by hand is forgotten after lost_after, a new one is added (valid moves)",
       sorted(b["variant"] for b in boards(w, t).values()) == ["red", "white_large"], str(sorted(b["variant"] for b in boards(w, t).values())))
 
+# TM-42 (real run 2026-10-28): Vision 1 reported the robot-placed board in processing_1 TWICE in one frame -> a 2nd
+# board b14 was created there, b6 drifted to a stray blob, the processed board came back as b14 (no job) -> stuck
+w = World(c); t = 0.0
+run([det("board/white_large", -0.60, 0.0)], 0.5)
+w.event(t, {"type": "picked", "board": "b1"})
+w.event(t, {"type": "placed", "board": "b1", "zone": "processing_1", "x": -0.45, "y": 0.45, "yaw": 0.0})
+run([det("board/white_large", -0.45, 0.45), det("board/white_large", -0.449, 0.451)], 1.0)   # duplicate detection
+ids = sorted(i for i, b in boards(w, t).items() if b["zone"] == "processing_1")
+check("TM-42 duplicate detection of the placed board in a processing zone: no 2nd board, LOADED with b1",
+      ids == ["b1"] and zone(w, "processing_1")["state"] == "LOADED", str(ids))
+run([det("board/white_large", -0.47, 0.47), det("board/white_large", -0.45, 0.45)], 0.5)   # + a stray blob in the zone
+ids = sorted(i for i, b in boards(w, t).items() if b["zone"] == "processing_1")
+check("TM-42 a stray 2nd detection inside the busy zone does not become a board", ids == ["b1"], str(ids))
+run([], CFG["gone_after"] + 0.3)
+run([det("board/white_large", -0.44, 0.46, 0.1), det("board/white_large", -0.441, 0.459, 0.1)], CFG["back_after"] + 0.3)
+z = zone(w, "processing_1")
+ids = sorted(i for i, b in boards(w, t).items() if b["zone"] == "processing_1")
+check("TM-42 processed board back (detected twice): DONE with the SAME id b1, processed, no other board in the zone",
+      z["state"] == "DONE" and z["board_id"] == "b1" and ids == ["b1"] and boards(w, t)["b1"]["processed"],
+      f"{z['state']} {z['board_id']} {ids}")
+w.event(t, {"type": "picked", "board": "b1"})
+w2 = World(c); t2 = 0.0
+for k in range(int((CFG["gone_after"] + CFG["back_after"]) / 0.1) + 30):
+    t2 = round(t2 + 0.1, 6); w2.update(t2, ZONES + [det("board/white_large", -0.45, 0.45)])
+check("TM-42 unchanged: a board put by hand into an EMPTY processing zone is still FAULT (not the zone's board)",
+      zone(w2, "processing_1")["state"] == "FAULT", zone(w2, "processing_1")["state"])
+
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)
