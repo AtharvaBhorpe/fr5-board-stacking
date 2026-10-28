@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 790" role="img" aria-labelledby="title desc">
+  <title id="title">From a request and a camera observation to a robot job</title>
+  <desc id="desc">Text or voice passes through Parakeet, Gemma and a command grammar. The overhead camera supplies board and zone observations through Vision 1 and the world model. Both paths meet at the deterministic task controller. Skills call MoveIt and the gripper interfaces to operate the FR5. Wrist images go to the web app, not to pick-height control.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#718096"/></marker>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#172b40;text-anchor:middle}
+      .title{font-size:25px;font-weight:650;letter-spacing:-.4px}.detail{font-size:19px;fill:#465a70}
+      .eyebrow{font-size:16px;letter-spacing:1.8px;font-weight:650;fill:#51677d}
+      .flow{fill:none;stroke:#718096;stroke-width:2.5;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="680" height="790" rx="24" fill="#f5f7fa"/>
+  <text x="340" y="38" class="eyebrow">TWO INPUTS. ONE CONTROLLER.</text>
+  <rect x="24" y="64" width="304" height="96" rx="18" fill="#e7effb"/>
+  <text x="176" y="105" class="title">Speak or type</text><text x="176" y="136" class="detail">Web app · operator request</text>
+  <rect x="352" y="64" width="304" height="96" rx="18" fill="#e3f0ea"/>
+  <text x="504" y="105" class="title">Overhead camera</text><text x="504" y="136" class="detail">Boards · variants · zones</text>
+  <path d="M176 160V207" class="flow"/><path d="M504 160V207" class="flow"/>
+  <rect x="24" y="218" width="304" height="124" rx="18" fill="#fff" stroke="#d6e0eb"/>
+  <text x="176" y="261" class="title">Propose a job</text><text x="176" y="294" class="detail">Parakeet · Gemma</text><text x="176" y="321" class="detail">Fixed command grammar</text>
+  <rect x="352" y="218" width="304" height="124" rx="18" fill="#fff" stroke="#d6e0eb"/>
+  <text x="504" y="261" class="title">Locate the boards</text><text x="504" y="294" class="detail">Vision 1 · calibration</text><text x="504" y="321" class="detail">Tracked world model</text>
+  <path d="M176 342V376H292V412" class="flow"/><path d="M504 342V376H388V412" class="flow"/>
+  <rect x="122" y="424" width="436" height="122" rx="20" fill="#203b56"/>
+  <text x="340" y="469" class="title" style="fill:white">Task controller</text><text x="340" y="502" class="detail" style="fill:#dce7f2">Validate · queue · execute skills</text><text x="340" y="529" class="detail" style="fill:#dce7f2">Deterministic control</text>
+  <path d="M340 546V591" class="flow"/>
+  <rect x="122" y="604" width="436" height="108" rx="20" fill="#fff" stroke="#d6e0eb"/>
+  <text x="340" y="648" class="title">MoveIt + gripper interfaces</text><text x="340" y="683" class="detail">FR5 arm · Schmalz vacuum tool</text>
+  <text x="340" y="755" class="detail">The language model has no direct motion access.</text>
+</svg>
