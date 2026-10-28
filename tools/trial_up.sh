@@ -9,7 +9,7 @@
 #     --no-gui: do not open a terminal window nor the demo page in the browser (attach later: tmux attach -t trial)
 #
 # Windows: 0 monitor | 1 motion | 2 vision (or fake) | 3 world | 4 skills | 5 ctrl | 6 cli (tc = task_cli function)
-#          | 7 bridge (agent_bridge: $HK_LIVE_DIR/bridge/state.txt, events.txt, cmd pipe) | 8 demo-ui (vacuum failure page)
+#          | 7 bridge (agent_bridge: $HK_LIVE_DIR/bridge/state.txt, events.txt, cmd pipe) | 8 demo-ui (vacuum failure page) | 9 dashboard (optional)
 # In tmux: Ctrl+b then a window number = switch window, Ctrl+b d = detach (everything keeps running).
 # The real robot does NOT move at start-up: motion only on a job / command (user's OK, CLAUDE.md section 3).
 set -u
@@ -80,14 +80,26 @@ wait_for "controller (/task/list_jobs)" 60 svc /task/list_jobs
 win 6 cli $WT "tc() { $PX run python3 $WT/tools/task_cli.py \"\$@\"; }; echo 'tc help = all commands'; sleep 3; tc status"
 win 7 bridge $WT "$PX run python3 tools/agent_bridge.py"
 win 8 demo-ui $WT "$PX run python3 tools/vacuum_demo_ui.py"     # TM-47: 'Simulate vacuum failure' page
+DASH_DIR=${HK_DASHBOARD_DIR:-$(cd "$WT/../.." && pwd)/demo_webapp}   # TM-51: presentation dashboard (outside the repo)
+DASH_URL="http://localhost:${DEMO_WEBAPP_PORT:-8080}"
+if curl -sf "$DASH_URL/state" > /dev/null 2>&1; then
+  echo "dashboard already running: $DASH_URL"
+elif [ -x "$DASH_DIR/run.sh" ]; then
+  win 9 dashboard "$DASH_DIR" "./run.sh"
+else
+  DASH_URL=""; echo "no dashboard at $DASH_DIR (optional; HK_DASHBOARD_DIR)"
+fi
 $TMUX_BIN select-window -t $S:6
 UI_URL="http://localhost:${HK_DEMO_UI_PORT:-8765}"                  # TM-49: demo page address, logged + opened
 wait_for "demo page ($UI_URL)" 20 curl -sf "$UI_URL/status"
 echo "$UI_URL" > "$HK_LIVE_DIR/demo_ui_url.txt"
+[ -n "$DASH_URL" ] && wait_for "dashboard ($DASH_URL)" 40 curl -sf "$DASH_URL/state" && echo "$DASH_URL" >> "$HK_LIVE_DIR/demo_ui_url.txt"
 echo "all started. Logs: $HK_LIVE_DIR"
 echo "vacuum-failure demo page: $UI_URL   (also in $HK_LIVE_DIR/demo_ui_url.txt)"
+[ -n "$DASH_URL" ] && echo "dashboard (3D + camera + chat): $DASH_URL"
 echo "attach: $WT/tools/trial_attach.sh   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: $WT/tools/trial_down.sh"
 if [ $GUI = 1 ] && [ -n "${DISPLAY:-}" ]; then
   gnome-terminal --maximize --title="trial ($MODE)" -- $TMUX_BIN attach -t $S > /dev/null 2>&1 &
   command -v xdg-open > /dev/null && xdg-open "$UI_URL" > /dev/null 2>&1 &              # TM-49: the demo page
+  [ -n "$DASH_URL" ] && command -v xdg-open > /dev/null && xdg-open "$DASH_URL" > /dev/null 2>&1 &   # TM-51
 fi
