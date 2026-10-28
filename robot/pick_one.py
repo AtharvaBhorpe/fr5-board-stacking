@@ -101,6 +101,12 @@ while not desc and time.time() - t0 < 5.0:
 n_desc = node.count_publishers("/robot_description")
 if n_desc > 1:
     raise SystemExit(f"{n_desc} robot stacks publish /robot_description (sim + robot?): stop all but one")
+t0 = time.time()
+while not node.count_publishers("/task/status") and time.time() - t0 < 2.0:  # DDS discovery takes 1-2 s
+    rclpy.spin_once(node, timeout_sec=0.1)
+if node.count_publishers("/task/status"):  # never two masters of one arm
+    raise SystemExit("STOP: the main controller is running (/task/status) and owns the robot. Send it a job "
+                     "(tc / chat), or stop it first (tools/trial_down.sh).")
 hw = "none (robot not started?)" if not desc else ("MOCK (simulation, arm will NOT move)"
                                                     if "mock_components" in desc[-1] else "REAL FR5")
 print(f"robot hardware: {hw}")

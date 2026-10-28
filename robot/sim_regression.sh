@@ -10,7 +10,7 @@
 # samples/06.jpg (VARa board in reach), same camera pose: the only image with a reachable VARa board + its template.
 # Needs: fr5-board-stacking next to vision1-overhead, built (pixi run build). No other vision node running.
 cd "$(dirname "$0")/.." || exit 1
-VISION=$PWD; ROBOT=$VISION/../fr5-board-stacking
+VISION=$PWD; ROBOT=${FR5_DIR:-$VISION/../fr5-board-stacking}; [ -d "$ROBOT" ] || ROBOT=$VISION/../feat-robot-motion-gripper  # wt/ layout
 CASES=(  # image | pick_one.py args | expected last line
   "samples/06.jpg|--variant VARa|done"
   "samples/06.jpg|--variant VARb|done"

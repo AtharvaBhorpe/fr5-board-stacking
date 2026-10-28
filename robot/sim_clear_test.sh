@@ -3,7 +3,7 @@
 # Vision replays samples/stack_varb_on_vara.png (VARb pasted over the reachable VARa); once pick_one starts moving
 # the VARb to the temp spot, the replayed file is swapped for the uncovered scene, as the real camera would see it.
 cd "$(dirname "$0")/.." || exit 1
-VISION=$PWD; ROBOT=$VISION/../fr5-board-stacking; IMG=/tmp/sim_clear_scene.png
+VISION=$PWD; IMG=/tmp/sim_clear_scene.png; ROBOT=${FR5_DIR:-$VISION/../fr5-board-stacking}; [ -d "$ROBOT" ] || ROBOT=$VISION/../feat-robot-motion-gripper  # wt/ layout
 cp samples/stack_varb_on_vara.png $IMG
 setsid bash -c "cd '$VISION' && exec pixi run -q vision --ros-args -p device:=$IMG -p model:=true" > /tmp/sim_clear_vision.log 2>&1 &
 sleep 8
