@@ -12,7 +12,7 @@
 # Windows: 0 monitor | 1 motion | 2 vision (or fake) | 3 world | 4 skills | 5 ctrl | 6 cli (tc ...) | 7 bridge
 #          | 8 demo-ui (:8765) | 9 llm (Gemma :8770) | 10 speech (:8766) | 11 chat | 12 web (:8088) | 13 wrist (real only)
 # Nothing moves at start-up: the robot moves only for a job.
-set -u
+set -eu
 cd "$(dirname "$(readlink -f "$0")")/.."
 R=$PWD
 S=fr5

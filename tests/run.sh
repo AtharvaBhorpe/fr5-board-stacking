@@ -6,7 +6,7 @@
 # Do not run 'all' next to a running sim stack: the CPU load makes timing checks flaky.
 # Node logs: $HK_TEST_LOG_DIR (default /tmp/hk_fr5_tests).
 cd "$(dirname "$(readlink -f "$0")")/.."
-OFFLINE="world_core fake_world skill_math vision1 main_node demo_ui main_core main_core_regress main_core_fuzz gripper_io"
+OFFLINE="launcher world_core fake_world skill_math vision1 main_node demo_ui main_core main_core_regress main_core_fuzz gripper_io"
 ROS="inject demo_ui_bridge world_ros main_node_ros gripper_node gripper_actions scene_smoke scene_launch scene_motion
      joint_config skills_ros main_ros"
 SUITES=$OFFLINE; [ "${1:-}" = all ] && SUITES="$OFFLINE $ROS"

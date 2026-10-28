@@ -138,7 +138,7 @@ git submodule update --init
 ### 4.3 Install the environments
 
 ```bash
-pixi install -a
+pixi install --locked -a
 ```
 
 This command installs two environments:
@@ -208,7 +208,11 @@ The simulation needs no robot and no cameras. A fake arm, a fake gripper and a f
 pixi run up --sim
 ```
 
-The script starts each process in order and waits until each part is ready. The robot does not move at start-up. When all parts are ready, the script:
+The script starts each process in order and waits until each part is ready.
+If a part does not become ready, the script stops with a nonzero exit code.
+The existing windows stay open for diagnosis. Run `pixi run attach` to read the error.
+After you correct the problem, run `pixi run down`. Then start the system again.
+The robot does not move at start-up. When all parts are ready, the script:
 
 - opens a terminal that shows the tmux session `fr5`,
 - opens the web app on http://localhost:8088,
@@ -547,7 +551,7 @@ HTTP ports on the PC:
 |---|---|---|
 | `pixi run up` shows `not built` | `install/` or `web/dist/` does not exist | Run `pixi run build`. |
 | `pixi run up` shows `session 'fr5' already runs` | an earlier start still runs | Run `pixi run down`. |
-| A `waiting for ...` line ends with `NOT ready` | that process did not start | Run `pixi run attach` and read the window of that process. |
+| A `waiting for ...` line ends with `NOT ready` | startup stopped because a process did not become ready | Run `pixi run attach`. Read the window of that process. Correct the problem. Run `pixi run down`. Then start again. |
 | `No space left on device` during `pixi install` | the disk is full | Erase old `live_logs/` sessions. Run `pixi clean cache`. |
 | `Gemma (:8770)` is not ready after 180 s | the model download is slow, or the GPU memory is full | Read window 9. Run `nvidia-smi` and stop other GPU programs. |
 | `CUDA error: out of memory` in window 9 or 10 | another program uses the GPU | Stop the other program. Gemma, Parakeet and Vision 1 need about 7 GB together. |
