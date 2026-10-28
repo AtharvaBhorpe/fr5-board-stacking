@@ -357,5 +357,43 @@ w = World(c); t = 0.0
 run([], 0.2)
 check("V2 fixed zone: base_z from its config z", abs(zone(w, "fault")["base_z"] - (CFG["table_z"] + 0.002)) < 1e-12)
 
+# 11 TM-33: UNKWN in zones ignored, placed boards keep their variant, FAULT auto-clear, input boards come and go
+w = World(CFG); t = 0.0
+UNK = lambda x, y: det("board/UNKWN", x, y, 0.0, 0.20, 0.14)          # a hand / merged blob, as Vision 1 sends it
+run([UNK(-0.20, 0.55)], 0.5)                                           # inside drop_off_1
+check("TM-33 UNKWN inside a drop-off zone: ignored (no ghost board), noted for debugging",
+      not boards(w, t) and any("ignored a UNKWN detection in zone drop_off_1" in x for _, x in w.log), str(sorted(boards(w, t))))
+run([UNK(-0.45, 0.45)], UA + 1.0)                                      # inside processing_1 (EMPTY) > unknown_after
+check("TM-33 UNKWN inside an EMPTY processing zone > unknown_after: no board, the zone stays EMPTY (no FAULT)",
+      zone(w, "processing_1")["state"] == "EMPTY" and not boards(w, t), zone(w, "processing_1")["state"])
+run([UNK(-0.60, 0.0)], 0.3)
+check("TM-33 UNKWN on the input area: still a board (label UNKWN, never picked unless named)",
+      [(b["variant"], b["label"], b["location"]) for b in boards(w, t).values()] == [("unknown", "UNKWN", "input")])
+w = World(dict(CFG, zone_unknown_boards=True)); t = 0.0
+run([UNK(-0.45, 0.45)], UA + 1.0)
+check("TM-33 zone_unknown_boards: true -> old behaviour: the UNKWN board exists and processing_1 goes FAULT",
+      zone(w, "processing_1")["state"] == "FAULT" and len(boards(w, t)) == 1, zone(w, "processing_1")["state"])
+w = World(CFG); t = 0.0                                                # white on white: robot-placed board keeps its variant
+run([det("board/white_small", -0.6, 0.0)], 0.3)
+w.event(t, {"type": "picked", "board": "b1"})
+w.event(t, {"type": "placed", "board": "b1", "zone": "drop_off_1", "x": -0.20, "y": 0.55, "yaw": 0.0})
+run([det("board/white_large", -0.20, 0.552)], 0.5)                     # the camera merges it with the board below
+b1 = boards(w, t)["b1"]
+check("TM-33 a board the robot placed keeps its known variant (camera says white_large, label kept for debugging)",
+      b1["variant"] == "white_small" and b1["label"] == "white_large" and b1["location"] == "zone", str((b1["variant"], b1["label"])))
+w = World(CFG); t = 0.0                                                # a known board put by hand into an EMPTY processing zone
+run([det("board/red", -0.45, 0.45)], UA + 0.5)
+f1 = zone(w, "processing_1")["state"]
+run([], GA + 0.5)                                                      # the operator takes it away
+check("TM-33 processing FAULT (unknown board) clears by itself once the zone is seen empty, the board is forgotten",
+      f1 == "FAULT" and zone(w, "processing_1")["state"] == "EMPTY" and not boards(w, t)
+      and any("FAULT cleared" in x for _, x in w.log), f"{f1} -> {zone(w, 'processing_1')['state']}, {sorted(boards(w, t))}")
+w = World(CFG); t = 0.0                                                # input area: boards taken away / added at any time
+run([det("board/red", -0.6, 0.0), det("board/white_small", -0.6, 0.25)], 0.5)
+run([det("board/red", -0.6, 0.0)], CFG["lost_after"] + 0.5)
+run([det("board/red", -0.6, 0.0), det("board/white_large", -0.4, -0.3)], 0.5)
+check("TM-33 input area: a board taken away by hand is forgotten after lost_after, a new one is added (valid moves)",
+      sorted(b["variant"] for b in boards(w, t).values()) == ["red", "white_large"], str(sorted(b["variant"] for b in boards(w, t).values())))
+
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

@@ -78,7 +78,14 @@ rclpy.init(); n = rclpy.create_node("skills_test")
 L = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 S = {"w": None, "g": None, "seal_z": None}
 tfb = tf2_ros.Buffer(); tf2_ros.TransformListener(tfb, n)
+REL = []                                          # TM-32: [t_start, t_end] of every RELEASING interval
+ZS = []                                           # (t, tcp z) sampled while a skill runs
 def on_gripper(m):
+    prev = S["g"].state if S["g"] is not None else ""
+    if m.state == GripperState.RELEASING and prev != GripperState.RELEASING:
+        REL.append([time.time(), None])
+    elif prev == GripperState.RELEASING and m.state != GripperState.RELEASING and REL:
+        REL[-1][1] = time.time()
     if m.state == GripperState.HOLDING and (S["g"] is None or S["g"].state != GripperState.HOLDING):
         try:
             S["seal_z"] = tfb.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation.z
@@ -150,6 +157,10 @@ def run(name, goal, timeout=60, hook=None):
     seen, end = 0, time.time() + timeout
     while not r.done() and time.time() < end:
         rclpy.spin_once(n, timeout_sec=0.02)
+        try:
+            ZS.append((time.time(), tfb.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation.z))
+        except Exception:
+            pass
         while hook is not None and seen < len(phases):
             seen += 1
             hook(phases[seen - 1], gh)
@@ -212,9 +223,17 @@ try:
     sz = S["seal_z"]
     check("contact search sealed at the board top (table + 5 mm), not in the air / below", sz is not None
           and TABLE + TH - 0.015 <= sz <= TABLE + TH + 0.001, f"seal tcp z {sz}")
+    n_rel = len(REL)
     r = run("place", Place.Goal(target="processing_1"))
     check("place VARa in processing_1: success, camera confirmed (settle check), zone LOADED", r and r.success
           and until(lambda: zone("processing_1").state in ("LOADED", "PROCESSING"), 3), desc(r))
+    riv = REL[n_rel] if len(REL) > n_rel else None
+    z0 = next((z for t, z in ZS if riv and t >= riv[0]), None)
+    t_up = next((t for t, z in ZS if riv and z0 is not None and t >= riv[0] and z > z0 + 0.005), None)
+    check("TM-32 retract starts 0.3-2 s after the release starts, while the blow-off still runs (blow_off_time "
+          f"{cfg['blow_off_time']} s)", riv is not None and riv[1] is not None and t_up is not None
+          and 0.3 <= t_up - riv[0] <= 2.0 and t_up < riv[1],
+          f"release {riv and riv[1] and round(riv[1] - riv[0], 2)} s, retract after {t_up and riv and round(t_up - riv[0], 2)} s")
 
     ws = board_near(*STACK)
     r = run("pick", Pick.Goal(board_id=bid(ws)))

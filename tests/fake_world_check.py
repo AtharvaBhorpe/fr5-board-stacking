@@ -142,7 +142,8 @@ except ValueError as e:
 P1 = next(z for z in SCN["zones"] if z["name"] == "processing_1")
 for mode, want_label in (("same", "VARa"), ("nonvariant", "UNKWN")):
     s = quiet(SCN); s["operator"]["return_variant"] = mode
-    fw, w = FakeWorld(s, V), World(CFG)
+    # TM-33: UNKWN in zones is ignored by default; the nonvariant case runs with the old behaviour (kept as reference)
+    fw, w = FakeWorld(s, V), World(dict(CFG, zone_unknown_boards=(mode == "nonvariant")))
     t = sim(fw, w, 0.0, 0.3)
     a = [b for b in w.snapshot(t)["boards"] if b["variant"] == "VARa"][0]
     fw.event(t, {"type": "picked", "x": a["x"], "y": a["y"]}); w.event(t, {"type": "picked", "board": a["id"]})
@@ -158,6 +159,20 @@ for mode, want_label in (("same", "VARa"), ("nonvariant", "UNKWN")):
           seq == ["LOADED", "PROCESSING", "DONE"] and len(back) == 1 and back[0]["label"] == want_label
           and back[0]["variant"] == "VARa" and back[0]["processed"] and back[0]["id"] == a["id"],
           f"{seq} {[(b['id'], b['variant'], b['label'], b['processed']) for b in back]}")
+
+# 5b TM-33 default: a board returned as UNKWN is ignored in the zone -> processing_1 stays PROCESSING (documented)
+s = quiet(SCN); s["operator"]["return_variant"] = "nonvariant"
+fw, w = FakeWorld(s, V), World(CFG)
+t = sim(fw, w, 0.0, 0.3)
+a = [b for b in w.snapshot(t)["boards"] if b["variant"] == "VARa"][0]
+fw.event(t, {"type": "picked", "x": a["x"], "y": a["y"]}); w.event(t, {"type": "picked", "board": a["id"]})
+fw.event(t, {"type": "placed", "x": P1["x"], "y": P1["y"], "yaw": P1["yaw"], "variant": "VARa"})
+w.event(t, {"type": "placed", "board": a["id"], "zone": "processing_1", "x": P1["x"], "y": P1["y"], "yaw": P1["yaw"]})
+op = SCN["operator"]
+t = sim(fw, w, t, t + op["take_after"] + CFG["gone_after"] + op["return_after"] + CFG["back_after"] + 1.5)
+z1 = {z["name"]: z for z in w.snapshot(t)["zones"]}["processing_1"]
+check("TM-33 default: a board returned as UNKWN is ignored -> processing_1 stays PROCESSING (no ghost, no DONE)",
+      z1["state"] == "PROCESSING" and not any(b["label"] == "UNKWN" for b in w.snapshot(t)["boards"]), z1["state"])
 
 # 6 hands -> optional obstacles[] (TM-24)
 s = copy.deepcopy(SCN); s["hands"] = [{"t": 1.0, "x": -0.3, "y": 0.0, "duration": 1.0}]

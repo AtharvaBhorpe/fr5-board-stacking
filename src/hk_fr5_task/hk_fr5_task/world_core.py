@@ -61,6 +61,7 @@ class World:
         self.held = ""
         self.last_frame_t = None
         self._next = 1
+        self.unknown_noted = {}      # TM-33: zone -> last note time of an ignored UNKWN detection
         self.log = []               # (t, text) state changes, for the dashboard / tests
 
     # ---------- helpers ----------
@@ -172,6 +173,13 @@ class World:
                 continue                                     # CL-39: the fault zone is a void - boards there do not exist
             under_arm = M.hits(self.mask.get("arm"), d["corners"])
             label = d["cls"].split("/", 1)[1]
+            if zf and label not in known and not (c.get("zone_unknown_boards", False) or c["expanded_detection"]):
+                # TM-33 (user): non-variant (UNKWN) detections inside zones are hands / merged blobs, not boards
+                # (no printed boards yet): ignored, so no ghost zone boards. Logged for debugging (every 10 s / zone).
+                if t - self.unknown_noted.get(zf, -1e9) >= 10.0:
+                    self.unknown_noted[zf] = t
+                    self._note(t, f"ignored a {label} detection in zone {zf} (zone_unknown_boards: false)")
+                continue
             best, bd = None, None
             for i, b in free.items():
                 if i in matched:
@@ -189,8 +197,10 @@ class World:
                 best = self._new_board_id(t, x, y)
             b = self.boards.setdefault(best, {"id": best, "location": "input", "zone": "", "first": t,
                                               "variant": "unknown", "processed": False})
-            if label in known and label != b["variant"]:          # CL-19: a non-variant label never replaces the
-                if b["variant"] != "unknown":                     # original variant (kept through processing)
+            if label in known and label != b["variant"] and "placed" not in b:   # TM-33: a board the ROBOT
+                # placed keeps the variant we know (white on white / red on red merge into one blob, trial 1 TM-O12);
+                # CL-19: a non-variant label never replaces the original variant (kept through processing)
+                if b["variant"] != "unknown":
                     self._note(t, f"board {best}: variant {b['variant']} -> {label}")
                 b["variant"] = label
             b.update(label=label, x=x, y=y, yaw=yaw, length=l, width=wd, score=d.get("score", 1.0),
@@ -277,7 +287,12 @@ class World:
                 self._set_state(z, "FAULT", t, f"unknown board {present[0]} (not placed by the robot)")
             elif st == "FAULT" and not present and z["empty_since"] is not None and t - z["empty_since"] >= c["gone_after"]:
                 z["board_id"] = ""
-                self._set_state(z, "EMPTY", t)
+                self._set_state(z, "EMPTY", t, "")
+                gone = [i for i, b in self.boards.items() if b["location"] == "zone" and b["zone"] == z["name"]]
+                for i in gone:                               # TM-33: cleared by itself -> no stale boards left there
+                    del self.boards[i]
+                self._note(t, f"zone {z['name']}: FAULT cleared (seen empty {c['gone_after']:.0f} s)"
+                              + (f", removed {', '.join(gone)}" if gone else ""))
 
     # ---------- skill events ----------
     def event(self, t, ev):

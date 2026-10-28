@@ -406,12 +406,13 @@ def rearm():
     sim.fake._add("white_small", -0.50, 0.45, 0.0)            # an unknown board in processing_1
     sim.loop(max_t=sim.t + 4, until=lambda s: False)
     sim.fake.boards = [b for b in sim.fake.boards if sim.fake.zone_at(b["x"], b["y"]) is None]   # taken away
-    sim.loop(max_t=sim.t + 4, until=lambda s: False)          # zone EMPTY again, the board stays known (same id)
+    sim.loop(max_t=sim.t + 4, until=lambda s: False)          # zone EMPTY again; the FAULT auto-clear forgets the board (TM-33)
     sim.fake._add("white_small", -0.50, 0.45, 0.0)            # put back: the same situation again
     sim.loop(max_t=sim.t + 4, until=lambda s: False)
     al = events(sim, "remove it and reset the zone")
     check("CL-29 an alert re-arms when its situation ends: the same unknown board back in the zone alerts again",
-          len(al) == 2 and al[0][2].split(" - ")[0] == al[1][2].split(" - ")[0], str([e[2][:70] for e in al]))
+          len(al) == 2 and all(e[2].startswith("processing_1 FAULT: board ") and "unknown board" in e[2] for e in al),
+          str([e[2][:70] for e in al]))
 
 
 @case("CL-35 park")

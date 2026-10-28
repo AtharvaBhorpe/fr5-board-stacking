@@ -436,23 +436,36 @@ class SkillServer(Node):
             if e.code == C.LOST_IN_TRANSIT:
                 self._lost(held)
             raise
+        # TM-32: the pressed rubber tip held boards by adhesion after a 2 s blow-off (trial 1, TM-O17). Now: blow-off
+        # blow_off_time (4 s) and the retract starts retract_delay (0.5 s: pump spool-up) after the release was
+        # accepted, WHILE it still blows. A late accept only delays the retract (WARN); the release result is checked
+        # after the retract, and the 'placed' event goes out only after a successful release.
         self._phase(gh, Place, "RELEASE")
+        t_rel = time.monotonic()
         rfut = self.release.send_goal_async(Release.Goal(blow_off_time=float(self.c["blow_off_time"])))
         if not self._wait_future(rfut, 3.0) or not rfut.result().accepted:
             raise SkillError(C.RELEASE_FAILED, "release goal not accepted")
+        accepted_after = time.monotonic() - t_rel
+        if accepted_after > self.c["retract_delay"]:
+            self._step_warn(f"late retract: the release was accepted only after {accepted_after:.2f} s")
         rres = rfut.result().get_result_async()
-        ok_r = self._wait_future(rres, self.c["blow_off_time"] + 5.0) and rres.result().result.success
-        self._step(f"release (blow-off {self.c['blow_off_time']:.1f} s) at {self._tcp_text()}: "
-                   f"{'OK' if ok_r else 'FAILED'} {rres.result().result.message if rres.done() else 'no result'}")
-        if not ok_r:
-            raise SkillError(C.RELEASE_FAILED, "release failed")
+        time.sleep(self.c["retract_delay"])               # blow-off pump spool-up, then lift while it blows
+        if rres.done() and not rres.result().result.success:
+            raise SkillError(C.RELEASE_FAILED, f"release failed: {rres.result().result.message}")
+        self._step(f"release accepted after {accepted_after:.2f} s (blow-off {self.c['blow_off_time']:.1f} s): "
+                   f"retract starts while it blows")
         self._phase(gh, Place, "DETACH")
         r = self._call(self.detach, DetachBoard.Request(keep_as_obstacle=False), "detach_board")   # W13: stack box instead
-        self._event(type="placed", board=held, zone=target, x=x, y=y, yaw=sm.wrap_pi(yaw),
-                    variant=hb.variant if hb is not None else "")
         self._phase(gh, Place, "RETRACT")
         self._vertical(gh, max(self.c["hover_z"], tz) if void else self.c["hover_z"], self.c["approach_speed"],
                        what="retract")
+        ok_r = self._wait_future(rres, self.c["blow_off_time"] + 5.0) and rres.result().result.success
+        self._step(f"release finished {time.monotonic() - t_rel:.2f} s after its start: {'OK' if ok_r else 'FAILED'} "
+                   f"{rres.result().result.message if rres.done() else 'no result'}")
+        if not ok_r:
+            raise SkillError(C.RELEASE_FAILED, "release failed - the board may still be on the cup")
+        self._event(type="placed", board=held, zone=target, x=x, y=y, yaw=sm.wrap_pi(yaw),
+                    variant=hb.variant if hb is not None else "")
         if not r.success:
             raise SkillError(C.SCENE_ERROR, f"placed, but detach_board failed: {r.message}")
         if void:                                         # nothing to confirm: the world forgets boards in the void
@@ -511,12 +524,11 @@ class SkillServer(Node):
         held = self.world.held_board_id if self.world is not None else ""
         if held and not self._holding():                 # CL-32: taken off the cup by hand (e.g. during a stop)
             raise SkillError(C.NOT_HOLDING, f"the world holds {held} but the cup is empty")
-        msg = "nothing held"
         if self._holding() and held:
             target = gh.request.target or "fault"
-            msg = self._place(gh, Place.Result(), target=target)
+            return self._place(gh, Place.Result(), target=target) + ", at home"   # _place ends at home (no 2nd move)
         self._home_move(gh)
-        return msg + ", at home"
+        return "nothing held, at home"
 
 
 def main():
