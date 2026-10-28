@@ -28,6 +28,7 @@ from hk_fr5_task_interfaces.msg import World  # web/run.sh sources the controlle
 from ament_index_python.packages import get_package_share_directory
 
 ROOT = Path(__file__).resolve().parents[1]
+REAL_OK = os.environ.get('WORKCELL_REAL') == '1'  # explicit opt-in: chat may command the REAL robot
 sys.path.insert(0, str(ROOT / 'conversation'))
 from speech_input import normalize_voice_command
 from policy import controller_block
@@ -177,7 +178,7 @@ class Workcell(Node):
         except ValueError: pass
 
     def blocked(self, variant):
-        if self.hardware != 'SIMULATION': return 'Web control is simulation-only'
+        if self.hardware != 'SIMULATION' and not REAL_OK: return 'Web control is simulation-only (WORKCELL_REAL=1 to allow)'
         return controller_block(self.status, self.status_at, time.time())
 
     def panel(self):
@@ -263,7 +264,7 @@ def main():
                 if path == '/api/chat':
                     text=str(data.get('text','')).strip()
                     if not text or len(text)>1000: raise ValueError('Enter a command or question')
-                    if node.hardware != 'SIMULATION': raise ValueError('Web control is simulation-only')
+                    if node.hardware != 'SIMULATION' and not REAL_OK: raise ValueError('Web control is simulation-only (WORKCELL_REAL=1 to allow)')
                     node.chat_pub.publish(String(data=text)); result={}
                 elif path == '/api/control':
                     action=data.get('action')
