@@ -7,7 +7,8 @@ control, status) and pokes the fake world (no vacuum, a hand). ~7-9 min. Node ou
 
 A  the user's scheduling example (CL-22): process 2 VARc via processing_1 -> drop_off_a (prio 10) + transfer the
    VARb stack -> drop_off_b (prio 5) -> the exact interleaved order, counters, stacks
-B  failures + commands on an extra board / the drop-off stacks (clear_zone picks from stacks): no vacuum -> skip, hand -> wait_clear,
+B  vacuum lost mid-carry (fake vacuum off) -> lost 1, the fallen board is a new input board, picked again
+   -> delivered 1 (TM-38); failures + commands on an extra board / the drop-off stacks (clear_zone picks from stacks): no vacuum -> skip, hand -> wait_clear,
    pause after a pick, stop while holding -> release_safe on resume, cancel_job while holding, invalid job, list_jobs,
    Ctrl+C on the controller during a skill
 """
@@ -71,7 +72,8 @@ def stop(p, sig=signal.SIGINT):
 # ---------- configs for the test (fast sim, short end timers) ----------
 tmp = tempfile.mkdtemp(prefix="main_check_")
 scn = yaml.safe_load(open(os.path.join(SHARE, "config", "scenario_demo.yaml")))
-scn["boards"] = scn["boards"] + [{"variant": "VARc", "x": 0.02, "y": -0.60, "yaw": 1.5708}]   # demo + a 2nd VARc
+scn["boards"] = scn["boards"] + [{"variant": "VARc", "x": 0.02, "y": -0.60, "yaw": 1.5708},    # demo + a 2nd VARc
+                                 {"variant": "VARc", "x": -0.30, "y": 0.72, "yaw": 1.5708}]   # TM-38: a 3rd (left by A)
 #   (layout rules: scenario_demo.yaml header; reach 0.30-0.80 m - a board at 0.26 m: NO_IK_SOLUTION, W9)
 yaml.safe_dump(scn, open(os.path.join(tmp, "scenario.yaml"), "w"))
 sk = yaml.safe_load(open(os.path.join(SHARE, "config", "skills.yaml")))
@@ -162,10 +164,10 @@ t0 = time.time()
 outs = {}
 try:
     ready = until(lambda: S["st"] is not None and S["st"]["skills_ready"] and S["st"]["motion_ready"] and S["w"] is not None
-                  and S["w"].vision_ok and len(S["w"].boards) == 4 and S["g"] is not None, 150)
+                  and S["w"].vision_ok and len(S["w"].boards) == 5 and S["g"] is not None, 150)
     ready = ready and until(motion_ok, 60)
     time.sleep(3.0)                                    # move_group finishes loading the scene
-    check("stack up: controller (skills + motion ready), world (4 boards), gripper", ready, f"{time.time() - t0:.0f} s")
+    check("stack up: controller (skills + motion ready), world (5 boards), gripper", ready, f"{time.time() - t0:.0f} s")
     r = control("home")
     homed = r is not None and r.success and until(lambda: S["st"]["current"] is not None, 10) and until(idle, 60)
     check("control home while idle: the robot moves home (operator's home command)", homed, str(r and r.message))
@@ -192,6 +194,23 @@ try:
           f"stacks {zone('drop_off_a').stack_count}/{zone('drop_off_b').stack_count}, {time.time() - t_a:.0f} s")
 
     # ---------- B: failures + commands ----------
+    r = add(type="transfer", select_variant="VARc", to="drop_off_b", count=1)        # the VARc left over by A
+    e = r.id if r and r.success else ""
+    until(lambda: S["st"]["current"] is not None and S["st"]["current"]["skill"] == "place"
+          and S["st"]["phase"] == "HOVER", 60)                                     # the carry starts: still over the pick
+    # directly via fake_world, right at the carry start: at sim carry speed 1.0 the arm crosses the rail within ~1.5 s
+    # (the board would be gone, correct but not this case); the tool itself: skills_ros_check + inject_check
+    set_fake("force_vacuum", "off")
+    lost_seen = until(lambda: any("LOST" in x for x in events()), 20)
+    set_fake("force_vacuum", "")
+    until(lambda: finished(e), 180)
+    Je = jobs().get(e)
+    ev_e = [x for x in events() if "LOST" in x or "lost" in x or "dropped" in x]
+    check("TM-38 vacuum lost mid-carry: lost 1, the fallen board seen again as a new input board, "
+          "picked again -> job DONE, delivered 1",
+          lost_seen and Je is not None and Je.state == "DONE" and Je.lost == 1 and Je.delivered == 1,
+          f"{Je and (Je.state, Je.delivered, Je.lost, Je.attempts, Je.message)}, events {ev_e[-3:]}")
+
     r = add(type="transfer", select_variant="VARa", to="drop_off_a", count=1)
     c = r.id if r and r.success else ""
     until(lambda: S["st"]["current"] is not None and S["st"]["current"]["skill"] == "pick", 30)

@@ -5,13 +5,16 @@
 DIR/state.txt   compact current state, rewritten on every change (controller, current skill, jobs, zones, boards)
 DIR/events.txt  one line per command result, job change, alert (append)
 DIR/cmd         named pipe: echo "<command>" > DIR/cmd
-Commands (as tools/task_cli.py; COUNT default 1, 0 = all): transfer VARIANT|any TO [COUNT] [PRIO] | board ID TO [PRIO] |
+Commands (as tools/task_cli.py; COUNT default 1, 0 = all, -1 = continuous until cancelled): transfer VARIANT|any TO [COUNT] [PRIO] | board ID TO [PRIO] |
 process VARIANT|any ZONE [TO] [COUNT] [PRIO] | clear FROM TO [COUNT] [PRIO] | pause [JOB] | resume [JOB] | stop | home |
-cancel JOB | prio JOB N | clear_queue | reset_zone ZONE
+cancel JOB | prio JOB N | clear_queue | reset_zone ZONE | inject vacuum_loss [SECS]
+(inject: tools/inject_vacuum_loss.py as its own process, output into events.txt; REAL robot: switches the gripper,
+only on the user's command)
 """
 import json
 import os
 import queue
+import subprocess
 import sys
 import threading
 import time
@@ -148,6 +151,11 @@ def main():
                 send_ctl(cmd, "cancel_job", a[1])
             elif c == "prio":
                 send_ctl(cmd, "set_priority", a[1], a[2])
+            elif c == "inject" and a[1:2] == ["vacuum_loss"]:
+                script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inject_vacuum_loss.py")
+                ev(f"CMD {cmd} -> started")
+                subprocess.Popen([sys.executable, script] + a[2:3], stdout=EV, stderr=subprocess.STDOUT,
+                                 start_new_session=True)       # output straight into events.txt (no pipe)
             elif c == "reset_zone":
                 evp.publish(String(data=json.dumps({"type": "reset_zone", "zone": a[1]})))
                 ev(f"CMD {cmd} -> sent")
@@ -160,7 +168,7 @@ def main():
 
     def needs(cmd):
         c = cmd.split()[0] if cmd.split() else ""
-        return add if c in ("transfer", "board", "process", "clear") else None if c == "reset_zone" else ctl
+        return add if c in ("transfer", "board", "process", "clear") else None if c in ("reset_zone", "inject") else ctl
 
     def drain():
         while not Q.empty():

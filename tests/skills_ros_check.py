@@ -298,15 +298,30 @@ try:
     reset("lost in transit")
     wl = board("VARc")
     r = run("pick", Pick.Goal(board_id=bid(wl)))
-    lost = {"done": False}
+    lost = {"proc": None}
+    inj_log = open(os.path.join(LOG_DIR, "skills_check_inject.log"), "w")
     def lose(phase, gh):                             # runs in run()'s loop, not in a ROS callback
-        if phase == "HOVER" and not lost["done"]:
-            lost["done"] = True; set_fake("force_vacuum", "off")
+        if phase == "HOVER" and lost["proc"] is None:   # TM-38: the real injection tool, its own process
+            lost["proc"] = subprocess.Popen([sys.executable, os.path.join(HERE, "..", "tools", "inject_vacuum_loss.py"),
+                                             "1.0"], stdout=inj_log, stderr=subprocess.STDOUT)
     r2 = run("place", Place.Goal(target="drop_off_a"), hook=lose)
-    set_fake("force_vacuum", "")
-    check("vacuum lost while carrying: LOST_IN_TRANSIT, board dropped from the world, nothing held",
-          r and r.success and r2 and r2.code.value == C.LOST_IN_TRANSIT
-          and until(lambda: S["w"].held_board_id == "" and all(b.id != bid(wl) for b in S["w"].boards), 3), desc(r2))
+    tr = tfb.lookup_transform("base_link", "tcp", rclpy.time.Time()).transform.translation
+    drop_xy = (tr.x, tr.y)
+    rc = lost["proc"].wait(timeout=15) if lost["proc"] else None
+    inj_log.close()
+    check("vacuum lost while carrying (tools/inject_vacuum_loss.py, sim): LOST_IN_TRANSIT, board dropped from the world, "
+          "nothing held", r and r.success and r2 and r2.code.value == C.LOST_IN_TRANSIT and rc == 0
+          and until(lambda: S["w"].held_board_id == "" and all(b.id != bid(wl) for b in S["w"].boards), 3),
+          f"{desc(r2)} / inject rc {rc}")
+    seen_under_arm = board_near(*drop_xy, tol=0.05) is not None
+    rh = run("home", Home.Goal())
+    fallen = {}
+    until(lambda: fallen.update(b=board_near(*drop_xy, tol=0.05)) or fallen["b"] is not None, 5)
+    fb = fallen.get("b")
+    check("TM-38: the fallen board lands under the tcp and is a NEW input board once the arm has moved home",
+          rh and rh.success and fb is not None and fb.location == "input" and fb.id != bid(wl) and fb.variant == "VARc",
+          f"drop at ({drop_xy[0]:.3f}, {drop_xy[1]:.3f}); seen while the arm was above: {seen_under_arm}; "
+          f"after home: {fb and (fb.id, fb.variant, fb.location)}")
 
     reset("obstacle")
     red2 = board("VARa")

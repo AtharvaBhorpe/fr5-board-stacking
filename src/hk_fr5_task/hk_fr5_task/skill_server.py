@@ -380,7 +380,7 @@ class SkillServer(Node):
         r = self._call(self.attach, AttachBoard.Request(length=float(b.length), width=float(b.width), height=float(thick),
                                                         yaw=0.0, dx=0.0, dy=0.0), "attach_board")
         attached = r.success
-        self._event(type="picked", board=b.id, x=b.x, y=b.y)
+        self._event(type="picked", board=b.id, x=b.x, y=b.y, variant=b.variant)   # TM-43: variant if re-added
         self._phase(gh, Pick, "LIFT")
         try:
             self._vertical(gh, hover, speed, holding=True, what="lift")
@@ -475,8 +475,10 @@ class SkillServer(Node):
         if not r.success:
             raise SkillError(C.SCENE_ERROR, f"placed, but detach_board failed: {r.message}")
         if void:                                         # nothing to confirm: the world forgets boards in the void
-            self._home_move(gh)
             res.target, res.stack_count = target, 0
+            if getattr(req, "skip_home", False):          # TM-45: a queued pick follows (as other places, TM-36);
+                return f"dropped {held} into the fault zone {target} (void, no home: the next pick follows)"
+            self._home_move(gh)                           # release_safe never skips home (no skip_home field)
             return f"dropped {held} into the fault zone {target} (void)"
         if getattr(req, "skip_home", False):              # TM-36: the next pick starts from here; the controller
             def zone_now():                               # confirms the place later

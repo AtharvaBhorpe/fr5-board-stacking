@@ -129,7 +129,7 @@ def state_violations(core):
         counted = sum(j.get(k, 0) for k in ("delivered", "to_fault", "lost", "skipped"))
         if "attempts" in j and (j["attempts"] != len(items) or counted != final):
             out.append(f"{j['id']}: counters attempts {j['attempts']} / items {len(items)}, outcomes {counted} / final {final}")
-        if j["count"] and j.get("delivered", 0) > j["count"]:
+        if j["count"] > 0 and j.get("delivered", 0) > j["count"]:           # 0 = all, -1 = continuous (TM-39)
             out.append(f"{j['id']}: delivered {j['delivered']} > count {j['count']}")
         if j.get("max_attempts") and j["attempts"] > j["max_attempts"]:
             out.append(f"{j['id']}: attempts {j['attempts']} > max_attempts {j['max_attempts']}")

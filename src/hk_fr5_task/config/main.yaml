@@ -1,5 +1,8 @@
 # Main controller (T5, control-loop.md CL-21..CL-32, review fixes TM-16, failure policies section 6). Seconds.
 fresh: 1.5                # zones seen longer ago are not targets (boards: every board in the world counts, TM-36)
+lost_pick_radius: 0.30     # TM-40: after a vacuum loss the job re-picks the matching board nearest to the
+lost_pick_wait: 12.0       #   loss point (within this radius); waits up to lost_pick_wait s after the loss for it to
+lost_pick_keep: 60.0       #   be seen (home move + detection), the hint is dropped after lost_pick_keep s
 deferred_verify: 15.0     # TM-36: s for the camera to confirm a skip_home place, else a warning (job goes on)
 end_wait: 3.0             # CL-24: count 0 (all) ends after this long without a candidate
 partial_after: 30.0       # count n: give up waiting for more matching boards after this long

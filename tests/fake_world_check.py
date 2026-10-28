@@ -198,5 +198,29 @@ after = fw.surface_at(DA["x"], DA["y"], TZ)
 check("surface, mixed stack on a sheet: sheet + 5 + 4 mm, after picking the top: sheet + 5 mm (VARb below)",
       abs(top - (-0.055 + 0.009)) < 1e-9 and abs(after - (-0.055 + 0.005)) < 1e-9, f"{top} -> {after}")
 
+# 9 TM-38: vacuum lost in flight -> the board lands under the tcp (table: new input board) or is gone
+def drop_case(tcp, scn=None):
+    fw, w = FakeWorld(quiet(scn or SCN), V), World(CFG)
+    t = sim(fw, w, 0.0, 0.5)
+    b = next(b for b in w.snapshot(t)["boards"] if b["variant"] == "VARa")
+    fw.event(t, {"type": "picked", "x": b["x"], "y": b["y"]}); w.event(t, {"type": "picked", "board": b["id"]})
+    t = sim(fw, w, t, t + 0.5)
+    fw.tcp = tcp
+    fw.event(t, {"type": "dropped"}); w.event(t, {"type": "dropped", "board": b["id"]})
+    t = sim(fw, w, t, t + 1.0)
+    snap = w.snapshot(t)
+    new = [x for x in snap["boards"] if x["variant"] == "VARa" and x["id"] != b["id"]]
+    return b, new, snap, fw.log[-1][1]
+b, new, snap, msg = drop_case((-0.30, -0.55))
+check("drop over the input table: a NEW input VARa board near the tcp, the lost one gone from the world",
+      len(new) == 1 and new[0]["location"] == "input" and math.hypot(new[0]["x"] + 0.30, new[0]["y"] + 0.55) < 0.04
+      and all(x["id"] != b["id"] for x in snap["boards"]), f"{msg} / {[(x['id'], x['location']) for x in new]}")
+b, new, snap, msg = drop_case((-0.48, 0.37))
+check("drop over drop_off_a: lands in the zone (a zone board, not an input board)",
+      len(new) == 1 and new[0]["location"] == "zone" and new[0]["zone"] == "drop_off_a", f"{msg}")
+for tcp, what in (((-0.30, 0.02), "over the rail"), ((0.30, -0.40), "outside the camera area"), (None, "tcp unknown")):
+    b, new, snap, msg = drop_case(tcp)
+    check(f"drop {what}: gone (no new board)", not new and "gone" in msg, msg)
+
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

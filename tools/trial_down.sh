@@ -6,7 +6,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/paths.sh"      # tmux (TM-34)
 TMUX_BIN=$HK_TMUX_CMD
 S=${HK_TMUX_SESSION:-trial}
 if ! $TMUX_BIN has-session -t $S 2>/dev/null; then echo "no tmux session '$S'"; exit 0; fi
-for w in bridge ctrl skills world vision fake motion monitor; do
+for w in demo-ui bridge ctrl skills world vision fake motion monitor; do
   if $TMUX_BIN list-windows -t $S -F '#W' | grep -qx $w; then
     echo "stopping $w"
     $TMUX_BIN send-keys -t $S:$w C-c

@@ -11,7 +11,8 @@ string select_board         # world-model board id; "" = choose by variant / fro
 string from_zone            # "" = input area
 string zone                 # processing zone for "process"
 string to                   # target zone
-int32 count                 # target number of SUCCESSFUL boards (delivered); 0 = all that match (S1)
+int32 count                 # target number of SUCCESSFUL boards (delivered); 0 = all that match (S1);
+                            #   -1 = continuous: never ends by itself, waits for new matching boards (cancel to stop, TM-39)
 int32 max_attempts          # stop starting new boards after this many attempts; 0 = no limit (S1)
 int32 priority              # higher runs first (ties: queue order); changeable at runtime (Control set_priority, CL-22)
 string source               # "dashboard" | "llm" | "cli"

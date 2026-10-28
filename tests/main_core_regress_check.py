@@ -532,6 +532,128 @@ def tm36_unconfirmed():
           and cnt(jobs(sim)[a], "delivered") == 2, str([e[2] for e in events(sim, "not confirmed")]))
 
 
+
+@case("TM-39 continuous")
+def tm39_continuous():
+    sim = Sim(boards=[{"variant": "white_small", "x": -0.30, "y": -0.30, "yaw": -0.1, "count": 3}])   # no red at first
+    ok_a, _, a = sim.add(type="process", select_variant="red", zone="processing_1", to="drop_off_1", count=-1, priority=10)
+    _, _, b = sim.add(type="transfer", select_variant="white_small", to="drop_off_2", count=0, priority=1)
+    sim.loop(max_t=400, until=lambda s: jobs(s)[b]["state"] == "DONE")
+    t0 = sim.t
+    sim.loop(max_t=t0 + MCFG["partial_after"] + MCFG["end_wait"] + 20)            # idle at home, no red for > 50 s
+    Ja = jobs(sim)[a]
+    check("TM-39 count -1 (continuous) accepted; no matching board, robot idle past end_wait + partial_after: the job "
+          "stays open (QUEUED / WAITING; the lower one ran meanwhile)", ok_a and Ja["state"] in ("QUEUED", "WAITING") and "continuous" in Ja["message"]
+          and cnt(jobs(sim)[b], "delivered") == 3, f"{Ja['state']} {Ja['message']}, {short(sim.seq)}")
+    for k, (x, y, yaw) in enumerate(((-0.45, 0.22, 0.2), (-0.62, 0.20, 0.0))):
+        sim.fake._add("red", x, y, yaw)                                          # the operator adds a red board
+        sim.loop(max_t=sim.t + 200, until=lambda s, k=k: cnt(jobs(s)[a], "delivered") == k + 1 and not s.core.current)
+        Ja = jobs(sim)[a]
+        check(f"TM-39 red board {k + 1} added later: processed -> drop_off_1, delivered {k + 1}, job still open",
+              cnt(Ja, "delivered") == k + 1 and Ja["state"] in ("WAITING", "RUNNING"), f"{Ja['state']} {Ja['message']}")
+    sim.core.control("cancel_job", a, 0, sim.t)
+    sim.loop(max_t=sim.t + 20, until=lambda s: jobs(s)[a]["state"] == "CANCELLED")
+    check("TM-39 cancel ends the continuous job", jobs(sim)[a]["state"] == "CANCELLED", jobs(sim)[a]["message"])
+    w = sim.wd()
+    bad1 = sim.core.add_job({"type": "transfer", "select_variant": "red", "to": "drop_off_1", "count": -2}, w, sim.t)
+    bid = next(x["id"] for x in w["boards"])
+    bad2 = sim.core.add_job({"type": "transfer", "select_board": bid, "to": "drop_off_2", "count": -1}, w, sim.t)
+    check("TM-39 count -2 and select_board with count -1 rejected", not bad1[0] and not bad2[0], f"{bad1[1]} / {bad2[1]}")
+
+
+def _record(sim):
+    """Wrap next_action: every action the core returns, in order (the dicts, incl. skip_home)."""
+    out, orig = [], sim.core.next_action
+    def wrap(world, t, tcp):
+        r = orig(world, t, tcp)
+        if r is not None:
+            out.append(dict(r))
+        return r
+    sim.core.next_action = wrap
+    return out
+
+
+@case("TM-40 A")
+def tm40_a():
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2},
+                      {"variant": "white_small", "x": -0.30, "y": -0.30, "yaw": -0.1, "count": 3}])
+    acts = _record(sim)
+    _, _, a = sim.add(type="process", select_variant="red", zone="processing_1", to="drop_off_1", count=1, priority=10)
+    _, _, b = sim.add(type="process", select_variant="white_small", zone="processing_1", to="drop_off_2", count=1, priority=5)
+    sim.loop(max_t=400)
+    first = next((x for x in acts if x["skill"] == "place" and x.get("target") == "processing_1"), None)
+    check("TM-40 A: the place INTO processing_1 does not skip home when the only other work also needs processing_1 "
+          "(no parking over the busy zone); both jobs delivered", first is not None and not first.get("skip_home")
+          and cnt(jobs(sim)[a], "delivered") == 1 and cnt(jobs(sim)[b], "delivered") == 1,
+          f"{first}, {short(sim.seq)}")
+
+
+@case("TM-40 B")
+def tm40_b():
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2}, {"variant": "red", "x": -0.62, "y": 0.20, "yaw": 0.0}])
+    acts = _record(sim)
+    a = red_transfer(sim, 2)
+    sim.loop(max_t=200, until=lambda s: s.skip_homes >= 1)            # first board placed, arm stays at the zone
+    sim.core.control("pause", a, 0, sim.t)                            # its only job paused: nothing to do
+    n = len(acts)
+    sim.loop(max_t=sim.t + 15)
+    parked = [x for x in acts[n:] if x["skill"] == "home"]
+    sim.core.control("resume", a, 0, sim.t)
+    sim.loop(max_t=sim.t + 200)
+    check("TM-40 B: nothing to do with the arm away from home (its job paused) -> it parks at home (not over the "
+          "table); the job goes on after resume", parked and events(sim, "parking at home") and cnt(jobs(sim)[a], "delivered") == 2,
+          f"{[x['skill'] for x in acts[n:n + 3]]}, {short(sim.seq)}")
+
+
+@case("TM-40 fault no verify")
+def tm40_fault():
+    sim = Sim(boards=[{"variant": "red", "x": -0.45, "y": 0.22, "yaw": 0.2}, {"variant": "red", "x": -0.62, "y": 0.20, "yaw": 0.0}])
+    _, _, a = sim.add(type="transfer", select_variant="red", to="fault", count=2)
+    sim.loop(max_t=200, until=lambda s: s.skip_homes >= 1)
+    t0 = sim.t
+    sim.loop(max_t=t0 + MCFG["deferred_verify"] + 40)
+    check("TM-40: a skip_home drop into the fault zone (a void) gets no deferred camera check (no false warning)",
+          sim.skip_homes >= 1 and not events(sim, "not confirmed by the camera") and cnt(jobs(sim)[a], "delivered") == 2,
+          f"skip_homes {sim.skip_homes}, {[e[2] for e in events(sim, 'not confirmed')]}")
+
+
+def _lost_case(fallen):
+    """A board lost mid-carry at LOSS; `fallen` -> it lies there afterwards (else it is gone). The stack is NEARER to
+    home than the loss point, so 'nearest to the tcp' would take the stack."""
+    LOSS = (-0.45, 0.24)
+    sim = Sim(boards=[{"variant": "white_small", "x": -0.30, "y": -0.30, "yaw": -0.1, "count": 3}])
+    acts = _record(sim)
+    _, _, a = sim.add(type="transfer", select_variant="white_small", to="drop_off_1", count=1)
+    sim.inject = [("place", None, "LOST_IN_TRANSIT")]
+    sim.loop(max_t=200, until=lambda s: s.seq and s.seq[-1][-1] == "LOST_IN_TRANSIT")
+    t_lost = sim.t
+    sim.tcp = LOSS                                                    # the arm stopped where the board fell
+    if fallen:
+        sim.fake._add("white_small", LOSS[0] + 0.01, LOSS[1] - 0.01, 0.1)
+    n = len(acts)
+    sim.loop(max_t=sim.t + 120, until=lambda s: jobs(s)[a]["state"] == "DONE")
+    picks = [x for x in acts[n:] if x["skill"] == "pick"]
+    return sim, a, picks, t_lost, LOSS
+
+
+@case("TM-40 lost re-pick")
+def tm40_lost():
+    sim, a, picks, t_lost, loss = _lost_case(True)
+    b = sim.core.status(sim.t)
+    first = picks[0]["board"] if picks else ""
+    bd = next((x for x in sim.wd()["boards"] if x["id"] == first), None) or {}
+    stack_left = [x for x in sim.fake.boards if abs(x["x"] + 0.30) < 0.02 and abs(x["y"] + 0.30) < 0.02]   # 3 - lost = 2
+    check("TM-40 after a vacuum loss the job re-picks the FALLEN board (nearest to the loss point), not the stack "
+          "nearer to home; delivered 1, lost 1", picks and stack_left and stack_left[0]["count"] == 2
+          and cnt(jobs(sim)[a], "delivered") == 1 and cnt(jobs(sim)[a], "lost") == 1,
+          f"first pick {first}, stack count {stack_left and stack_left[0]['count']}, {short(sim.seq)}")
+    sim, a, picks, t_lost, loss = _lost_case(False)
+    t_pick = next((s[0] for s in [(x.get('t'),) for x in picks]), None)
+    check("TM-40 fallen board gone (not seen): after lost_pick_wait the job takes the stack instead (no deadlock)",
+          picks and cnt(jobs(sim)[a], "delivered") == 1 and cnt(jobs(sim)[a], "lost") == 1
+          and events(sim, "waiting for the fallen board") == [] and sim.t - t_lost >= MCFG["lost_pick_wait"],
+          f"{short(sim.seq)}, t since loss {sim.t - t_lost:.1f}")
+
 check(*invariant_summary())
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)
