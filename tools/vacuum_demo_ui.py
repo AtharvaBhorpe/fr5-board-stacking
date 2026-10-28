@@ -2,7 +2,7 @@
 'Pause' / 'Resume' / 'Stop' for the main controller (TM-48 / TM-50: through the bridge, as `tc pause` / `tc resume` /
 `tc stop`; stop = smooth software stop now, a held board goes to the fault zone on resume - NOT an e-stop).
 
-    pixi run python3 tools/vacuum_demo_ui.py [--port 8765] [--lan] [--delay 1.5] [--bridge DIR]
+    pixi run python3 tools/vacuum_demo_ui.py [--port 8765] [--lan] [--delay 1.3] [--bridge DIR]
     (started by tools/trial_up.sh as window 8 'demo-ui'; open http://localhost:8765)
 
 Simulate vacuum failure = ARM: at the next carry (skill place, phase HOVER, gripper HOLDING) wait DELAY s (the board
@@ -128,7 +128,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--port", type=int, default=int(os.environ.get("HK_DEMO_UI_PORT", "8765")))
     ap.add_argument("--lan", action="store_true", help="listen on all interfaces (default: this PC only)")
-    ap.add_argument("--delay", type=float, default=1.5, help="s into the carry before the injection (armed mode)")
+    ap.add_argument("--delay", type=float, default=1.3,   # TM-52: carry 0.45 -> same drop spot as the real test
+                    help="s into the carry before the injection (armed mode)")
     ap.add_argument("--bridge", default=None, help="agent bridge dir (default $HK_LIVE_DIR/bridge)")
     a = ap.parse_args()
     bridge = a.bridge or os.path.join(os.environ.get("HK_LIVE_DIR") or os.environ.get("HK_LIVE_ROOT") or LIVE_ROOT, "bridge")

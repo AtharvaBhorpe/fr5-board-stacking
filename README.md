@@ -55,7 +55,7 @@ Windows: 0 monitor, 1 motion, 2 vision (or fake), 3 world, 4 skills, 5 ctrl, 6 c
 9 dashboard (optional: the presentation web app from `<ws>/demo_webapp` or `HK_DASHBOARD_DIR`, http://localhost:8080;
 skipped with a note if that folder does not exist).
 **Vacuum-failure demo page:** http://localhost:8765, opened in the browser by `trial_up.sh` (not with `--no-gui`) and
-written to `<session>/demo_ui_url.txt` (`tools/vacuum_demo_ui.py`, `--lan` for a phone on the same network): *Simulate vacuum failure* arms it (fires 1.5 s into the next carry), *Now* fires at once while holding; *Pause* / *Resume* / *Stop* = `tc pause` / `tc resume` / `tc stop` (whole controller; Stop is a smooth software stop,
+written to `<session>/demo_ui_url.txt` (`tools/vacuum_demo_ui.py`, `--lan` for a phone on the same network): *Simulate vacuum failure* arms it (fires 1.3 s into the next carry), *Now* fires at once while holding; *Pause* / *Resume* / *Stop* = `tc pause` / `tc resume` / `tc stop` (whole controller; Stop is a smooth software stop,
 not an e-stop).
 Options: `--rviz`, `--no-gui`. Env: `ROS_DOMAIN_ID`, `HK_MOTION_WT`, `HK_VISION1_WT`, `HK_LIVE_ROOT`, `HK_TMUX_SESSION`.
 
