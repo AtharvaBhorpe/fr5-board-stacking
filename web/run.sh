@@ -10,6 +10,6 @@ npm --prefix web run build
 "$CTRL/tools/trial_up.sh" --sim --no-gui
 trap 'trap - EXIT; "$CTRL/tools/trial_down.sh"; kill 0' EXIT INT TERM
 pixi run conversation --ros-args -p browser_speech:=true > /tmp/workcell-bridge.log 2>&1 &
-pixi run --manifest-path "$robot/pixi.toml" python "$PWD/web/gateway.py" > /tmp/workcell-gateway.log 2>&1 &
+pixi run --manifest-path "$robot/pixi.toml" bash -c "source $CTRL/install/local_setup.bash && exec python $PWD/web/gateway.py" > /tmp/workcell-gateway.log 2>&1 &
 echo 'Web simulation: http://localhost:8088. Model services: conversation/model.sh (separate).'
 wait -n

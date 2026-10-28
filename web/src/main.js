@@ -280,40 +280,27 @@ async function loadRobot() {
     loadingRobot = false;
   }
 }
-function drawBoards(vision) {
+function drawBoards(world) {
+  // main controller world model (/task/world): zones + tracked boards, centre / long side / size
   for (const c of [...boardsGroup.children]) {
     boardsGroup.remove(c);
     c.geometry.dispose();
     c.material.dispose();
   }
-  const colors = { VARa: 0x7199c0, VARb: 0x9c86bc, VARc: 0x72a79b };
-  for (const [key, dest] of [
-    ["boards", false],
-    ["destinations", true],
-  ])
-    for (const b of vision[key] || []) {
-      if (!Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
-      const sizes = {
-        VARa: [0.21, 0.3],
-        VARb: [0.15, 0.21],
-        VARc: [0.105, 0.21],
-      };
-      const [w, h] = b.size_mm
-        ? b.size_mm.map((v) => v / 1000)
-        : sizes[b.variant] || [0.1, 0.1];
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(w, h, 0.004),
-        new THREE.MeshStandardMaterial({
-          color: colors[b.variant] || 0xbbbbbb,
-          transparent: dest,
-          opacity: dest ? 0.3 : 0.9,
-          roughness: 0.9,
-        }),
-      );
-      mesh.position.set(b.x, b.y, -0.097);
-      mesh.rotation.z = b.yaw || 0;
-      boardsGroup.add(mesh);
-    }
+  const box = (o, z, color, opacity) => {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(o.length, o.width, 0.004),
+      new THREE.MeshStandardMaterial({ color, transparent: opacity < 1, opacity, roughness: 0.9 }),
+    );
+    mesh.position.set(o.x, o.y, z);
+    mesh.rotation.z = o.yaw;
+    boardsGroup.add(mesh);
+  };
+  for (const z of world.zones || [])
+    if (z.length > 0) box(z, -0.1, z.kind === "processing" ? 0xe0a030 : 0x50a070, 0.35);
+  for (const b of world.boards || [])
+    if (b.location !== "held" && b.length > 0)
+      box(b, -0.095, b.variant === "VARc" ? 0xd04040 : 0xf4f4f4, 1);
 }
 function appendEvent(e, play) {
   if (e.kind === "log") return;
@@ -384,7 +371,7 @@ function update(s) {
     b.disabled = !!s.blocked[v];
     b.title = s.blocked[v] || "Pick and place this variant";
     b.querySelector("small").textContent = s.vision_fresh
-      ? `${n} visible · ${(s.vision.destinations || []).some((x) => x.variant === v) ? "template ready" : "no template"}`
+      ? `${n} visible · ${(s.vision.zones || []).some((z) => z.kind === "drop_off") ? "drop-off zones ready" : "no drop-off zone"}`
       : "Vision stale";
   }
   $("#vision-detail").textContent = s.vision_fresh
@@ -396,9 +383,9 @@ function update(s) {
     for (const [name, value] of Object.entries(s.joints))
       robot.setJointValue(name, value);
   } else loadRobot();
-  if (s.vision.stamp !== visionStamp) {
-    visionStamp = s.vision.stamp;
-    drawBoards(s.vision);
+  if ((s.world || {}).stamp !== visionStamp) {
+    visionStamp = (s.world || {}).stamp;
+    drawBoards(s.world || {});
   }
   const logs = s.events.filter((e) => e.kind === "log");
   $("#logs").textContent = logs.map((e) => e.text).join("\n");

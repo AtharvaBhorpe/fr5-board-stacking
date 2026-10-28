@@ -24,6 +24,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy, qos_profile_sensor_data
 from sensor_msgs.msg import Image, JointState
 from std_msgs.msg import String
 from hk_fr5_interfaces.msg import GripperState
+from hk_fr5_task_interfaces.msg import World  # web/run.sh sources the controller's install
 from ament_index_python.packages import get_package_share_directory
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,38 @@ def model_request(path, body):
     return json.load(urllib.request.urlopen(req, timeout=45))
 
 
+def top_view(w, W=960, H=540, x0=0.15, x1=-0.85, y0=0.9, y1=-0.9):
+    """World model dict (base_link) -> top-down picture like the overhead camera (robot at the top, +y left)."""
+    img = np.full((H, W, 3), 38, np.uint8)
+    px = lambda x, y: (int((y0 - y) / (y0 - y1) * W), int((x0 - x) / (x0 - x1) * H))
+
+    def rect(o, color, fill, lines):
+        a, b, c, s_ = o['length'] / 2, o['width'] / 2, np.cos(o['yaw']), np.sin(o['yaw'])
+        p = np.int32([px(o['x'] + c*u - s_*t, o['y'] + s_*u + c*t) for u, t in ((a, b), (-a, b), (-a, -b), (a, -b))])
+        cv2.fillPoly(img, [p], color) if fill else cv2.polylines(img, [p], True, color, 2)
+        cx, cy = p.mean(0).astype(int)
+        for i, text in enumerate(lines):
+            cv2.putText(img, text, (cx - 45, cy - 6 + 18 * i), cv2.FONT_HERSHEY_SIMPLEX, .5,
+                        (25, 25, 25) if fill else color, 2)
+    zc = {'EMPTY': (90, 200, 90), 'OK': (90, 200, 90), 'LOADED': (60, 170, 230), 'PROCESSING': (40, 140, 255),
+          'DONE': (230, 200, 60), 'FULL': (60, 60, 230), 'FAULT': (60, 60, 230)}
+    for z in w.get('zones', []):
+        if z['length'] > 0:
+            rect(z, zc.get(z['state'], (180, 180, 180)), False,
+                 [z['name'], z['state'] + (f" x{z['stack_count']}" if z['kind'] != 'processing' else '')])
+    for b in w.get('boards', []):
+        if b['location'] != 'held' and b['length'] > 0:
+            rect(b, (60, 60, 220) if b['variant'] == 'VARc' else (235, 235, 235), True,
+                 [f"{b['id']} {b['variant']}"] + (['processed'] if b['processed'] else []))
+    for o in w.get('obstacles', []):
+        rect(o, (0, 0, 255), False, [o['label']])
+    cv2.circle(img, px(0, 0), 18, (200, 200, 200), 2)
+    cv2.putText(img, 'robot' + (f"  holding {w['held']}" if w.get('held') else ''), (px(0, 0)[0] - 22, 30), 0, .55,
+                (0, 220, 255) if w.get('held') else (200, 200, 200), 2)
+    cv2.putText(img, 'Main controller world model (/task/world) - simulated', (10, H - 12), 0, .55, (0, 200, 255), 2)
+    return img
+
+
 class Workcell(Node):
     def __init__(self):
         super().__init__('web_workcell')
@@ -47,7 +80,7 @@ class Workcell(Node):
         self.images = {}; self.events = collections.deque(maxlen=350); self.sequence = 0
         self.model_health = {}
         threading.Thread(target=self.health_loop, daemon=True).start()
-        self.batch = {}; self.input_epoch = 0
+        self.batch = {}; self.input_epoch = 0; self.real_overhead = 0.; self.world = {}
         self.status = {}; self.status_at = float('nan')  # main controller (/task/status): it runs every job
         self.chat_pub = self.create_publisher(String, '/conversation/input', 10)
         self.control_pub = self.create_publisher(String, '/conversation/control', 10)
@@ -57,6 +90,7 @@ class Workcell(Node):
         self.create_subscription(String, '/vision/boards', self.boards, 1)
         self.create_subscription(GripperState, '/gripper/state', self.grip, latched)
         self.create_subscription(String, '/task/status', self.task_status, latched)
+        self.create_subscription(World, '/task/world', self.world_msg, latched)
         self.create_subscription(String, '/conversation/output', self.conversation, 20)
         self.create_subscription(String, '/conversation/batch_state', self.batch_state, 10)
         for topic, key in [('/vision/image', 'overhead'), ('/wrist/wrist_camera/color/image_raw', 'wrist')]:
@@ -96,7 +130,23 @@ class Workcell(Node):
         try:
             value = json.loads(msg.data)
             with self.lock: self.vision = value; self.vision_at = time.time()
-        except ValueError: pass
+        except ValueError: return
+
+    def world_msg(self, m):
+        """Main controller world model (/task/world) -> dict for the 3D view + the overhead picture."""
+        f = lambda o, keys: {k: getattr(o, k) for k in keys}
+        w = dict(stamp=time.time(), held=m.held_board_id, gripper=m.gripper_state, vision_ok=m.vision_ok,
+                 boards=[f(b, ('id', 'variant', 'location', 'zone', 'x', 'y', 'yaw', 'length', 'width', 'processed'))
+                         for b in m.boards if b.location != 'zone' or b.age < 5.0],
+                 zones=[f(z, ('name', 'kind', 'state', 'x', 'y', 'yaw', 'length', 'width', 'stack_count'))
+                        for z in m.zones],
+                 obstacles=[f(o, ('label', 'x', 'y', 'yaw', 'length', 'width')) for o in m.obstacles])
+        with self.lock: self.world = w
+        # no camera image (simulation): show what the controller's world model believes, labelled as such
+        if time.time() - self.real_overhead > 2 and time.time() - self.images.get('overhead', (0,))[0] > .2:
+            ok, jpg = cv2.imencode('.jpg', top_view(w), [cv2.IMWRITE_JPEG_QUALITY, 80])
+            if ok:
+                with self.lock: self.images['overhead'] = (time.time(), jpg.tobytes())
 
     def conversation(self, msg):
         try: self.event('chat', **json.loads(msg.data))
@@ -118,6 +168,7 @@ class Workcell(Node):
         ok, encoded = cv2.imencode('.jpg', pixels, [cv2.IMWRITE_JPEG_QUALITY, 75])
         if ok:
             with self.lock: self.images[key] = (now, encoded.tobytes())
+            if key == 'overhead': self.real_overhead = now
 
     def task_status(self, msg):
         try:
@@ -140,7 +191,7 @@ class Workcell(Node):
             now = time.time(); fresh = now-self.vision_at <= 2 and 0 <= now-self.vision.get('stamp', 0) <= 2
             return dict(stamp=now, panel=self.panel(), joints=self.joints,
                 robot_fresh=now-self.joints_at < 2, vision=self.vision if fresh else {}, vision_fresh=fresh,
-                gripper=self.gripper, batch=self.batch, model=self.model_health, events=list(self.events),
+                gripper=self.gripper, batch=self.batch, world=self.world if now - self.world.get('stamp', 0) < 3 else {}, model=self.model_health, events=list(self.events),
                 cameras={k:now-v[0]<2 for k,v in self.images.items()},
                 blocked={v:self.blocked(v) for v in ('VARa','VARb','VARc')})
 
@@ -152,8 +203,9 @@ def main():
     args = parser.parse_args()
     rclpy.init(); node = Workcell()
     threading.Thread(target=rclpy.spin, args=(node,), daemon=True).start()
-    token = secrets.token_urlsafe(32)
     local = ROOT/'web/.local'; local.mkdir(exist_ok=True)
+    try: token = json.loads((local/'session.json').read_text())['token']  # keep paired browsers across restarts
+    except (OSError, ValueError, KeyError): token = secrets.token_urlsafe(32)
     (local/'session.json').write_text(json.dumps({'token':token}))
     (local/'session.json').chmod(0o600)
 
