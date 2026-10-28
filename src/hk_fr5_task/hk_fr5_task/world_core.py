@@ -62,6 +62,7 @@ class World:
         self.last_frame_t = None
         self._next = 1
         self.unknown_noted = {}      # TM-33: zone -> last note time of an ignored UNKWN detection
+        self.recent_lost = {}        # TM-43: input boards removed as lost: id -> (t, board), reused when seen again
         self.log = []               # (t, text) state changes, for the dashboard / tests
 
     # ---------- helpers ----------
@@ -225,6 +226,7 @@ class World:
                 continue
             if b["location"] == "input" and t - max(b["seen"], b.get("lost_ref", 0.0)) > c["lost_after"]:
                 self._note(t, f"board {i} lost (not seen {t - b['seen']:.1f} s)")
+                self.recent_lost[i] = (t, dict(b))          # TM-43: same spot again soon -> same id
                 del self.boards[i]
         self._processing(t, matched)
         for z in self.zones.values():
@@ -254,6 +256,17 @@ class World:
         if z and z["kind"] == "processing" and z["state"] == "PROCESSING" and z["board_id"] in self.boards:
             self._note(t, f"board {z['board_id']} back in {zn}")
             return z["board_id"]
+        keep = self.c.get("lost_reuse_after", 10.0)                  # TM-43: an input board hidden by the arm
+        for k in [k for k, (tl, _) in self.recent_lost.items() if t - tl > keep]:   # longer than lost_after
+            del self.recent_lost[k]                                   # comes back at the same spot: its old id
+        near = [(math.hypot(ob["x"] - x, ob["y"] - y), k) for k, (_, ob) in self.recent_lost.items()
+                if not zn and k not in self.boards]
+        near = [n for n in near if n[0] <= self.c["match_dist"]]
+        if near:
+            k = min(near)[1]
+            self.boards[k] = self.recent_lost.pop(k)[1]
+            self._note(t, f"board {k} seen again (same id)")
+            return k
         i = f"b{self._next}"
         self._next += 1
         self._note(t, f"new board {i}" + (f" in {zn}" if zn else ""))
@@ -305,6 +318,26 @@ class World:
         typ, i = ev.get("type"), ev.get("board", "")
         if typ == "picked":
             b = self.boards.get(i)
+            if b is None and "x" in ev and "y" in ev:                # TM-43: the id changed meanwhile (hidden by the
+                cand = [(math.hypot(o["x"] - ev["x"], o["y"] - ev["y"]), k) for k, o in self.boards.items()   # arm,
+                        if o["location"] != "held"]                  # lost, seen again as a new id): the board at
+                cand = [c for c in cand if c[0] <= self.c.get("pick_rebind_dist", 0.05)]   # that spot is the one
+                if cand:
+                    old = min(cand)[1]
+                    b = self.boards.pop(old)
+                    b["id"] = i
+                    self.boards[i] = b
+                    for z in self.zones.values():
+                        if z.get("board_id") == old:
+                            z["board_id"] = i
+                    self._note(t, f"picked {i}: the board at that spot was tracked as {old} (renamed)")
+                elif i in self.recent_lost:
+                    b = self.boards[i] = self.recent_lost.pop(i)[1]
+                else:                                                # nothing known there: the robot holds it
+                    b = self.boards[i] = {"id": i, "location": "input", "zone": "", "first": t, "seen": t,
+                                          "variant": ev.get("variant") or "unknown", "processed": False,
+                                          "x": float(ev["x"]), "y": float(ev["y"]), "yaw": 0.0}
+                    self._note(t, f"picked {i}: not in the world any more - added as held")
             if b is None:
                 raise ValueError(f"picked: unknown board '{i}'")
             z = self.zones.get(b["zone"]) if b["location"] == "zone" else None

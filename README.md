@@ -87,7 +87,7 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
 
 - **World:** boards are tracked by position (stable ids), located `input` (table, no zone), `zone` (inside a zone
   outline + 3 cm) or `held`. Jobs pick only `input` boards (never re-pick a placed one). Input boards may be added or
-  taken away by hand at any time. Zones come live from the Vision 1 tags (they can move). UNKWN detections inside zones
+  taken away by hand at any time; one hidden by the arm keeps its id when seen again (TM-43). Zones come live from the Vision 1 tags (they can move). UNKWN detections inside zones
   are ignored (hands); a board the robot placed keeps its known variant. Drop-off stack height = sheet top + count x
   board thickness (the camera cannot count a stack).
 - **Processing zone:** EMPTY -> LOADED (robot placed) -> PROCESSING (operator took it, 2 s) -> DONE (a board back, 2 s)
@@ -110,7 +110,7 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
 | File | Main values |
 |---|---|
 | `world.yaml` | variants VARa 0.295 x 0.210, VARb 0.210 x 0.150, VARc 0.210 x 0.135 (5 mm), table_z -0.060, zone margin, timers (gone / back / unknown_after 2 s, stale_after 1.5 s, lost_after 2 s), **fault zone position**, zone_unknown_boards |
-| `skills.yaml` | speeds (free moves 0.40 / carry with a board 0.30 / approach 0.20 / search 0.015), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
+| `skills.yaml` | speeds (free moves 0.60 / carry with a board 0.45 / approach 0.30 / search 0.0225), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
 | `main.yaml` | home_xy (= home_pose x / y), retry / halt policy, alert times, per-skill timeouts, deferred_verify |
 | `scenario_demo.yaml` | the simulated table for `--sim` and the tests |
 
@@ -121,7 +121,7 @@ Logging: `tools/live_env.sh` (sessions, `debug` / `demo`), `tools/live_monitor.p
 
 `tests/README.md`. Logic tests run in seconds without ROS (`pixi run python3 tests/world_core_check.py`, ...); ROS /
 sim tests need a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 pixi run python3 tests/skills_ros_check.py`).
-Last full run 2026-10-28: all pass (world_core 82, main_core 49, regress 50, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
+Last full run 2026-10-28: all pass (world_core 86, main_core 49, regress 50, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
 
 ## Limitations / open
 

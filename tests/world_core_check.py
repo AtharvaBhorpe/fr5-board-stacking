@@ -422,5 +422,28 @@ for k in range(int((CFG["gone_after"] + CFG["back_after"]) / 0.1) + 30):
 check("TM-42 unchanged: a board put by hand into an EMPTY processing zone is still FAULT (not the zone's board)",
       zone(w2, "processing_1")["state"] == "FAULT", zone(w2, "processing_1")["state"])
 
+# TM-43 (real run 2026-10-28): the arm hid an input VARc > lost_after -> removed, seen again as a NEW id twice
+# (b44 -> b45 -> b46); the controller picked b45, the 'picked b45' event was rejected (unknown) -> HALTED
+w = World(c); t = 0.0
+LA, RA = CFG["lost_after"], CFG["lost_reuse_after"]
+run([det("board/red", -0.30, 0.30)], 0.5)
+i0 = sorted(boards(w, t))
+run([], LA + 0.5)                                                   # hidden (not masked here): removed as lost
+gone = sorted(boards(w, t))
+run([det("board/red", -0.302, 0.301)], 0.5)                          # seen again at the same spot
+check("TM-43 an input board lost (hidden) and seen again at the same spot within lost_reuse_after keeps its id",
+      i0 == ["b1"] and gone == [] and sorted(boards(w, t)) == ["b1"], f"{i0} -> {gone} -> {sorted(boards(w, t))}")
+run([], LA + 0.5); run([], RA)                                      # gone longer than lost_reuse_after
+run([det("board/red", -0.30, 0.30)], 0.5)
+check("TM-43 ... but after lost_reuse_after it is a new board", sorted(boards(w, t)) == ["b2"], str(sorted(boards(w, t))))
+w.event(t, {"type": "picked", "board": "b1", "x": -0.30, "y": 0.30, "variant": "red"})   # the controller still had b1
+check("TM-43 'picked' for an id the world no longer has: the board at that spot (b2) takes the id, held b1 (no HALT)",
+      w.snapshot(t)["held_board_id"] == "b1" and sorted(boards(w, t)) == ["b1"] and boards(w, t)["b1"]["location"] == "held",
+      f"held {w.snapshot(t)['held_board_id']}, {sorted(boards(w, t))}")
+w.event(t, {"type": "placed", "board": "b1", "zone": "drop_off_1", "x": -0.15, "y": 0.55, "yaw": 0.0})
+w.event(t, {"type": "picked", "board": "b9", "x": 0.0, "y": -0.30, "variant": "white_small"})   # nothing known there
+check("TM-43 'picked' for an unknown id with no board at that spot: added as held (variant from the event)",
+      w.snapshot(t)["held_board_id"] == "b9" and boards(w, t)["b9"]["variant"] == "white_small", str(boards(w, t).get("b9")))
+
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

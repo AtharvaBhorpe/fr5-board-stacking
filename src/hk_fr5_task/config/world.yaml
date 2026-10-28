@@ -22,6 +22,9 @@ work_area:                     # obstacles inside (+ margin) stop / pause motion
 
 match_dist: 0.040              # tracking: same board if the centre moved less than this between frames
 lost_after: 2.0                # s unseen -> board removed (not for held / zone boards)
+lost_reuse_after: 10.0         # TM-43: a removed input board seen again at the same spot (match_dist) within this
+                               #   keeps its id (the arm hid it longer than lost_after)
+pick_rebind_dist: 0.05         # TM-43: 'picked' for an id the world lost: the board within this of the pick spot
 stale_after: 1.5               # s without detections -> vision_ok false
 gone_after: 2.0                # s: LOADED zone empty this long -> PROCESSING (operator took the board); 2 s: Vision 1 flicker (CL-40)
 back_after: 2.0                # s: board in a PROCESSING zone this long -> DONE (or FAULT, CL-8); CL-40
