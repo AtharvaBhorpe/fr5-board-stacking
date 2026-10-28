@@ -70,7 +70,8 @@ def describe_status(status, received, now):
 
 def boundary_reply(text):
     """Motion-like text that is no command: say how to phrase it, never guess."""
-    if re.match(r"^(please )?(pick|move|put|place|stack|grab|sort|jog|release|grip)\b", text.strip().lower()):
+    if re.search(r"\b(pick|move|put|place|stack|grab|sort|organi[sz]e|tidy|arrange|empty|clean|process|bring|"
+                 r"clear|transfer|jog|release|grip)\w*", text.strip().lower()):
         return ("Say for example 'move two variant B boards to drop off b', or a controller command such as "
                 "'process VARa processing_1 drop_off_a 1'. Stop, pause, resume, home and status work any time.")
     return None

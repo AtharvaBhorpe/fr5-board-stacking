@@ -26,6 +26,18 @@ from speech_input import normalize_voice_command
 import task_link
 
 FINAL = ("DONE", "CANCELLED")
+LLM = "http://127.0.0.1:8770/v1/chat/completions"  # conversation/gemma_qat.sh (llama.cpp, OpenAI API)
+PLAN = """You plan jobs for the main controller of a robot cell that moves boards. Reply with JSON only:
+{"reason": "<one or two sentences: what you will do and why>", "commands": ["<command>", ...]}
+Commands (exact syntax, at most 4, run in order):
+  transfer VARIANT ZONE COUNT        move COUNT boards of VARIANT from the input table to drop-off ZONE (COUNT 0 = all)
+  process VARIANT PZONE ZONE COUNT   put boards into processing zone PZONE; after processing, move them to ZONE
+  clear FROM_ZONE TO_ZONE            move every board from one zone to another
+  pause | resume | home
+VARIANT: VARa (large white 295x210 mm), VARb (small white 150x210 mm), VARc (red 135x210 mm) or any.
+Example: "process VARc processing_1 drop_off_b 1" = take one red board to processing_1 and, once processed, to
+drop_off_b; the controller does both moves, so never add a transfer for the same boards.
+Use only zones and boards listed in STATE. Unclear, impossible or unsafe request: no commands, explain in reason."""
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
 
@@ -242,9 +254,8 @@ class Conversation(Node):
                 return
             threading.Thread(target=self.dispatch, args=(parsed.command,), daemon=True).start()
             return
-        boundary = boundary_reply(text)
-        if boundary:
-            self.say(boundary)
+        if boundary_reply(text):  # motion-like free text: the model plans, the grammar + controller check
+            threading.Thread(target=self.plan, args=(text,), daemon=True).start()
             return
         with self.lock:
             if self.busy:
@@ -260,12 +271,59 @@ class Conversation(Node):
             ok, job, msg = task_link.send(command)
         except (RuntimeError, OSError) as exc:
             self.say(f"Not sent: {exc}")
-            return
+            return False
         if ok and job:
             with self.lock:
                 self.mine[job] = None
         self.say(f"Job {job} queued: {command}." if ok and job else
                  f"Done: {command}. {msg}".strip() if ok else f"The main controller refused '{command}': {msg}")
+        return ok
+
+    def plan(self, text):
+        """Free-form request -> Gemma plans controller commands from the live state; each one must pass the
+        same fixed grammar (policy.intent) before it is sent, and the controller validates the job."""
+        with self.lock:
+            scene, status = copy.deepcopy(self.scene), copy.deepcopy(self.status)
+        zones = scene.get("zones", [])
+        state = {"zones": [{"name": z.get("name"), "kind": z.get("kind")} for z in zones],
+                 "boards": [{"variant": b.get("variant"), "on": b.get("zone")} for b in scene.get("boards", [])],
+                 "jobs": [{k: j.get(k) for k in ("id", "state", "type", "select_variant", "to", "delivered")}
+                          for j in status.get("jobs", []) if j.get("state") not in FINAL]}
+        self.emit("system", "Planning with the local model...", "thinking")
+        try:
+            req = urllib.request.Request(LLM, json.dumps({
+                "messages": [{"role": "system", "content": PLAN},
+                             {"role": "user", "content": "STATE: " + json.dumps(state) + "\nREQUEST: " + text}],
+                "temperature": 0, "max_tokens": 250, "response_format": {"type": "json_object"}}).encode(),
+                {"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                out = json.loads(json.load(r)["choices"][0]["message"]["content"])
+            reason, proposed = str(out.get("reason", ""))[:400], [str(c) for c in out.get("commands", [])][:4]
+        except Exception as exc:  # noqa: BLE001  no model / bad JSON: nothing moves
+            self.say(boundary_reply(text) + f" (planner unavailable: {str(exc)[:80]})")
+            return
+        names = {z.get("name") for z in zones}
+
+        def valid(c):  # exact arity, only zones that exist (the controller checks the rest)
+            a = c.split()
+            return ((a[0] == "transfer" and len(a) == 4 and a[2] in names) or
+                    (a[0] == "process" and len(a) == 5 and a[2] in names and a[3] in names) or
+                    (a[0] == "clear" and len(a) == 3 and a[1] in names and a[2] in names) or
+                    (a == [a[0]] and a[0] in ("pause", "resume", "home")))
+        ok = [intent(c, zones) for c in proposed]
+        commands = [i.command for i in ok if i.kind == "command" and valid(i.command)]
+        dropped = len(proposed) - len(commands)
+        self.say((reason or "No plan.") + (f" ({dropped} proposed command(s) rejected by the grammar.)" if dropped else ""))
+        if not commands:
+            return
+        reason_block = controller_block(status, self.status_rx, time.time())
+        if reason_block:
+            self.say(reason_block + " Nothing sent.")
+            return
+        for c in commands:  # a plan is a sequence: stop at the first refusal
+            if not self.dispatch(c):
+                self.say("Plan stopped: the rest was not sent.")
+                return
 
     def respond(self, text, epoch):
         """Questions only: the local model sees the scene, the controller status and fresh images."""
