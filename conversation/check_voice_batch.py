@@ -9,7 +9,7 @@ import wave
 import numpy as np
 import ptts
 
-from scheduler import batch_request
+from policy import batch_request
 from speech import MODEL
 from speech_input import normalize_voice_command
 

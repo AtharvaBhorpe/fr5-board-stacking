@@ -1,48 +1,47 @@
-# Local robot conversation — MVP1
+# Robot conversation (branch `feat/robot-conversation`)
 
-Branch: `feat/robot-conversation`. English text and push-to-talk in the existing RViz panel.
-Multi-board scheduling is documented in [BATCHES.md](BATCHES.md), including validation scope and deployment options.
-This implements the team's **LLM Agent** box. Existing calibrated vision, wrist depth and the robot controller
-still own geometry and motion. This is a supervised prototype, not an autonomous manipulation policy.
+Chat and push-to-talk (RViz panel or web UI) for the FR5 cell. Fixed sentence patterns become **jobs for the main
+controller** (`feat/task-main-controller`); the local model only answers questions and never moves the robot.
 
-## Start the demo on this laptop
-
-From `vision1-overhead`, three terminals for the current Gemma setup:
-
-```bash
-# Terminal 1: pinned Gemma QAT on the GPU
-conversation/gemma_qat.sh
-
-# Terminal 2: local model adapter, speech recognition, and Phonon
-conversation/model.sh --backend llama
-
-# Terminal 3: isolated MoveIt mock robot, dynamic replay vision, bridge and RViz
-conversation/demo.sh
+```
+panel / web chat / voice --/conversation/input--> bridge.py --policy.py--> task_link.py --> agent bridge
+   (<ws>/live_logs/session_*/bridge/cmd, tools/agent_bridge.py) --> /task/add_job, /task/control
+status: /task/status (JSON) -> chat replies + /conversation/batch_state;  scene: /vision/boards (boards + zones)
 ```
 
-Wait for `READY` in terminal 2 and `SIMULATION` in RViz. The demo uses ROS domain **62**, localhost-only.
-It does not connect to the FR5. Do not run a second copy of the demo on the same domain.
-Ctrl+C in terminal 3 stops the processes launched by that script. Model services are separate.
-If the development demo is already open, use it instead of starting another copy.
-
-In RViz, type `status`, `what do you see?`, or `pick variant B`. **Hold to talk** captures your microphone;
-release to transcribe. An accepted pick request runs through pick, placement, and release automatically. The screenshot capture hook only captures Qt widgets;
-OpenGL scene contents may not appear in that capture, even though RViz renders them on screen.
-
-The default demo has two B boards. Use **Reset 2 B**, then `pick two variant B boards`, or
-**Reset A/B/C**, then `sort all visible boards`. Reset is accepted only while the controller
-and batch are idle. **Cancel batch** works during and between picks. Progress appears above chat.
-The simulated image removes a source board after mock-controller completion; the real GPU detector
-and Gemma then process the changed image. It does not simulate contact, vacuum physics, destination
-stack growth, wrist depth, or physical placement accuracy. Camera and robot hardware remain disconnected.
-
-For VARa's composite recorded scene:
+## Start (simulation)
 
 ```bash
-conversation/demo.sh samples/composite_vara_dest.png
+conversation/model.sh --backend llama      # optional: questions + speech (see below)
+conversation/demo.sh                      # main controller sim (trial_up --sim) + bridge + RViz, domain 62
 ```
 
-The composite image is a synthetic test fixture, not a live observation of the robot scene.
+Real robot: start the controller with `tools/trial_up.sh` (see its README), then `pixi run conversation` here on the
+same `ROS_DOMAIN_ID`. The bridge finds the newest trial session itself (`HK_BRIDGE_DIR` overrides).
+
+## What you can say
+
+| Text | Controller command |
+|---|---|
+| `move two variant B boards to drop off b`, `pick variant A`, `move all var c` | `transfer VARb drop_off_b 2` ... (no zone: `drop_off_<letter>` if seen, the only drop-off zone, else it asks) |
+| any controller command verbatim: `process VARa processing_1 drop_off_a 1`, `clear drop_off_a drop_off_b`, `board b7 drop_off_a`, `prio j3 5`, `cancel j3` | sent as typed |
+| `stop` / `cancel` | `stop` (smooth stop now, then paused; always sent, never gated) |
+| `cancel batch` / `cancel all` | `clear_queue` (a held board is placed first) |
+| `pause`, `resume` / `continue`, `home` | same |
+| `status` | read from `/task/status` |
+| anything else | question for the local model (images + detections + status), no motion |
+
+Jobs are refused with a reason when no `/task/status` arrived for 3 s or motion / skills are not ready; the
+controller validates everything else and its answer is read back. Finished / paused jobs and new alerts are
+announced in the chat.
+
+## Checks
+
+```bash
+pixi run conversation-check                       # unit tests (no ROS)
+python3 conversation/policy.py                    # command patterns self-check
+pixi run python conversation/sim_check.py         # end-to-end with conversation/demo.sh running (13 checks)
+```
 
 ## First setup / after reboot
 
@@ -64,82 +63,6 @@ To retain models, set `CONVERSATION_CACHE` to a writable location with sufficien
 and on subsequent launches. No old datasets or model caches were removed. The optional audio setup script
 extracts eSpeak under ignored `.tools/` for synthetic ASR fixtures; live playback uses Phonon and `pacat`.
 
-## Supported behavior
-
-- Explicit commands such as `pick VARa`, `please pick variant B`, `pick and place variant C` request one pick.
-- `status`, `stop`, `cancel`, and `clear chat` have bounded local meanings.
-- Other text is conversational. It can never become a motion command through model-generated output.
-  Ask explicitly again after clarifying a variant; MVP1 does not turn a bare `B` follow-up into an action.
-- A task requires fresh controller and vision timestamps, known hardware, calibration, a freely pickable variant,
-  its destination, a fresh overhead image, and a successful model image check. Changed target poses are rejected.
-- Replay is permitted only with `allow_replay:=true` **and** SIMULATION hardware. Real operation requires
-  vision's explicit `live: true`. No automatic task retry or remote real-hardware confirmation.
-- The controller rejects expired requests and duplicate task IDs. Result messages are correlated with the request.
-- Pressing PTT interrupts spoken output, not robot motion. **Stop** bypasses inference and requests cancellation
-  of the pick script's active action. Check the log for cancellation completion. This is not the pendant e-stop.
-- Closing/clearing chat does not cancel an existing task. Unknown or unavailable speech/model services do not
-  dispatch a pick. A recognized phrase is not proof that the user intended it; inspect the visible transcript.
-
-## Real-robot test handoff
-
-1. Stop the isolated demo and its replay node. Keep the local model server running.
-2. Use the existing real-robot, overhead GPU vision and D405 startup procedure from the main README, all on
-   the same intended ROS domain. Do not set `CONVERSATION_SIM`. Use live C920 input, not a sample file.
-3. Launch this branch's `robot/rviz.sh` in that domain, then:
-
-   ```bash
-   pixi run conversation
-   ```
-
-4. Verify the panel says **REAL FR5**, both cameras stream, the gripper state is valid, and the expected variant
-   and template are present. Clear simulation extra arguments: no `--speed 0.3` or `--no-wrist-height`.
-5. Test `status` and a scene question first. Test PTT transcription of variant names without requesting motion
-   (for example, `what is variant B?`). Lab-noise and the operator's microphone/voice remain unvalidated.
-6. Request one variant. The request permits approach, pick descent, grip, lift, carry, placement, release,
-   and return to park without confirmation pauses. Use `--hover-only` for a
-   contact-free alignment check. Repeat per variant only after inspecting results.
-
-Dynamic D405 pick/drop heights and placement accuracy are inherited from the existing controller and were not
-physically revalidated during this session. The integration blocks fully occluded targets instead of automatically
-asking the existing controller to clear covering boards.
-
-## Interfaces
-
-| Interface | Type | Contract |
-|---|---|---|
-| `/conversation/input` | `std_msgs/String` | English text |
-| `/conversation/control` | `std_msgs/String` | `ptt_start`, `ptt_stop`, `clear` |
-| `/conversation/output` | `std_msgs/String` JSON | `role`, `text`, `phase` for RViz |
-| `/conversation/task` | `std_msgs/String` JSON | `id`, `variant`, Unix `stamp`; panel checks before starting |
-| `/pick_panel/state` | `std_msgs/String` JSON | `stamp`, `hardware`, `busy`, `waiting`, `task_id`, `phase`, `detail` |
-| `/vision/boards` | existing JSON | adds `live` provenance flag; existing geometry unchanged |
-| `127.0.0.1:8766` | local HTTP | GET health/device; POST `/ask`, `/speak`, `/silence`, `/listen/start`, `/listen/stop`, `/transcribe` |
-
-The HTTP service binds loopback only. Do not expose it or ROS task topics to untrusted clients; this MVP has no
-remote authentication. `/transcribe` accepts mono 16-bit 16 kHz WAV for repeatable synthetic-speech tests.
-
-## Checks
-
-```bash
-pixi run conversation-check
-# With isolated demo open and IDLE, the following automate confirmations ONLY after verifying SIMULATION:
-ROS_DOMAIN_ID=62 ROS_LOCALHOST_ONLY=1 pixi run python conversation/sim_check.py --variant VARb --chat
-ROS_DOMAIN_ID=62 ROS_LOCALHOST_ONLY=1 pixi run python conversation/sim_negative_check.py
-# With VARa composite scene:
-ROS_DOMAIN_ID=62 ROS_LOCALHOST_ONLY=1 pixi run python conversation/sim_cancel_check.py
-# Local VLM and generated speech, no robot commands:
-PATH="$PWD/.tools:$PATH" pixi run -e train python conversation/benchmark.py
-```
-
-Results are under `conversation/results/`. Synthetic speech tests are not live microphone tests; the 30 VLM
-turns repeat three prompts on one recorded scene, and the 30 ASR turns repeat ten generated utterances.
-The separate policy and ROS-negative suites cover unsupported commands and dispatch boundaries.
-These finite checks do not establish general VLM accuracy, physical success, or full PTT-to-speech latency.
-
-The subsequent [VLM/Phonon comparison](results/comparison/REPORT.md) and
-[MoveIt/vision comparison](results/sim-comparison/REPORT.md) record Gemma and Qwen separately.
-Wake-word listening remains MVP2; German remains MVP3.
-
 ### Experimental Gemma simulation backend
 
 The default remains Qwen. Gemma requires a separate environment with Transformers 5.21.0 and
@@ -151,7 +74,7 @@ HF_HOME=/home/ub26/.cache/robot-conversation-comparison PATH="$PWD/.tools:$PATH"
   /tmp/gemma-comparison-env/bin/python conversation/model_server.py \
   --backend gemma --asr-cache /tmp/robot-conversation-models/hub
 # In another terminal:
-conversation/demo.sh samples/composite_vara_dest.png
+conversation/demo.sh
 ```
 
 Gemma uses NF4/BF16 on GPU, a CPU per-layer embedding lookup, and offloaded unused audio modules.
@@ -173,7 +96,7 @@ conversation/gemma_qat.sh
 # Terminal 2: existing conversation/audio HTTP adapter, port 8766
 conversation/model.sh --backend llama
 # Terminal 3: mock hardware only
-conversation/demo.sh samples/composite_vara_dest.png
+conversation/demo.sh
 ```
 
 Model weights are read from the pinned Hugging Face comparison cache; `GEMMA_QAT_DIR` overrides it.

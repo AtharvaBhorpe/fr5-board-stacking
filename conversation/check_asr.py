@@ -8,7 +8,7 @@ import time
 import urllib.request
 import wave
 
-from scheduler import batch_request
+from policy import batch_request
 from speech_input import normalize_voice_command
 
 parser = argparse.ArgumentParser()
@@ -18,7 +18,7 @@ args = parser.parse_args()
 url = f'http://127.0.0.1:{args.port}'
 health = json.load(urllib.request.urlopen(url + '/health'))
 fixtures = Path(__file__).parent / 'results/voice-batch'
-expected = [('count', ('VARb', 2)), ('count', ('VARa', 3)), ('all', None)]
+expected = ['transfer VARb drop_off_b 2', 'transfer VARa drop_off_a 3', None]  # 2: 'sort all' dropped
 rows = []
 for path in sorted(fixtures.glob('*.wav')):
     began = time.monotonic()

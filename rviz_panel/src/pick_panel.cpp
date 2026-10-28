@@ -137,12 +137,12 @@ public:
     outer->addWidget(batch_status_);
     auto * chat_row = new QHBoxLayout;
     chat_input_ = new QLineEdit;
-    chat_input_->setPlaceholderText("Pick variant B / what do you see? / status / stop");
+    chat_input_->setPlaceholderText("move two variant B to drop off b / status / pause / stop / what do you see?");
     auto * send = new QPushButton("Send");
     auto * talk = new QPushButton("Hold to talk");
     auto * clear = new QPushButton("Clear chat");
-    auto * cancel_batch = new QPushButton("Cancel batch");
-    cancel_batch->setToolTip("Cancel remaining queued picks and request stop of the current pick. Not an emergency stop.");
+    auto * cancel_batch = new QPushButton("Stop robot (main controller)");
+    cancel_batch->setToolTip("Main controller stop: smooth stop now, then paused. Not an emergency stop.");
     chat_row->addWidget(chat_input_, 1);
     chat_row->addWidget(send);
     chat_row->addWidget(talk);
@@ -161,20 +161,6 @@ public:
     connect(talk, &QPushButton::released, this, [this] {chatControl("ptt_stop");});
     connect(clear, &QPushButton::clicked, this, [this] {chatControl("clear");});
     connect(cancel_batch, &QPushButton::clicked, this, [this] {chatControl("stop");});
-    if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {
-      args_->setText("--speed 0.3 --no-wrist-height");
-      auto * demo_row = new QHBoxLayout;
-      for (const auto & entry : {std::make_pair("Reset 2 B", "two_b"), std::make_pair("Reset A/B/C", "mixed")}) {
-        auto * button = new QPushButton(entry.first);
-        demo_row->addWidget(button);
-        connect(button, &QPushButton::clicked, this, [this, command = QString(entry.second)] {
-          if (demo_pub_ && hw_kind_ == "SIMULATION" && !running()) {
-            std_msgs::msg::String m; m.data = command.toStdString(); demo_pub_->publish(m);
-          }
-        });
-      }
-      outer->addLayout(demo_row);
-    }
     auto * t = new QTimer(this);
     connect(t, &QTimer::timeout, this, &PickPanel::refresh);
     t->start(500);
@@ -237,9 +223,6 @@ public:
     state_pub_ = node_->create_publisher<std_msgs::msg::String>("/pick_panel/state", 10);
     chat_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/input", 10);
     chat_control_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/control", 10);
-    if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {
-      demo_pub_ = node_->create_publisher<std_msgs::msg::String>("/conversation/demo/control", 10);
-    }
     batch_sub_ = node_->create_subscription<std_msgs::msg::String>("/conversation/batch_state", 10,
       [this](std_msgs::msg::String::ConstSharedPtr m) {
         QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->data)] {
@@ -257,10 +240,6 @@ public:
           chat_status_->setText("Assistant: " + o["phase"].toString());
         }, Qt::QueuedConnection);
       });
-    task_sub_ = node_->create_subscription<std_msgs::msg::String>("/conversation/task", 10,
-      [this](std_msgs::msg::String::ConstSharedPtr m) {
-        QMetaObject::invokeMethod(this, [this, s = QString::fromStdString(m->data)] {onTask(s);}, Qt::QueuedConnection);
-      });
   }
 
   void save(rviz_common::Config config) const override
@@ -276,7 +255,6 @@ public:
     if (config.mapGetString("extra_args", &s)) {
       args_->setText(s);
     }
-    if (qEnvironmentVariableIsSet("CONVERSATION_SIM")) {args_->setText("--speed 0.3 --no-wrist-height");}
   }
 
 protected:
@@ -320,24 +298,6 @@ private:
       {"task_id", task_id_}, {"phase", waiting_ ? QString("waiting") : phase_}, {"detail", detail_}};
     std_msgs::msg::String m; m.data = QJsonDocument(o).toJson(QJsonDocument::Compact).toStdString();
     state_pub_->publish(m);
-  }
-
-  void onTask(const QString & json)
-  {
-    const auto o = QJsonDocument::fromJson(json.toUtf8()).object();
-    const auto id = o["id"].toString();
-    const auto v = o["variant"].toString();
-    const double age = QDateTime::currentMSecsSinceEpoch()/1000.0 - o["stamp"].toDouble();
-    if (id.isEmpty() || seen_tasks_.contains(id)) {return;}
-    seen_tasks_.insert(id);
-    // Do not overwrite correlation for an active task with a rejected second request.
-    if (running()) {line("[panel] conversation task rejected: already running"); return;}
-    task_id_ = id;
-    detail_ = age < 0 || age > 2 ? "expired request" :
-      !VARIANTS.contains(v) ? "invalid variant" : blocked(v);
-    if (hw_kind_ != "SIMULATION" && hw_kind_ != "REAL FR5") {detail_ = "unknown robot hardware";}
-    if (!detail_.isEmpty()) {phase_ = "rejected"; publishState(); return;}
-    start(v, "conversation");
   }
 
   static QImage toQImage(const sensor_msgs::msg::Image & m)
@@ -597,11 +557,10 @@ private:
   QLineEdit * chat_input_;
   QLabel * chat_status_, * batch_status_;
   QString task_id_, phase_ = "idle", detail_;
-  QSet<QString> seen_tasks_;
   bool live_ = false;
   qint64 observed_ms_ = 0;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state_pub_, chat_pub_, chat_control_pub_, demo_pub_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr chat_sub_, task_sub_, batch_sub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state_pub_, chat_pub_, chat_control_pub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr chat_sub_, batch_sub_;
   QLabel * cam_, * wrist_, * vision_, * run_;
   QImage img_, wrist_img_;
   qint64 wrist_ms_ = 0, joints_ms_ = 0;

@@ -1,15 +1,12 @@
 # Workcell PWA
 
-A local web replacement for the RViz interaction panel, on branch `feat/robot-conversation`.
-This version executes **simulation only**, on ROS domain 62. RViz is not required.
-Downloaded models are retained in the normal Hugging Face cache. Background ASR
-loading keeps typed chat and TTS available; the microphone enables when ready.
-It uses the existing `robot/pick_one.py`, MoveIt mock hardware, vision pipeline,
-Gemma scene checks, bounded conversation scheduler, Parakeet, and Phonon 40M.
+A local web replacement for the RViz chat panel, on branch `feat/robot-conversation`. Chat goes to the conversation
+bridge, which sends jobs to the **main controller** (`feat/task-main-controller`); state comes from `/task/status`.
+Commands from the web are accepted only while the robot is the simulation (mock hardware). RViz is not required.
 
 ## Start
 
-Close the existing RViz demo first. From the vision1-overhead directory:
+From the vision1-overhead directory (`web/run.sh` also starts the simulated main controller, `trial_up.sh --sim`):
 
 ```bash
 conversation/gemma_qat.sh

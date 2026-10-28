@@ -137,7 +137,8 @@ for (const b of document.querySelectorAll("[data-variant]"))
       (e) => notice(e.message),
     );
 $("#sort").onclick = () =>
-  command("sort all visible boards").catch((e) => notice(e.message));
+  ["a", "b", "c"].forEach((v) =>
+    command(`move all variant ${v}`).catch((e) => notice(e.message)));
 async function control(action) {
   if (action === "stop" || action === "clear") {
     stopSpeech();

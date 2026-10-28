@@ -1,12 +1,12 @@
 """Shared English ASR vocabulary and conservative command transcription repair."""
 import re
 
-from scheduler import batch_request
+from policy import batch_request
 
 PROMPT = (
     "Robot workcell vocabulary: variant A, variant B, variant C; board, boards. "
-    "Pick one board. Pick two variant B boards. Pick three variant A boards. "
-    "Sort all visible boards. Batch status. Cancel batch. What do you see?"
+    "Move two variant B boards to drop off b. Process variant A in processing one then to drop off a. "
+    "Clear drop off a to drop off b. Sort all visible boards. Status. Pause. Resume. Stop. Cancel batch. What do you see?"
 )
 
 
@@ -49,5 +49,4 @@ def normalize_voice_command(text):
     """Repair observed noun/spacing errors only in an otherwise exact counted pick command."""
     corrected = re.sub(r"\b(?:volts|bolts)(?=\s*(?:please)?[.!?]*$)", "boards", text, flags=re.I)
     corrected = re.sub(r"\bvariant\s+([abc])(boards?)\b", r"variant \1 \2", corrected, flags=re.I)
-    request = batch_request(corrected)
-    return corrected if request and request[0] == "count" else text
+    return corrected if batch_request(corrected) else text

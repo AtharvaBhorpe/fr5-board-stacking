@@ -9,7 +9,6 @@ import re
 import secrets
 import signal
 import ssl
-import subprocess
 import sys
 import threading
 import time
@@ -30,7 +29,7 @@ from ament_index_python.packages import get_package_share_directory
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'conversation'))
 from speech_input import normalize_voice_command
-from policy import block_reason
+from policy import controller_block
 
 
 def model_request(path, body):
@@ -48,26 +47,20 @@ class Workcell(Node):
         self.images = {}; self.events = collections.deque(maxlen=350); self.sequence = 0
         self.model_health = {}
         threading.Thread(target=self.health_loop, daemon=True).start()
-        self.batch = {}; self.proc = None; self.phase = 'idle'; self.task_id = ''; self.waiting = False
-        self.input_epoch = 0
-        self.detail = ''; self.seen = collections.deque(maxlen=1000); self.stopping = False
-        self.state_pub = self.create_publisher(String, '/pick_panel/state', 10)
-        self.log_pub = self.create_publisher(String, '/pick_panel/log', 50)
+        self.batch = {}; self.input_epoch = 0
+        self.status = {}; self.status_at = float('nan')  # main controller (/task/status): it runs every job
         self.chat_pub = self.create_publisher(String, '/conversation/input', 10)
         self.control_pub = self.create_publisher(String, '/conversation/control', 10)
-        self.demo_pub = self.create_publisher(String, '/conversation/demo/control', 10)
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.create_subscription(String, '/robot_description', self.robot, latched)
         self.create_subscription(JointState, '/joint_states', self.joint, qos_profile_sensor_data)
         self.create_subscription(String, '/vision/boards', self.boards, 1)
         self.create_subscription(GripperState, '/gripper/state', self.grip, latched)
-        self.create_subscription(String, '/conversation/task', self.task, 10)
-        self.create_subscription(String, '/pick_panel/request', self.request, 10)
+        self.create_subscription(String, '/task/status', self.task_status, latched)
         self.create_subscription(String, '/conversation/output', self.conversation, 20)
         self.create_subscription(String, '/conversation/batch_state', self.batch_state, 10)
         for topic, key in [('/vision/image', 'overhead'), ('/wrist/wrist_camera/color/image_raw', 'wrist')]:
             self.create_subscription(Image, topic, lambda m, k=key: self.picture(m, k), qos_profile_sensor_data)
-        self.create_timer(.2, self.publish_state)
 
     def health_loop(self):
         while rclpy.ok():
@@ -86,7 +79,6 @@ class Workcell(Node):
 
     def log(self, text):
         self.event('log', text=text)
-        self.log_pub.publish(String(data=text))
 
     def robot(self, msg):
         with self.lock:
@@ -127,19 +119,21 @@ class Workcell(Node):
         if ok:
             with self.lock: self.images[key] = (now, encoded.tobytes())
 
-    def busy(self):
-        return self.proc is not None and self.proc.poll() is None
+    def task_status(self, msg):
+        try:
+            value = json.loads(msg.data)
+            with self.lock: self.status = value; self.status_at = time.time()
+        except ValueError: pass
 
     def blocked(self, variant):
-        if self.hardware != 'SIMULATION': return 'Web execution is currently simulation-only'
-        if time.time() - self.joints_at > 2: return 'Robot state is stale'
-        if time.time() - self.vision_at > 2: return 'Camera data is stale'
-        if self.busy(): return 'A pick is already running'
-        return block_reason(self.vision, self.panel(), now=time.time(), variant=variant, allow_replay=True)
+        if self.hardware != 'SIMULATION': return 'Web control is simulation-only'
+        return controller_block(self.status, self.status_at, time.time())
 
     def panel(self):
-        return dict(stamp=time.time(), hardware=self.hardware, busy=self.busy(), waiting=self.waiting,
-                    task_id=self.task_id, phase='waiting' if self.waiting else self.phase, detail=self.detail)
+        st = self.status; jobs = [j for j in st.get('jobs', []) if j.get('state') not in ('DONE', 'CANCELLED')]
+        return dict(stamp=time.time(), hardware=self.hardware, busy=bool(jobs), waiting=False,
+                    phase=str(st.get('state', 'no main controller')).lower(),
+                    detail=' · '.join(f"{j['id']} {j['state'].lower()} {j.get('delivered', 0)} delivered" for j in jobs))
 
     def snapshot(self):
         with self.lock:
@@ -150,82 +144,13 @@ class Workcell(Node):
                 cameras={k:now-v[0]<2 for k,v in self.images.items()},
                 blocked={v:self.blocked(v) for v in ('VARa','VARb','VARc')})
 
-    def publish_state(self):
-        with self.lock: payload = self.panel()
-        self.state_pub.publish(String(data=json.dumps(payload)))
-
-    def task(self, msg):
-        try:
-            data = json.loads(msg.data); key = data.get('id'); variant = data.get('variant')
-            with self.lock:
-                if not key or key in self.seen: return
-                self.seen.append(key)
-                if self.busy(): self.log('Task rejected: controller busy'); return
-                self.task_id = key
-                age = time.time()-data.get('stamp', 0)
-                reason = 'Expired task' if not 0 <= age <= 2 else self.blocked(variant)
-                if reason:
-                    self.phase = 'rejected'; self.detail = reason; self.publish_state(); return
-                self.phase = 'running'; self.detail = ''; self.waiting = False; self.stopping = False
-                self.proc = subprocess.Popen([sys.executable, '-u', str(ROOT/'robot/pick_one.py'),
-                    '--place', '--variant', variant, '--speed', '0.3', '--no-wrist-height'],
-                    cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    start_new_session=True)
-                threading.Thread(target=self.read_process, args=(self.proc,), daemon=True).start()
-                self.publish_state()
-        except Exception as exc:
-            with self.lock: self.phase = 'failed'; self.detail = str(exc)
-            self.log(str(exc)); self.publish_state()
-
-    def read_process(self, proc):
-        buf = ''
-        while True:
-            char = proc.stdout.read(1)
-            if not char: break
-            buf += char.decode('utf-8', errors='replace')
-            if char == b'\n': self.log(buf.rstrip()); buf = ''
-            elif buf.startswith('>>>') and buf.endswith(': '):
-                with self.lock: self.waiting = True
-                self.log(buf); buf = ''; self.publish_state()
-        if buf: self.log(buf)
-        code = proc.wait()
-        with self.lock:
-            self.waiting = False
-            self.phase = 'stopped' if self.stopping else 'completed' if code == 0 else 'failed'
-            self.detail = f'Pick process exited {code}'
-        self.log(f'[web] pick_one finished, exit code {code}'); self.publish_state()
-
-    def request(self, msg):
-        if msg.data == 'stop': self.stop()
-        elif msg.data == 'confirm': self.confirm()
-
-    def confirm(self):
-        with self.lock:
-            if self.hardware != 'SIMULATION' or not self.busy() or not self.waiting:
-                raise ValueError('No simulation confirmation is pending')
-            self.proc.stdin.write(b'\n'); self.proc.stdin.flush(); self.waiting = False
-
-    def stop(self):
-        with self.lock:
-            if not self.busy(): return
-            self.stopping = True; self.phase = 'stopping'
-            os.killpg(self.proc.pid, signal.SIGINT)
-        self.publish_state()
-
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8088)
     parser.add_argument('--tls-port', type=int, default=8443)
     args = parser.parse_args()
-    if os.environ.get('ROS_DOMAIN_ID') != '62' or os.environ.get('ROS_LOCALHOST_ONLY') != '1':
-        raise RuntimeError('Web MVP requires isolated simulation domain 62')
     rclpy.init(); node = Workcell()
-    # A second task executor would cause duplicate picks.
-    deadline = time.monotonic()+2
-    while time.monotonic()<deadline: rclpy.spin_once(node, timeout_sec=.1)
-    if node.count_publishers('/pick_panel/state') > 1:
-        raise RuntimeError('Another controller is running; close RViz/demo before web launch')
     threading.Thread(target=rclpy.spin, args=(node,), daemon=True).start()
     token = secrets.token_urlsafe(32)
     local = ROOT/'web/.local'; local.mkdir(exist_ok=True)
@@ -286,17 +211,13 @@ def main():
                 if path == '/api/chat':
                     text=str(data.get('text','')).strip()
                     if not text or len(text)>1000: raise ValueError('Enter a command or question')
+                    if node.hardware != 'SIMULATION': raise ValueError('Web control is simulation-only')
                     node.chat_pub.publish(String(data=text)); result={}
                 elif path == '/api/control':
                     action=data.get('action')
                     if action in ('stop','clear'):
                         with node.lock: node.input_epoch += 1
                         node.control_pub.publish(String(data=action))
-                    elif action=='confirm': node.confirm()
-                    elif action in ('two_b','mixed'):
-                        if node.hardware!='SIMULATION' or node.busy() or node.batch.get('phase') in ('checking','executing','verifying'):
-                            raise ValueError('Reset is available only in idle simulation')
-                        node.demo_pub.publish(String(data=action))
                     else: raise ValueError('Unknown control')
                     result={}
                 elif path == '/api/transcribe':

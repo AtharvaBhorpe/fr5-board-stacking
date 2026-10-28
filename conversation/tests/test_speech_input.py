@@ -8,14 +8,14 @@ from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from speech_input import normalize_voice_command, transcribe_audio
-from scheduler import batch_request
+from policy import batch_request
 
 
 class SpeechInputTest(unittest.TestCase):
     def test_observed_error_preserves_two_and_variant_b(self):
         text = normalize_voice_command('Pick two variant B volts.')
         self.assertEqual(text, 'Pick two variant B boards.')
-        self.assertEqual(batch_request(text), ('count', ('VARb', 2)))
+        self.assertEqual(batch_request(text), 'transfer VARb drop_off_b 2')
 
     def test_no_invented_counts_or_actions(self):
         for text in ('Pick variant B.', 'Do not pick two variant B volts.',
@@ -25,7 +25,7 @@ class SpeechInputTest(unittest.TestCase):
 
     def test_parakeet_joined_variant_preserves_command(self):
         self.assertEqual(batch_request(normalize_voice_command('Pick three variant aboards.')),
-                         ('count', ('VARa', 3)))
+                         'transfer VARa drop_off_a 3')
         for text in ('Do not pick three variant aboards.', 'Pick variant aboards.',
                      'Pick three variant dboards.', 'Could I pick three variant aboards?'):
             self.assertEqual(normalize_voice_command(text), text)

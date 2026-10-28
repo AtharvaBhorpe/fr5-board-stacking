@@ -16,7 +16,7 @@ Use multimodal conversation and reasoning with the existing FR5 board-handling s
 ## Existing integration surface
 
 - Observations: overhead images and `/vision/boards` JSON; wrist camera images and controller-owned D405 depth measurements.
-- Execution: existing RViz panel and `robot/pick_one.py`, using the motion/gripper workspace.
+- Execution: jobs for the main controller (feat/task-main-controller) through its agent bridge (conversation/task_link.py).
 - Requests: `/pick_panel/request` accepts `VARa`, `VARb`, `VARc`, `stop`, `confirm`. Real-hardware confirmation is restricted to the panel button.
 - Feedback: `/pick_panel/log`.
 
