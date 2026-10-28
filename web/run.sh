@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Web UI on the simulated main controller (tools/trial_up.sh --sim). http://localhost:8088. Ctrl+C stops everything.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$(readlink -f "$0")")/.."
 CTRL=${HK_TASK_WT:-$PWD/../wt/feat-task-main-controller}
 robot="${FR5_DIR:-$PWD/../fr5-board-stacking}"
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-62} ROS_LOCALHOST_ONLY=1

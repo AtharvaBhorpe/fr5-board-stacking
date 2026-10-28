@@ -2,7 +2,7 @@
 # Simulation demo: main controller (fake arm, gripper, camera: tools/trial_up.sh --sim) + chat bridge + RViz panel.
 # Model questions need conversation/model.sh running; robot commands do not. Ctrl+C stops everything.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$(readlink -f "$0")")/.."
 CTRL=${HK_TASK_WT:-$PWD/../wt/feat-task-main-controller}
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-62} ROS_LOCALHOST_ONLY=1
 "$CTRL/tools/trial_up.sh" --sim --no-gui
