@@ -80,10 +80,10 @@ All types are in package `hk_fr5_interfaces` (`action/`, `srv/`, `msg/`).
 
 - **Frame `base_link`, metres, radians.** It is **rotated 180 deg about z** vs. the pendant / web UI:
   `x = -x_pendant`, `y = -y_pendant`, `z = z_pendant` (pendant in mm).
-- **tcp** = tip of the relaxed suction cup (112.9 mm from the flange); tcp z-axis points out of the cup.
+- **tcp** = tip of the relaxed suction cup (107.4 mm from the flange, H-12); tcp z-axis points out of the cup.
 - **Orientation:** `MODE_DOWN_YAW` (default): tool straight down, only `yaw` used, R = Rz(yaw) Rx(pi).
   `MODE_FULL`: R = Rz(yaw) Ry(pitch) Rx(roll). `GetState.yaw` can be fed back as `MoveTo.yaw`.
-  Home `ready`: tcp (-0.497, -0.102, 0.364), tool down, yaw +pi/2.
+  Home `ready`: tcp (-0.497, -0.102, 0.370), tool down, yaw +pi/2.
 - **Deltas:** `FRAME_TCP` (default) = tool axes, so with the tool down **`dz > 0` moves DOWN**; `FRAME_BASE` = base
   axes, `dz > 0` = up.
 - **Planners (`MoveTo.planner`):** `""` = OMPL, avoids obstacles; `"PTP"` / `"LIN"` = Pilz, no avoidance (a path through
