@@ -1,0 +1,31 @@
+# Main controller (T5, control-loop.md CL-21..CL-32, review fixes TM-16, failure policies section 6). Seconds.
+fresh: 1.5                # zones seen longer ago are not targets (boards: every board in the world counts, TM-36)
+lost_pick_radius: 0.30     # TM-40: after a vacuum loss the job re-picks the matching board nearest to the
+lost_pick_wait: 12.0       #   loss point (within this radius); waits up to lost_pick_wait s after the loss for it to
+lost_pick_keep: 60.0       #   be seen (home move + detection), the hint is dropped after lost_pick_keep s
+deferred_verify: 15.0     # TM-36: s for the camera to confirm a skip_home place, else a warning (job goes on)
+end_wait: 3.0             # CL-24: count 0 (all) ends after this long without a candidate
+partial_after: 30.0       # count n: give up waiting for more matching boards after this long
+lookup_retries: 2         # BOARD_NOT_FOUND / BOARD_MOVED / VISION_STALE: retries before the board is skipped;
+                          #   also place-target retries (S2). Keep < max_place_fail (else D5 halts first, A11)
+motion_retries: 1         # PLAN_FAILED / MOTION_FAILED on a pick: retries (after a home move) before skipping
+halt_after: 3             # motion / system failures in a row -> HALTED (resume by command)
+fault_zone: fault         # where boards with problems go (CL-11 / CL-15)
+place_when_paused: true   # pause with a board on the cup: place it first, then hold
+home_xy: [-0.233, 0.0]    # = skills.yaml home_pose x, y (above the aluminium profile, TM-25); CL-26 fallback for 'nearest board' when /motion/get_state fails
+world_wait: 1.0           # CL-23: max wait for a world message newer than the last skill result
+tick: 0.2                 # decision loop period when idle
+max_place_fail: 3         # D5: failed puts-down of a held board into the fault zone before HALTED
+retry_wait: 1.0           # P / R5: wait before retrying a place (target not seen / busy)
+hold_alert_after: 10.0    # CL-28: holding, target cannot take the board this long -> alert (also: target not seen)
+hold_fault_after: 10.0    # CL-28: ... this long more -> board to the fault zone (FULL / not seen: job paused too)
+loaded_alert_after: 30.0  # CL-29: processing zone LOADED this long (not taken for processing) -> alert
+home_tol: 0.05            # CL-30: m, tcp this close to home_xy counts as at home
+skill_timeout:            # CL-37: node-side safety net, s (well above the skills' own limits, skills.yaml):
+  pick: 240.0             #   no result in time -> goal cancelled, INTERNAL_ERROR (home + streak -> HALT)
+  place: 240.0
+  home: 90.0
+  wait_clear: 45.0        #   skills.yaml clear_timeout 30 s + margin
+  release_safe: 300.0
+world_timeout: 2.0        # CL-37 N3: no /task/world this long -> no decisions + error (world model running?)
+tcp_period: 2.0           # CL-37 N6: tcp from /motion/get_state after each skill, else at most this often

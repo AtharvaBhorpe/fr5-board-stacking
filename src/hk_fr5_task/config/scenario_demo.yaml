@@ -1,0 +1,31 @@
+# Fake world scenario (stands in for Vision 1, decision-log TM-5 / TM-8; V5 TM-24: real variants, Vision 1 JSON).
+# base_link, metres / radians / seconds. SIM layout (the lab: 3 drop-off + 2 processing cardboard zones, sizes from
+# Vision 1 after measuring -> adapt this file then). Rules (checked in tests/fake_world_check.py section 1):
+# inside the calibrated area (x -0.66..0.09, y -0.86..0.84), 0.30-0.80 m from the base, nothing under the arm at home
+# (capsule base -> home_xy, r 0.12, CL-34), centres >= 0.20 m off the y = 0 mounting profile, zones + 2 x zone_margin
+# apart, input stacks >= 3 cm outside every zone + margin and >= 3 cm apart. The fault zone is world.yaml's (ours).
+zones:                           # board area (length = long side along yaw) + top_z = sheet top (table + 5 mm card)
+  - {name: drop_off_a,   kind: drop_off,   x: -0.48, y: 0.37,  yaw: 1.5708, length: 0.34, width: 0.26, top_z: -0.055}
+  - {name: drop_off_b,   kind: drop_off,   x: -0.16, y: 0.37,  yaw: 1.5708, length: 0.34, width: 0.26, top_z: -0.055}
+  - {name: processing_1, kind: processing, x: -0.48, y: -0.42, yaw: 1.5708, length: 0.34, width: 0.26, top_z: -0.055}
+boards:                          # input area; count > 1 = input stack (only the top board is seen)
+  - {variant: VARa, x: -0.185, y: -0.37, yaw: 1.5708}
+  - {variant: VARb, x: -0.21, y: -0.68, yaw: 1.5708, count: 3}
+  - {variant: VARc, x: 0.02, y: -0.34, yaw: 1.5708}   # main_ros_check adds a 2nd VARc at (0.02, -0.60)
+operator:                        # simulated processing (CL-4)
+  take_after: 5.0                # s after the robot placed a board in a processing zone: operator takes it away (the
+                                 #   demo routine: wait until the arm has left - with gone_after 2 s, CL-40)
+  return_after: 5.0              # s later: a board comes back (> gone_after + margin)
+  free_view: 3.0                 # TM-37: take only while the arm does not cover the zone; return only after the
+                                 #   zone was in free view this long (sim operator = demo routine)
+  return_variant: same           # same | nonvariant (CL-19 demo: a printed, non-variant board comes back)
+drop_area:                       # TM-38: a board lost in flight lands under the tcp inside this area (else gone)
+  x: [-0.66, 0.09]                #   = the calibrated camera area
+  y: [-0.86, 0.84]
+  rail_half_width: 0.08           #   |y| below this = on the aluminium rail between the tables: gone
+  scatter: 0.01                   #   m, random offset from the tcp
+  turn: 0.15                      #   rad, random turn
+nonvariant_label: UNKWN          # Vision 1 label of a board matching no variant (TM-22)
+nonvariant_size: [0.25, 0.18]    # its size
+hands: []                        # e.g. - {t: 30.0, x: -0.30, y: 0.0, duration: 2.0, label: hand} -> obstacles[]
+noise_xy: 0.001                  # m corner noise per frame (Vision 1 jitter ~1-2 mm)

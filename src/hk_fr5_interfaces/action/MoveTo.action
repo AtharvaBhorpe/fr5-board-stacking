@@ -1,0 +1,26 @@
+# Absolute TCP move. Everything in base_link, metres / radians.
+# Orientation convention: R = Rz(yaw) * Ry(pitch) * Rx(roll) (fixed axes: X, then Y, then Z).
+# MODE_DOWN_YAW: tcp z-axis points down (-z of base_link), R = Rz(yaw) * Rx(pi); roll/pitch ignored.
+#   GetState.yaw can be fed straight back here (home pose "ready" has yaw = +pi/2).
+uint8 MODE_DOWN_YAW=0           # default
+uint8 MODE_FULL=1               # roll, pitch, yaw used
+
+float64 x
+float64 y
+float64 z
+float64 roll
+float64 pitch
+float64 yaw
+uint8 mode
+float64 velocity_scaling        # (0, 1]; 0 -> 0.2. Also used as acceleration scaling
+string planner                  # "" -> OMPL RRTConnect (avoids obstacles); "PTP" | "LIN" -> Pilz
+string named_target             # "" -> pose above; else SRDF joint state ("ready" = home, "zero"):
+                                #   joint goal, pose fields and mode ignored
+bool plan_only                  # true -> plan and check only, do not move
+---
+bool success
+string message                  # human-readable reason
+moveit_msgs/MoveItErrorCodes error_code   # machine-readable reason (SUCCESS = 1, see MoveItErrorCodes)
+geometry_msgs/PoseStamped final_tcp_pose  # tcp pose in base_link after the move (plan_only: current pose)
+---
+string phase                    # PLANNING | EXECUTING

@@ -1,0 +1,9 @@
+# Pilz LIN/CIRC Cartesian limits. Rotational acc/dec are derived.
+# acc/dec: Fairino 2.25 / -5.0 violated the joint acc check (L-7: Pilz checks the joint motion
+# against the UNSCALED joint acc limit in joint_limits.yaml) -> 0.3 with joint acc 0.7 -> now 1.0
+# with joint acc 2.0 (decision T-11, same ratio). Revisit with real FR5 joint limits (T9).
+cartesian_limits:
+  max_trans_vel: 1.0     # m/s
+  max_trans_acc: 1.0     # m/s^2
+  max_trans_dec: -1.0    # m/s^2 (must be negative)
+  max_rot_vel: 1.57      # rad/s

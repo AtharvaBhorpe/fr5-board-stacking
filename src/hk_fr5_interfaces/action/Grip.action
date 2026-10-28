@@ -1,0 +1,12 @@
+# Grip: blow-off pump (DO1) off, vacuum pump (DO0) on, then wait up to `timeout` for vacuum
+# achieved (DI0 = 1, debounced). Success -> pump stays on (state HOLDING).
+# Timeout -> pump off, error_code NO_VACUUM. Cancel -> pump off, CANCELLED.
+# Already HOLDING with vacuum -> immediate SUCCESS, no I/O switched. Seconds.
+float64 timeout                 # s; 0 -> config grip_timeout
+---
+bool success
+GripperErrorCode error_code     # machine-readable reason (SUCCESS = 1)
+string message                  # human-readable reason
+float64 time_to_vacuum          # s from pump on to vacuum achieved (seal quality hint); -1 if not achieved
+---
+float64 elapsed                 # s since the vacuum pump was switched on

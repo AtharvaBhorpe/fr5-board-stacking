@@ -1,0 +1,21 @@
+controller_manager:
+  ros__parameters:
+    # 50 Hz (decision P-9, measured on the real FR5): at 125 Hz the loop only reached 79 Hz and the FR5
+    # queued the streamed ServoJ points -> constant 2.1 s lag (start AND stop late). At 50 Hz: lag 0.06-0.10 s.
+    # (The driver still sends ServoJ with cmdT 0.008 s, hard-coded in vendor code.) Launch arg update_rate overrides.
+    update_rate: 50
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+arm_controller:
+  ros__parameters:
+    joints: [j1, j2, j3, j4, j5, j6]
+    command_interfaces: [position]   # driver supports position only
+    state_interfaces: [position]
+    # Future JTC default; MoveIt trajectories end at zero velocity (decision M-12)
+    allow_nonzero_velocity_at_trajectory_end: false
+    # commanded state at the control rate: start state for the smooth stop trajectory (V-5, P-9)
+    state_publish_rate: 50.0

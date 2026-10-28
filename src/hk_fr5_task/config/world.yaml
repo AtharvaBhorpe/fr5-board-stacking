@@ -1,0 +1,38 @@
+# World model (control-loop.md sections 2-3, 6; decision-log TM-8). base_link, metres / radians / seconds.
+table_z: -0.060                # table top (motion branch H-10)
+
+variants:                      # CL-9 / CL-17: Vision 1 labels (TM-20); length = long side; sizes = Vision 1 spec,
+  VARa: {length: 0.295, width: 0.210, thickness: 0.005}     #   thickness = teammate's real-robot value
+  VARb: {length: 0.210, width: 0.150, thickness: 0.005}
+  VARc: {length: 0.210, width: 0.135, thickness: 0.005}
+default_thickness: 0.005       # stack height of a board of unknown variant (same as skills.yaml)
+size_tol: 0.010                # measured vs nominal length / width: more off -> size_ok false (CL-9)
+
+zone_margin: 0.030             # CL-7: zone + margin reserved for processing / drop-off (input boards are outside)
+max_stack: 10                  # drop-off / fault: FULL at this count
+fixed_zones:                   # CL-15 fallback, used only while Vision 1 does not detect that zone.
+  # CL-39: the fault zone is a VOID (boards put there leave the world, no stack, never FULL, no scene box).
+  # Measured 2026-10-27 (TM-29): hand-guided cup tip over the drop spot behind the base (read-only port 20004, tcp_z 0.1074)
+  - {name: fault, kind: fault, x: 0.4287, y: 0.7108, yaw: 0.0, length: 0.25, width: 0.20, z: -0.060}
+
+work_area:                     # obstacles inside (+ margin) stop / pause motion
+  x: [-0.90, 0.15]
+  y: [-1.00, 1.00]
+  margin: 0.05
+
+match_dist: 0.040              # tracking: same board if the centre moved less than this between frames
+lost_after: 2.0                # s unseen -> board removed (not for held / zone boards)
+lost_reuse_after: 10.0         # TM-43: a removed input board seen again at the same spot (match_dist) within this
+                               #   keeps its id (the arm hid it longer than lost_after)
+pick_rebind_dist: 0.05         # TM-43: 'picked' for an id the world lost: the board within this of the pick spot
+stale_after: 1.5               # s without detections -> vision_ok false
+gone_after: 2.0                # s: LOADED zone empty this long -> PROCESSING (operator took the board); 2 s: Vision 1 flicker (CL-40)
+back_after: 2.0                # s: board in a PROCESSING zone this long -> DONE (or FAULT, CL-8); CL-40
+unknown_after: 2.0             # s: board in an EMPTY processing zone this long -> FAULT (not placed by us); CL-40
+process_timeout: 60.0          # s in PROCESSING -> message "overdue" (state stays PROCESSING)
+expanded_detection: false      # CL-19: true (only if Vision 1 can classify printed boards as non-variant) -> only a
+                               #   non-variant board coming back = processed (DONE); a plain variant board -> FAULT
+zone_unknown_boards: false     # TM-33: UNKWN detections inside zones are ignored (hands / merged blobs; no
+                               #   printed boards yet); true = old behaviour (kept as reference)
+nonvariant_labels: [UNKWN]     # Vision 1 label of a board matching no variant (TM-22; C6 LATER: processed boards)
+min_score: 0.3                 # detections below are ignored

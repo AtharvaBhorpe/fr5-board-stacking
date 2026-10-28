@@ -1,0 +1,22 @@
+planning_plugin: ompl_interface/OMPLPlanner
+request_adapters: >-
+  default_planner_request_adapters/AddTimeOptimalParameterization
+  default_planner_request_adapters/ResolveConstraintFrames
+  default_planner_request_adapters/FixWorkspaceBounds
+  default_planner_request_adapters/FixStartStateBounds
+  default_planner_request_adapters/FixStartStatePathConstraints
+# FixStartStateCollision REMOVED (decision-log T25): with a start state in collision it silently planned from a
+# state 0.26-1.02 rad away from the real one (T20c). Now OMPL fails clearly instead (lift with Pilz, rule S-12).
+start_state_max_bounds_error: 0.1
+
+# Only the planner we use (F6). Defining planner_configs here stops
+# moveit_configs_utils from adding all ~25 OMPL default planners.
+planner_configs:
+  RRTConnect:
+    type: geometric::RRTConnect
+    range: 0.0    # 0 = OMPL chooses from the workspace size
+
+arm:
+  default_planner_config: RRTConnect
+  planner_configs:
+    - RRTConnect

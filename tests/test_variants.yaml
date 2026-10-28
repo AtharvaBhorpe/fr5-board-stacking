@@ -1,0 +1,11 @@
+# Test fixture (V1, decision-log TM-20, option A): PLACEHOLDER board variants for the logic tests only.
+# The real variants (Vision 1 labels VARa / VARb / VARc) live in src/hk_fr5_task/config/world.yaml.
+# The logic tests merge these keys over world.yaml. The sim stack (fake_world + scenario_demo.yaml) moves to the
+# real variants in V5.
+variants:
+  white_small: {length: 0.100, width: 0.070, thickness: 0.006}
+  white_large: {length: 0.200, width: 0.140, thickness: 0.006}
+  red:         {length: 0.150, width: 0.100, thickness: 0.006}
+default_thickness: 0.006
+size_tol: 0.020
+nonvariant_labels: [other]     # the scenarios' non-variant label

@@ -1,0 +1,313 @@
+"""Local web gateway and simulation-only headless pick controller."""
+import argparse
+import collections
+import json
+import mimetypes
+import os
+from pathlib import Path
+import re
+import secrets
+import signal
+import ssl
+import sys
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit, unquote
+import urllib.request
+
+import cv2
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, DurabilityPolicy, qos_profile_sensor_data
+from sensor_msgs.msg import Image, JointState
+from std_msgs.msg import String
+from hk_fr5_interfaces.msg import GripperState
+from hk_fr5_task_interfaces.msg import World  # built by pixi run build
+from ament_index_python.packages import get_package_share_directory
+
+ROOT = Path(__file__).resolve().parents[1]
+REAL_OK = os.environ.get('WORKCELL_REAL') == '1'  # explicit opt-in: chat may command the REAL robot
+sys.path.insert(0, str(ROOT / 'conversation'))
+from speech_input import normalize_voice_command
+from policy import controller_block
+
+
+def model_request(path, body):
+    req = urllib.request.Request('http://127.0.0.1:8766' + path,
+        json.dumps(body).encode(), {'Content-Type': 'application/json'})
+    return json.load(urllib.request.urlopen(req, timeout=45))
+
+
+def top_view(w, W=960, H=540, x0=0.15, x1=-0.85, y0=0.9, y1=-0.9):
+    """World model dict (base_link) -> top-down picture like the overhead camera (robot at the top, +y left)."""
+    img = np.full((H, W, 3), 38, np.uint8)
+    px = lambda x, y: (int((y0 - y) / (y0 - y1) * W), int((x0 - x) / (x0 - x1) * H))
+
+    def rect(o, color, fill, lines):
+        a, b, c, s_ = o['length'] / 2, o['width'] / 2, np.cos(o['yaw']), np.sin(o['yaw'])
+        p = np.int32([px(o['x'] + c*u - s_*t, o['y'] + s_*u + c*t) for u, t in ((a, b), (-a, b), (-a, -b), (a, -b))])
+        cv2.fillPoly(img, [p], color) if fill else cv2.polylines(img, [p], True, color, 2)
+        cx, cy = p.mean(0).astype(int)
+        for i, text in enumerate(lines):
+            cv2.putText(img, text, (cx - 70, cy - 8 + 30 * i), cv2.FONT_HERSHEY_SIMPLEX, .85,
+                        (25, 25, 25) if fill else color, 2)
+    zc = {'EMPTY': (90, 200, 90), 'OK': (90, 200, 90), 'LOADED': (60, 170, 230), 'PROCESSING': (40, 140, 255),
+          'DONE': (230, 200, 60), 'FULL': (60, 60, 230), 'FAULT': (60, 60, 230)}
+    for z in w.get('zones', []):
+        if z['length'] > 0:
+            rect(z, zc.get(z['state'], (180, 180, 180)), False,
+                 [z['name'], z['state'] + (f" x{z['stack_count']}" if z['kind'] != 'processing' else '')])
+    for b in w.get('boards', []):
+        if b['location'] != 'held' and b['length'] > 0:
+            rect(b, (60, 60, 220) if b['variant'] == 'VARc' else (235, 235, 235), True,
+                 [f"{b['id']} {b['variant']}"] + (['processed'] if b['processed'] else []))
+    for o in w.get('obstacles', []):
+        rect(o, (0, 0, 255), False, [o['label']])
+    cv2.circle(img, px(0, 0), 18, (200, 200, 200), 2)
+    cv2.putText(img, 'robot' + (f"  holding {w['held']}" if w.get('held') else ''), (px(0, 0)[0] - 30, 30), 0, .85,
+                (0, 220, 255) if w.get('held') else (200, 200, 200), 2)
+    cv2.putText(img, 'World model (/task/world), simulated', (10, H - 14), 0, .8, (0, 200, 255), 2)
+    return img
+
+
+class Workcell(Node):
+    def __init__(self):
+        super().__init__('web_workcell')
+        self.lock = threading.RLock()
+        self.vision = {}; self.vision_at = 0.; self.joints = {}; self.joints_at = 0.
+        self.description = ''; self.hardware = 'UNKNOWN'; self.gripper = 'UNKNOWN'
+        self.images = {}; self.events = collections.deque(maxlen=350); self.sequence = 0
+        self.model_health = {}
+        threading.Thread(target=self.health_loop, daemon=True).start()
+        self.batch = {}; self.input_epoch = 0; self.real_overhead = 0.; self.world = {}
+        self.status = {}; self.status_at = float('nan')  # main controller (/task/status): it runs every job
+        self.chat_pub = self.create_publisher(String, '/conversation/input', 10)
+        self.control_pub = self.create_publisher(String, '/conversation/control', 10)
+        latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.create_subscription(String, '/robot_description', self.robot, latched)
+        self.create_subscription(JointState, '/joint_states', self.joint, qos_profile_sensor_data)
+        self.create_subscription(String, '/vision/boards', self.boards, 1)
+        self.create_subscription(GripperState, '/gripper/state', self.grip, latched)
+        self.create_subscription(String, '/task/status', self.task_status, latched)
+        self.create_subscription(World, '/task/world', self.world_msg, latched)
+        self.create_subscription(String, '/conversation/output', self.conversation, 20)
+        self.create_subscription(String, '/conversation/batch_state', self.batch_state, 10)
+        for topic, key in [('/vision/image', 'overhead'), ('/wrist/wrist_camera/color/image_raw', 'wrist'),
+                           ('/wrist/wrist_camera/depth/image_rect_raw', 'depth')]:
+            self.create_subscription(Image, topic, lambda m, k=key: self.picture(m, k), qos_profile_sensor_data)
+
+    def health_loop(self):
+        while rclpy.ok():
+            try:
+                with urllib.request.urlopen('http://127.0.0.1:8766/health', timeout=2) as response:
+                    health = json.load(response)
+            except Exception:
+                health = {'ready': False, 'asr_ready': False}
+            with self.lock: self.model_health = health
+            time.sleep(2)
+
+    def event(self, kind, **data):
+        with self.lock:
+            self.sequence += 1
+            self.events.append(dict(id=self.sequence, kind=kind, time=time.time(), **data))
+
+    def log(self, text):
+        self.event('log', text=text)
+
+    def robot(self, msg):
+        with self.lock:
+            self.description = msg.data
+            self.hardware = 'SIMULATION' if 'mock_components' in msg.data else 'REAL FR5'
+
+    def joint(self, msg):
+        with self.lock:
+            self.joints = dict(zip(msg.name, msg.position)); self.joints_at = time.time()
+
+    def grip(self, msg):
+        with self.lock: self.gripper = msg.state
+
+    def boards(self, msg):
+        try:
+            value = json.loads(msg.data)
+            with self.lock: self.vision = value; self.vision_at = time.time()
+        except ValueError: return
+
+    def world_msg(self, m):
+        """Main controller world model (/task/world) -> dict for the 3D view + the overhead picture."""
+        f = lambda o, keys: {k: getattr(o, k) for k in keys}
+        w = dict(stamp=time.time(), held=m.held_board_id, gripper=m.gripper_state, vision_ok=m.vision_ok,
+                 boards=[f(b, ('id', 'variant', 'location', 'zone', 'x', 'y', 'yaw', 'length', 'width', 'processed'))
+                         for b in m.boards if b.location != 'zone' or b.age < 5.0],
+                 zones=[f(z, ('name', 'kind', 'state', 'x', 'y', 'yaw', 'length', 'width', 'stack_count'))
+                        for z in m.zones],
+                 obstacles=[f(o, ('label', 'x', 'y', 'yaw', 'length', 'width')) for o in m.obstacles])
+        with self.lock: self.world = w
+        # no camera image (simulation): show what the controller's world model believes, labelled as such
+        if time.time() - self.real_overhead > 2 and time.time() - self.images.get('overhead', (0,))[0] > .2:
+            ok, jpg = cv2.imencode('.jpg', top_view(w), [cv2.IMWRITE_JPEG_QUALITY, 80])
+            if ok:
+                with self.lock: self.images['overhead'] = (time.time(), jpg.tobytes())
+
+    def conversation(self, msg):
+        try: self.event('chat', **json.loads(msg.data))
+        except ValueError: pass
+
+    def batch_state(self, msg):
+        try:
+            with self.lock: self.batch = json.loads(msg.data)
+        except ValueError: pass
+
+    def picture(self, msg, key):
+        if msg.encoding not in ('rgb8', 'bgr8', '16UC1'): return
+        now = time.time()
+        if now - self.images.get(key, (0, b''))[0] < .18: return
+        if msg.encoding == '16UC1':  # D405 depth in mm -> colour map, near = red; ponytail: fixed 50-500 mm range
+            mm = np.frombuffer(msg.data, dtype=np.uint16).reshape(msg.height, msg.step // 2)[:, :msg.width]
+            pixels = cv2.applyColorMap((255 - np.clip((mm.astype(np.float32) - 50) / 450 * 255, 0, 255)).astype(np.uint8),
+                                       cv2.COLORMAP_TURBO)
+            pixels[mm == 0] = 0  # no depth = black
+            h, w = mm.shape; c = mm[h//2-5:h//2+5, w//2-5:w//2+5]; c = c[c > 0]
+            cv2.drawMarker(pixels, (w//2, h//2), (255, 255, 255), cv2.MARKER_CROSS, 24, 2)
+            cv2.putText(pixels, f'{np.median(c):.0f} mm' if c.size else 'no depth', (w//2 + 14, h//2 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+        else:
+            pixels = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.step)
+            pixels = pixels[:, :msg.width*3].reshape(msg.height, msg.width, 3)
+            if msg.encoding == 'rgb8': pixels = cv2.cvtColor(pixels, cv2.COLOR_RGB2BGR)
+        if msg.width > 960: pixels = cv2.resize(pixels, (960, round(msg.height*960/msg.width)))
+        ok, encoded = cv2.imencode('.jpg', pixels, [cv2.IMWRITE_JPEG_QUALITY, 75])
+        if ok:
+            with self.lock: self.images[key] = (now, encoded.tobytes())
+            if key == 'overhead': self.real_overhead = now
+
+    def task_status(self, msg):
+        try:
+            value = json.loads(msg.data)
+            with self.lock: self.status = value; self.status_at = time.time()
+        except ValueError: pass
+
+    def blocked(self, variant):
+        if self.hardware != 'SIMULATION' and not REAL_OK: return 'Web control is simulation-only (WORKCELL_REAL=1 to allow)'
+        return controller_block(self.status, self.status_at, time.time())
+
+    def panel(self):
+        st = self.status; jobs = [j for j in st.get('jobs', []) if j.get('state') not in ('DONE', 'CANCELLED')]
+        return dict(stamp=time.time(), hardware=self.hardware, busy=bool(jobs), waiting=False,
+                    phase=str(st.get('state', 'no main controller')).lower(),
+                    detail=' · '.join(f"{j['id']} {j['state'].lower()} {j.get('delivered', 0)} delivered" for j in jobs))
+
+    def snapshot(self):
+        with self.lock:
+            now = time.time(); fresh = now-self.vision_at <= 2 and 0 <= now-self.vision.get('stamp', 0) <= 2
+            return dict(stamp=now, panel=self.panel(), joints=self.joints,
+                robot_fresh=now-self.joints_at < 2, vision=self.vision if fresh else {}, vision_fresh=fresh,
+                gripper=self.gripper, batch=self.batch, world=self.world if now - self.world.get('stamp', 0) < 3 else {}, model=self.model_health, events=list(self.events),
+                cameras={k:now-v[0]<2 for k,v in self.images.items()},
+                blocked={v:self.blocked(v) for v in ('VARa','VARb','VARc')})
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=8088)
+    parser.add_argument('--tls-port', type=int, default=8443)
+    args = parser.parse_args()
+    rclpy.init(); node = Workcell()
+    threading.Thread(target=rclpy.spin, args=(node,), daemon=True).start()
+    local = ROOT/'web/.local'; local.mkdir(exist_ok=True)
+    try: token = json.loads((local/'session.json').read_text())['token']  # keep paired browsers across restarts
+    except (OSError, ValueError, KeyError): token = secrets.token_urlsafe(32)
+    (local/'session.json').write_text(json.dumps({'token':token}))
+    (local/'session.json').chmod(0o600)
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_): pass
+        def send(self, status, payload, mime='application/json'):
+            data = json.dumps(payload).encode() if mime == 'application/json' else payload
+            self.send_response(status); self.send_header('Content-Type', mime)
+            self.send_header('Content-Length', str(len(data))); self.send_header('Cache-Control','no-store')
+            self.send_header('X-Content-Type-Options','nosniff'); self.end_headers()
+            try: self.wfile.write(data)
+            except (BrokenPipeError, ConnectionResetError): pass
+        def authorized(self):
+            return secrets.compare_digest(self.headers.get('X-Workcell-Token',''), token)
+        def do_GET(self):
+            path = unquote(urlsplit(self.path).path)
+            if path == '/api/session':
+                host = self.headers.get('Host','').split(':')[0]
+                if self.client_address[0] not in ('127.0.0.1','::1') or host not in ('localhost','127.0.0.1'):
+                    return self.send(403, {'error':'Pair this device using the code from the laptop'})
+                return self.send(200, {'token':token})
+            if path == '/workcell-ca.crt':
+                return self.send(200,(local/'ca.crt').read_bytes(),'application/x-x509-ca-cert')
+            if path.startswith('/api/'):
+                if not self.authorized(): return self.send(401, {'error':'Device not paired'})
+                if path == '/api/state': return self.send(200,node.snapshot())
+                if path == '/api/robot': return self.send(200,node.description.encode(),'application/xml')
+                if path == '/api/connection':
+                    return self.send(200, json.loads((local/'connection.json').read_text()))
+                if path.startswith('/api/image/'):
+                    stamp, image = node.images.get(path.rsplit('/',1)[-1], (0,b''))
+                    return self.send(200 if time.time()-stamp<2 else 404,image,'image/jpeg')
+                if path.startswith('/api/mesh/'):
+                    pieces = path[len('/api/mesh/'):].split('/',1)
+                    try:
+                        if len(pieces)!=2 or pieces[0] not in ('hk_fr5_description','fairino_description'): raise ValueError()
+                        base=Path(get_package_share_directory(pieces[0])).resolve()
+                        file=(base/pieces[1]).resolve()
+                        if '..' in Path(pieces[1]).parts or not pieces[1].startswith('meshes/') or file.suffix.lower() not in ('.stl','.dae','.obj','.png','.jpg'): raise ValueError()
+                        return self.send(200,file.read_bytes(),mimetypes.guess_type(file)[0] or 'application/octet-stream')
+                    except Exception: return self.send(404,{'error':'Mesh unavailable'})
+                return self.send(404,{'error':'Unknown API'})
+            file = (ROOT/'web/dist'/('index.html' if path=='/' else path.lstrip('/'))).resolve()
+            if not file.is_relative_to((ROOT/'web/dist').resolve()) or not file.is_file():
+                return self.send(404,{'error':'Not found'})
+            self.send(200,file.read_bytes(),mimetypes.guess_type(file)[0] or 'application/octet-stream')
+        def do_POST(self):
+            if not self.authorized(): return self.send(401,{'error':'Device not paired'})
+            origin=self.headers.get('Origin')
+            if origin and urlsplit(origin).netloc != self.headers.get('Host'): return self.send(403,{'error':'Cross-origin request denied'})
+            try:
+                size=int(self.headers.get('Content-Length','0'))
+                if not 0<size<1_000_000: raise ValueError('Invalid request size')
+                data=json.loads(self.rfile.read(size)); path=urlsplit(self.path).path
+                if path == '/api/chat':
+                    text=str(data.get('text','')).strip()
+                    if not text or len(text)>1000: raise ValueError('Enter a command or question')
+                    if node.hardware != 'SIMULATION' and not REAL_OK: raise ValueError('Web control is simulation-only (WORKCELL_REAL=1 to allow)')
+                    node.chat_pub.publish(String(data=text)); result={}
+                elif path == '/api/control':
+                    action=data.get('action')
+                    if action in ('stop','clear'):
+                        with node.lock: node.input_epoch += 1
+                        node.control_pub.publish(String(data=action))
+                    else: raise ValueError('Unknown control')
+                    result={}
+                elif path == '/api/transcribe':
+                    with node.lock: epoch = node.input_epoch
+                    result=model_request('/transcribe',data)
+                    result['normalized']=normalize_voice_command(result['text'])
+                    with node.lock:
+                        if epoch != node.input_epoch:
+                            raise ValueError('Transcription cancelled; no command sent')
+                        if result['normalized']: node.chat_pub.publish(String(data=result['normalized']))
+                elif path == '/api/speech': result=model_request('/synthesize',{'text':str(data.get('text',''))[:500], 'natural':True, 'language':data.get('language','en')})
+                else: return self.send(404,{'error':'Unknown API'})
+                self.send(200,result)
+            except Exception as exc: self.send(400,{'error':str(exc)[:300]})
+
+    http=ThreadingHTTPServer(('127.0.0.1',args.port),Handler)
+    https=ThreadingHTTPServer(('0.0.0.0',args.tls_port),Handler)
+    ctx=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); ctx.load_cert_chain(local/'server.crt',local/'server.key')
+    https.socket=ctx.wrap_socket(https.socket,server_side=True)
+    threading.Thread(target=https.serve_forever,daemon=True).start()
+    print(f'Web ready: http://localhost:{args.port}; HTTPS port {args.tls_port}',flush=True)
+    def shutdown(*_):
+        threading.Thread(target=http.shutdown,daemon=True).start()
+    signal.signal(signal.SIGTERM,shutdown); signal.signal(signal.SIGINT,shutdown)
+    try: http.serve_forever()
+    finally:
+        https.shutdown(); rclpy.try_shutdown()
+
+if __name__ == '__main__': main()

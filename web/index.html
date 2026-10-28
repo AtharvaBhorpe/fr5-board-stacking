@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f3f5f7" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <title>FR5 · Workcell</title>
+  </head>
+  <body data-view="workspace">
+    <div id="app">
+      <header>
+        <a class="brand" href="/" aria-label="Workcell home"
+          ><svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M6 26h20M10 26v-8l9-7-5-6M19 11l5 7" /></svg
+          ><span
+            >Workcell<span class="brand-sub">FR5 / Board handling</span></span
+          ></a
+        >
+        <div class="connection">
+          <span id="connection-dot" class="dot"></span
+          ><span id="connection">Connecting</span>
+        </div>
+        <div class="header-actions">
+          <details class="device-menu">
+            <summary>Devices</summary>
+            <div class="device-options">
+              <button id="install" hidden>Install app</button>
+              <button id="pair" aria-label="Connect a device">Connect device</button>
+            </div>
+          </details>
+          <button id="stop" class="stop">Stop task</button>
+        </div>
+      </header>
+      <nav class="mobile-views" aria-label="Workcell views">
+        <button data-view="workspace" aria-pressed="true" aria-controls="workspace-panel">Workspace</button>
+        <button data-view="cameras" aria-pressed="false" aria-controls="cameras-panel">Cameras</button>
+        <button data-view="conversation" aria-pressed="false" aria-controls="conversation-panel">Chat</button>
+      </nav>
+      <main>
+        <section class="workspace" id="workspace-panel" aria-label="Robot workspace">
+          <div class="section-heading">
+            <div>
+              <h1>Robot workspace</h1>
+              <p id="mode">Waiting for controller identity</p>
+            </div>
+            <div class="view-actions">
+              <button id="home-view" aria-label="Reset 3D view">
+                Reset view</button
+              ><button id="top-view">Top view</button>
+            </div>
+          </div>
+          <div class="run-state" id="paused-state" hidden>
+            <div><strong>Tasks paused</strong><p>Queued tasks wait until you resume.</p></div>
+            <button id="resume" disabled>Resume tasks</button>
+          </div>
+          <div id="viewport">
+            <div class="view-label">
+              <span class="dot"></span
+              ><span id="robot-label">Loading robot model</span>
+            </div>
+            <div class="view-hint">Drag to orbit · Pinch or scroll to zoom</div>
+          </div>
+          <div class="telemetry">
+            <div>
+              <span>Controller</span><strong id="controller">Offline</strong>
+            </div>
+            <div><span>Gripper</span><strong id="gripper">Unknown</strong></div>
+            <div>
+              <span>Batch</span><strong id="batch">No active batch</strong>
+            </div>
+          </div>
+          <section class="task-area">
+            <div class="section-heading compact">
+              <h2>Pick & place</h2>
+              <span id="task-detail">Waiting for fresh vision</span>
+            </div>
+            <div class="picks">
+              <button class="pick" data-variant="VARa" disabled>
+                <span class="variant-tag a">A</span
+                ><span>Variant A<small>Waiting for vision</small></span
+                ><span class="pick-arrow">↗</span></button
+              ><button class="pick" data-variant="VARb" disabled>
+                <span class="variant-tag b">B</span
+                ><span>Variant B<small>Waiting for vision</small></span
+                ><span class="pick-arrow">↗</span></button
+              ><button class="pick" data-variant="VARc" disabled>
+                <span class="variant-tag c">C</span
+                ><span>Variant C<small>Waiting for vision</small></span
+                ><span class="pick-arrow">↗</span>
+              </button>
+            </div>
+            <div class="task-tools">
+              <button id="sort">Move all boards (A, B, C)</button
+              ><button id="confirm" hidden>Confirm pending step</button>
+            </div>
+            <p class="safety-note">
+              Stop task requests software cancellation. It is not the physical
+              emergency stop.
+            </p>
+          </section>
+          <details class="logs">
+            <summary>
+              Controller log <span id="log-count">0 entries</span>
+            </summary>
+            <pre id="logs" aria-label="Controller log"></pre>
+          </details>
+        </section>
+        <aside class="vision-column" id="cameras-panel" aria-label="Camera feeds">
+          <section class="camera">
+            <div class="section-heading compact">
+              <h2>Overhead</h2>
+              <span id="overhead-status">No feed</span>
+            </div>
+            <div class="camera-image">
+              <img
+                id="overhead"
+                alt="Overhead camera with board detections"
+              /><span class="camera-empty">Waiting for camera</span>
+            </div>
+            <p id="vision-detail">Detection data unavailable</p>
+          </section>
+          <section class="camera">
+            <div class="section-heading compact">
+              <h2>Wrist camera</h2>
+              <span id="wrist-status">No feed</span>
+            </div>
+            <div class="camera-image wrist">
+              <img id="wrist" alt="Wrist camera" /><span class="camera-empty"
+                >No wrist camera in this demo</span
+              >
+            </div>
+          </section>
+          <section class="camera">
+            <div class="section-heading compact">
+              <h2>Wrist depth</h2>
+              <span id="depth-status">No feed</span>
+            </div>
+            <div class="camera-image wrist">
+              <img id="depth" alt="Wrist depth, near = red, distance at the centre cross" /><span class="camera-empty"
+                >No depth feed</span
+              >
+            </div>
+          </section>
+          <section class="session-note">
+            <h2>Local intelligence</h2>
+            <p>Gemma checks the scene.<br />Parakeet listens. Phonon speaks.</p>
+            <span id="model-status">Models are starting</span>
+          </section>
+        </aside>
+        <section class="conversation" id="conversation-panel" aria-label="Conversation">
+          <div class="section-heading compact">
+            <div>
+              <h2>Conversation</h2>
+              <p id="chat-status">Ask about the scene or request a pick.</p>
+            </div>
+            <button id="clear" aria-label="Clear conversation">Clear</button>
+          </div>
+          <div id="messages" role="log" aria-live="polite">
+            <div class="chat-empty">
+              <span class="assistant-mark">W</span>
+              <h3>Your workcell, in conversation.</h3>
+              <p>Try “What do you see?” or<br />“Pick two variant B boards.”</p>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="voice-settings">
+              <label class="language-control" for="voice-language"><span class="sr-only">Voice language</span>
+                <select id="voice-language" aria-label="Voice language">
+                  <option value="en">English</option>
+                  <option value="de">Deutsch</option>
+                </select>
+              </label>
+              <button id="sound" class="sound" aria-pressed="false">Voice replies off</button>
+            </div>
+            <form id="chat-form">
+              <label class="sr-only" for="chat-input"
+                >Message the workcell</label
+              ><textarea
+                id="chat-input"
+                rows="2"
+                placeholder="Ask a question or request a pick…"
+                maxlength="1000"
+              ></textarea
+              ><button type="submit" id="send" aria-label="Send message">
+                Send
+              </button>
+            </form>
+            <button id="talk" class="talk" disabled>
+              <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg
+              ><span id="talk-label">Hold to talk</span
+              ><span id="mic-time"></span>
+            </button>
+            <p id="voice-status" role="status">Microphone is off</p>
+          </div>
+        </section>
+      </main>
+      <div id="notice" role="status" hidden></div>
+      <dialog id="pair-dialog">
+        <form method="dialog">
+          <button class="close" aria-label="Close">×</button>
+        </form>
+        <h2>Bring your workcell with you.</h2>
+        <p>
+          On the same Wi-Fi, install and trust the local certificate on your
+          phone, then open the paired link.
+        </p>
+        <a href="/workcell-ca.crt" download>Download local CA certificate</a>
+        <p id="pair-url"></p>
+        <button id="copy-link">Copy paired link</button>
+        <details>
+          <summary>Certificate setup</summary>
+          <p>
+            iPhone/iPad: install the downloaded profile in Settings → General →
+            VPN & Device Management. Then enable it in General → About →
+            Certificate Trust Settings.
+          </p>
+          <p>
+            Android: install the certificate under Security → Encryption &
+            credentials → Install a CA certificate. Menu names vary.
+          </p>
+          <p>
+            Only install this certificate on devices you control. Remove it when
+            testing is finished. HTTPS and trust are required for the
+            microphone.
+          </p>
+        </details>
+      </dialog>
+      <dialog id="login-dialog">
+        <h2>Pair this device</h2>
+        <p>Open “Connect a device” on the laptop and use the paired link.</p>
+        <form id="login-form">
+          <label
+            >Pairing token<input
+              id="token-input"
+              autocomplete="off"
+              required /></label
+          ><button>Connect</button>
+        </form>
+      </dialog>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

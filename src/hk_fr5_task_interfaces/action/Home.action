@@ -1,0 +1,8 @@
+# Move to the home pose (SRDF "ready").
+float64 velocity_scaling    # (0, 1]; 0 -> default
+---
+bool success
+SkillCode code
+string message
+---
+string phase                # MOVING

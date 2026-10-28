@@ -6,10 +6,13 @@ If anything here conflicts with a request, stop and ask a human.
 ## Project
 
 Voice-commanded pick-and-place on a Fairino FR5 cobot. A Schmalz vacuum
-gripper picks white boards (27 x 20 cm, 6 mm thick) from the left pick zone
-and stacks them inside a taped boundary on the right (tolerance < 5 mm).
-Sensors: RealSense D405 on the wrist, Logitech webcam overhead.
-Stack: pixi + RoboStack ROS 2 Humble + MoveIt2, Python, Ubuntu 26.04.
+gripper moves boards (VARa 295 x 210, VARb 150 x 210 white, VARc 135 x 210 red,
+all 5 mm thick) between input positions, a processing zone, drop-off stacks
+and a fault spot. A main controller runs a priority job queue. A web app
+takes text and voice jobs; a local Gemma model plans free text into jobs.
+Sensors: Logitech C920 overhead (Vision 1), RealSense D405 on the wrist.
+Stack: pixi + RoboStack ROS 2 Humble + MoveIt2, Python, Ubuntu 24.04 or newer.
+Start: `README.md`.
 Priority: reliability and recovery over speed.
 
 ## Hard rules (never break these)
@@ -48,7 +51,7 @@ Priority: reliability and recovery over speed.
 
 ## Environment
 
-- Setup: `pixi install`. Run things with `pixi run <task>` or `pixi shell`.
+- Setup: `pixi install -a`. Start: `pixi run up [--sim]`. Tests: `pixi run test [all]`.
 - Build ROS packages: `pixi run build` (colcon, symlink install).
 - Do not use conda `base` alongside pixi.
 - Platform: linux-64 only.

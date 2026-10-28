@@ -1,0 +1,6 @@
+# Remove dynamic collision boxes, /scene/remove_box (decision-log 5n, S-3).
+# Static obstacles.yaml boxes are never removed. The attached board: use /scene/detach_board.
+string name               # "" -> all dynamic boxes (incl. stack_<n>)
+---
+bool success              # false: name unknown or static, MoveIt not reachable
+string message            # e.g. "removed 3 boxes"

@@ -1,39 +1,83 @@
 [workspace]
-authors = ["AtharvaBhorpe <athborpe@gmail.com>"]
-channels = ["https://prefix.dev/robostack-humble", "https://prefix.dev/conda-forge"]
 name = "fr5-board-stacking"
-platforms = [{ name = "linux-64-glibc234", platform = "linux-64", glibc = "2.34" }]
-version = "0.1.0"
+authors = ["AtharvaBhorpe <athborpe@gmail.com>", "vortexcv <69069296+vortexcv@users.noreply.github.com>"]
+channels = ["https://prefix.dev/robostack-humble", "https://prefix.dev/conda-forge"]
+# glibc 2.34: some RoboStack packages need more than the conda default 2.17. cuda 12.8: RTX 50xx (sm_120) needs it.
+platforms = [{ name = "linux-64-cuda", platform = "linux-64", glibc = "2.34", cuda = "12.8" }]
+version = "1.0.0"
 
+# Default environment: ROS 2 Humble, MoveIt 2, Fairino driver, controller, Vision 1, wrist camera, web gateway.
 [dependencies]
 ros-humble-desktop = ">=0.10.0,<0.11"
 colcon-common-extensions = ">=0.3.0,<0.4"
 ros-humble-moveit-ros-move-group = ">=2.5.10,<3"
-ros-humble-moveit-configs-utils = ">=2.5.10,<3"
 ros-humble-moveit-planners = ">=2.5.10,<3"
 ros-humble-moveit-kinematics = ">=2.5.10,<3"
+ros-humble-moveit-configs-utils = ">=2.5.10,<3"
 ros-humble-moveit-simple-controller-manager = ">=2.5.10,<3"
 ros-humble-moveit-ros-visualization = ">=2.5.10,<3"
-ros-humble-moveit-ros-warehouse = ">=2.5.10,<3"
-ros-humble-moveit-setup-assistant = ">=2.5.10,<3"
 ros-humble-ros2-control = ">=2.54.3,<3"
 ros-humble-ros2-controllers = ">=2.54.1,<3"
 ros-humble-xacro = ">=2.1.1,<3"
-ros-humble-joint-state-publisher-gui = ">=2.4.0,<3"
+ros-humble-vision-msgs = ">=4.1.1,<5"
+ros-humble-realsense2-camera = ">=4.57.7,<5"
 compilers = ">=2.0.0,<3"
 cmake = "<4"
 ninja = ">=1.13.2,<2"
 pkg-config = ">=0.29.2,<0.30"
 sysroot_linux-64 = ">=2.34"
-
-[tasks]
-demo = "ros2 launch fr5_bringup bringup.launch.py"
-robot = "ros2 launch fr5_bringup bringup.launch.py use_fake_hardware:=false"
-build = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 external/frcobot_ros2/fairino5_v6_moveit2_config src/fr5_bringup src/fr5_gripper'
-
+py-opencv = "==5.0.0"
+numpy = "==2.5.4"
+pyyaml = "==6.0.3"
+onnxruntime = { version = "*", build = "*cuda*" }   # Vision 1 model on the GPU
+nodejs = "*"                                        # builds the web app (web/dist)
+tmux = "*"                                          # tools/up.sh runs every process in one tmux session
 
 [activation]
 scripts = ["install/setup.sh"]
 
 [activation.env]
+CMAKE_GENERATOR = "Ninja"
+# Fairino driver: libfairino.so.2 is only found here
 LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/external/frcobot_ros2/fairino_hardware_v3_9_0_1/libfairino/lib:$LD_LIBRARY_PATH"
+
+[tasks]
+build = { cmd = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 src/* && npm --prefix web ci && npm --prefix web run build' }
+up = "tools/up.sh"
+down = "tools/down.sh"
+attach = "env -u TERMINFO TERM=xterm-256color tmux -L fr5 attach -t fr5"
+test = "tests/run.sh"
+# single processes (tools/up.sh starts all of them)
+sim = "ros2 launch hk_fr5_moveit_config bringup.launch.py"
+robot = "ros2 launch hk_fr5_moveit_config bringup.launch.py use_fake_hardware:=false"
+vision = "python vision1/node.py"
+wrist = "ros2 launch vision1/wrist.launch.py"
+conversation = "python conversation/bridge.py"
+web = "python web/gateway.py"
+tc = "python tools/task_cli.py"
+
+# Model environment (no ROS): Gemma on llama.cpp, Parakeet speech recognition, Phonon speech output.
+[feature.models]
+channels = ["https://prefix.dev/conda-forge"]
+
+[feature.models.dependencies]
+python = "3.12.*"
+pytorch-gpu = "*"
+"llama.cpp" = { version = "*", build = "cuda129*" }
+
+[feature.models.pypi-dependencies]
+transformers = ">=5.7,<6"
+librosa = ">=0.11,<0.12"     # Parakeet feature extractor
+accelerate = ">=1,<2"         # device_map for Parakeet
+faster-whisper = ">=1.1,<2"   # voice activity detection before Parakeet
+ptts = "==0.5.0"
+
+[feature.models.activation.env]
+PYTHONPATH = ""   # tools/up.sh windows inherit the ROS PYTHONPATH (Python 3.14 packages): never mix it into 3.12
+
+[feature.models.tasks]
+llm = "conversation/llm.sh"
+speech = "python conversation/model_server.py"
+
+[environments]
+models = { features = ["models"], no-default-feature = true }

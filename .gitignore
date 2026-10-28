@@ -23,3 +23,10 @@ secrets/
 
 # Editor caches
 .cache/
+
+# Run logs (tools/up.sh) and web app build output, dependencies, local TLS certificate
+live_logs/
+web/dist/
+web/node_modules/
+web/.local/
+web/test-results/

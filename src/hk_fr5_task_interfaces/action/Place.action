@@ -1,0 +1,16 @@
+# Place the held board (control-loop.md 4.2). Cancel = smooth stop.
+string target               # zone name; "" -> explicit pose below
+float64 x                   # explicit target (base_link) when target == ""
+float64 y
+float64 yaw
+float64 velocity_scaling    # (0, 1]; 0 -> default
+bool skip_home              # TM-36: after the retract no home move and no camera check (the next pick follows;
+                            #   the controller confirms the place later)
+---
+bool success
+SkillCode code
+string message
+string target
+int32 stack_count           # drop-off / fault: count after this place
+---
+string phase                # HOVER | CHECK | DESCEND | RELEASE | DETACH | RETRACT | VERIFY | RETRY

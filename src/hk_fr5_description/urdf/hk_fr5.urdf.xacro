@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!-- FR5 + D405 wrist mount + Schmalz vacuum gripper + tcp.
+     Geometry only (no ros2_control). All numbers come from config/tool_geometry.yaml. -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="hk_fr5">
+
+  <xacro:arg name="geometry_file" default="$(find hk_fr5_description)/config/tool_geometry.yaml"/>
+  <xacro:property name="g" value="${xacro.load_yaml('$(arg geometry_file)')}"/>
+  <xacro:property name="mesh_dir" value="package://hk_fr5_description/meshes"/>
+
+  <!-- Vendor arm: base_link ... wrist3_link, joints j1..j6 -->
+  <xacro:include filename="$(find fairino_description)/urdf/fairino5_v6.urdf"/>
+
+  <material name="pla_beige"><color rgba="0.85 0.80 0.65 1"/></material>
+  <material name="d405_grey"><color rgba="0.2 0.2 0.2 1"/></material>
+  <material name="schmalz_white"><color rgba="0.92 0.92 0.92 1"/></material>
+
+  <!-- Flange face -->
+  <joint name="flange_joint" type="fixed">
+    <parent link="wrist3_link"/>
+    <child link="flange"/>
+    <origin xyz="0 0 ${g['flange']['z']}" rpy="0 0 0"/>
+  </joint>
+  <link name="flange"/>
+
+  <!-- D405 mount plate (mesh origin on flange face, +x along camera arm) -->
+  <joint name="d405_mount_joint" type="fixed">
+    <parent link="flange"/>
+    <child link="d405_mount_link"/>
+    <origin xyz="0 0 0" rpy="0 0 ${g['mount']['yaw']}"/>
+  </joint>
+  <link name="d405_mount_link">
+    <visual>
+      <geometry><mesh filename="${mesh_dir}/d405_wrist_mount.stl"/></geometry>
+      <material name="pla_beige"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${g['mount']['plate_thickness'] / 2}"/>
+      <geometry><cylinder radius="${g['mount']['ring_radius']}" length="${g['mount']['plate_thickness']}"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="${' '.join(map(str, g['mount']['arm_xyz']))}" rpy="0 ${g['mount']['arm_pitch']} 0"/>
+      <geometry><box size="${' '.join(map(str, g['mount']['arm_size']))}"/></geometry>
+    </collision>
+  </link>
+
+  <!-- D405 camera body (approximate box) -->
+  <joint name="d405_joint" type="fixed">
+    <parent link="d405_mount_link"/>
+    <child link="d405_link"/>
+    <origin xyz="${' '.join(map(str, g['d405']['body_xyz']))}" rpy="0 ${g['d405']['body_pitch']} 0"/>
+  </joint>
+  <link name="d405_link">
+    <visual>
+      <geometry><box size="${' '.join(map(str, g['d405']['body_size']))}"/></geometry>
+      <material name="d405_grey"/>
+    </visual>
+    <collision>
+      <geometry><box size="${' '.join(map(str, g['d405']['body_size']))}"/></geometry>
+    </collision>
+  </link>
+
+  <!-- Camera frame on the front face, x = viewing direction. Replace with hand-eye result. -->
+  <joint name="d405_camera_joint" type="fixed">
+    <parent link="d405_link"/>
+    <child link="d405_camera_link"/>
+    <origin xyz="0 0 ${g['d405']['body_size'][2] / 2}" rpy="0 ${-pi / 2} 0"/>
+  </joint>
+  <link name="d405_camera_link"/>
+
+  <!-- Gripper on top of the mount plate (mesh origin on its mount face, +z toward cup) -->
+  <joint name="gripper_joint" type="fixed">
+    <parent link="flange"/>
+    <child link="gripper_link"/>
+    <origin xyz="0 0 ${g['mount']['plate_thickness']}" rpy="0 0 0"/>
+  </joint>
+  <link name="gripper_link">
+    <visual>
+      <geometry><mesh filename="${mesh_dir}/schmalz_gripper.stl"/></geometry>
+      <material name="schmalz_white"/>
+    </visual>
+    <!-- body -->
+    <collision>
+      <origin xyz="0 0 ${g['gripper']['body_length'] / 2}"/>
+      <geometry><cylinder radius="${g['gripper']['body_radius']}" length="${g['gripper']['body_length']}"/></geometry>
+    </collision>
+    <!-- cup, stops cup_collision_gap short of tcp -->
+    <xacro:property name="cup_len" value="${g['gripper']['tcp_z'] - g['gripper']['cup_collision_gap'] - g['gripper']['body_length']}"/>
+    <collision>
+      <origin xyz="0 0 ${g['gripper']['body_length'] + cup_len / 2}"/>
+      <geometry><cylinder radius="${g['gripper']['cup_radius']}" length="${cup_len}"/></geometry>
+    </collision>
+  </link>
+
+  <!-- TCP: relaxed suction cup tip, z out of the cup -->
+  <joint name="tcp_joint" type="fixed">
+    <parent link="gripper_link"/>
+    <child link="tcp"/>
+    <origin xyz="0 0 ${g['gripper']['tcp_z']}" rpy="0 0 0"/>
+  </joint>
+  <link name="tcp"/>
+
+</robot>

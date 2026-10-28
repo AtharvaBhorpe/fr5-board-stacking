@@ -1,0 +1,17 @@
+# Attach a picked board to the tcp as a collision box, /scene/attach_board (decision-log 5n, S-3 / S-4).
+# Call only after the gripper reports vacuum achieved (F12). One board at a time. Metres / radians.
+# RULE (S-11): if this board was added as an obstacle (/scene/add_box), remove it first (/scene/remove_box),
+# else the attached box overlaps it and every motion fails with START_STATE_IN_COLLISION.
+# Board frame = tcp frame turned by yaw about tcp z, centre shifted by (dx, dy) in the tcp frame.
+# The box hangs under the cup: from the cup tip (tcp z = 0) to height - contact_margin along tcp +z
+# (out of the cup). The margin keeps the box clear of the surface it rests on (lift / place in contact).
+float64 length            # along board x (= tcp x when yaw = 0)
+float64 width             # along board y
+float64 height            # board thickness, along tcp z
+float64 yaw               # board rotation about tcp z
+float64 dx                # board centre offset from the cup, tcp frame
+float64 dy
+float64 contact_margin    # 0 -> config default (0.002); must be < height
+---
+bool success              # false: a board is already attached, bad sizes, MoveIt not reachable
+string message

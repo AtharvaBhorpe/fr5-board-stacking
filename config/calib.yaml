@@ -1,0 +1,47 @@
+# Camera -> table calibration (decision-log V-7). Written by the calibration app; do not edit by hand.
+# lens_k: pixel correction p_u = c + (p_d - c)(1 + k |p_d - c|^2 / n^2), c = image centre, n = max(image_size).
+# homography: corrected pixel (u, v, 1) -> base_link (x, y, w), x / w and y / w in metres. Valid only for image_size,
+# this camera pose and this focus (do not move the camera). rms_homography_only_mm = same fit without lens_k (info). tags: centre pixel, recorded tcp x / y (m), fit residual err_mm,
+# drop_rms_mm = rms of the other tags without this one (6+ tags); suspect = tag that looks badly recorded.
+version: 1
+calibrated: true
+date: '2026-10-26 17:29:27'
+camera: C920
+image_size: [1920, 1080]
+lens_k: 0.011460973258509652
+homography:
+- [-5.109734128153063e-06, -0.001527558515505332, 0.4523431243928508]
+- [-0.001371666690182469, 1.3387075955487616e-05, 1.3704448441096224]
+- [3.3083537885806924e-06, 0.0002525776110412781, 1.0]
+rms_mm: 1.36
+rms_homography_only_mm: 1.38
+suspect: null
+tags:
+- {id: 0, u: 1532.4989013671875, v: 815.7767333984375, x: -0.6634744344323973, y: -0.5959952055018569, err_mm: 1.2, dx_mm: -1.19,
+  dy_mm: -0.15, drop_rms_mm: 1.2}
+- {id: 4, u: 423.11260986328125, v: 517.8629760742188, x: -0.3009756494074768, y: 0.7046412932488697, err_mm: 0.13, dx_mm: 0.08,
+  dy_mm: 0.11, drop_rms_mm: 1.43}
+- {id: 5, u: 754.6735229492188, v: 752.618896484375, x: -0.587601490358252, y: 0.29069705019055925, err_mm: 1.13, dx_mm: 0.41,
+  dy_mm: 1.05, drop_rms_mm: 1.35}
+- {id: 7, u: 1524.720458984375, v: 460.3171691894531, x: -0.2304837688741792, y: -0.6367890338657028, err_mm: 1.39, dx_mm: 0.04,
+  dy_mm: 1.39, drop_rms_mm: 1.31}
+- {id: 8, u: 1257.1202392578125, v: 434.4333801269531, x: -0.1924965489280808, y: -0.31327576220257547, err_mm: 2.98, dx_mm: 2.9,
+  dy_mm: -0.66, drop_rms_mm: 0.84}
+- {id: 9, u: 639.7557373046875, v: 361.5544738769531, x: -0.09449899509140455, y: 0.4543138291738807, err_mm: 1.1, dx_mm: -0.2,
+  dy_mm: -1.08, drop_rms_mm: 1.32}
+- {id: 12, u: 1175.067626953125, v: 707.3402709960938, x: -0.536370481467336, y: -0.1963384700837222, err_mm: 0.2, dx_mm: -0.05,
+  dy_mm: -0.19, drop_rms_mm: 1.43}
+- {id: 13, u: 1666.980224609375, v: 229.83242797851562, x: 0.08698812773740147, y: -0.8608007471167611, err_mm: 1.17, dx_mm: -1.04,
+  dy_mm: -0.54, drop_rms_mm: 1.3}
+- {id: 14, u: 352.4590148925781, v: 261.5682373046875, x: 0.047596554603014644, y: 0.8364884596756373, err_mm: 1.19, dx_mm: -0.74,
+  dy_mm: 0.94, drop_rms_mm: 1.28}
+- {id: 15, u: 421.5111389160156, v: 783.6032104492188, x: -0.6232194406378367, y: 0.6691207537041293, err_mm: 0.89, dx_mm: -0.22,
+  dy_mm: -0.87, drop_rms_mm: 1.33}
+verification:
+  date: '2026-10-26 17:36:02'
+  spots: 5
+  mean_mm: 1.73
+  max_mm: 2.14
+  passed: true
+  limits: {mean_mm: 2.0, max_mm: 4.0, min_spots: 5}
+  errors_mm: [1.41, 2.14, 1.87, 2.03, 1.22]

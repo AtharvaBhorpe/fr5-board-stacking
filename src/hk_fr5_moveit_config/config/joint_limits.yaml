@@ -1,0 +1,26 @@
+# Overrides/additions to the URDF limits. Pilz needs acceleration limits on every joint.
+# POSITION limits (2026-10-27, decision-log H-11): only ONE arm configuration is allowed = shoulder front,
+# elbow up, wrist down. Without them MoveIt picked any of the 8 IK branches -> elbow flips, j1 swings round the
+# back. j1 +-175 deg (= URDF range; +-120 lost reach beside the base: 158 -> 112 mm worst gap at z -55),
+# j2 -165..+10 deg (shoulder front: over the table j2 is -93..-18; the shoulder-back branch that leans over the
+# base has j2 ~ -197), j3 +10..+160 deg (elbow up), j5 -170..-10 deg (wrist down).
+# The elbow/wrist limits (j3, j5) do the flip prevention; tests/joint_config_check.py: no flip / swing in sim.
+# The old full-range file: joint_limits_full_range.yaml (reference, not loaded). Named target 'zero' is now
+# outside the limits (j3 = j5 = 0).
+# Acceleration 2.0 rad/s^2 (T-11, tested 19/19 incl. cancel suite) used for the first real-robot session.
+# VENDOR-REF values (P-6, online search 2026-10-25), NOT yet applied for acc (6.283 failed 4/19 checks;
+# retest later): max joint speed 180 deg/s = 3.1416 rad/s; acc 360 deg/s^2 = 6.283 rad/s^2; J3 +-160 deg.
+default_velocity_scaling_factor: 0.2      # F14
+default_acceleration_scaling_factor: 0.2
+
+joint_limits:
+  j1: {has_position_limits: true, min_position: -3.0543, max_position: 3.0543,
+       has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j2: {has_position_limits: true, min_position: -2.8798, max_position: 0.1745,
+       has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j3: {has_position_limits: true, min_position: 0.1745, max_position: 2.7925,
+       has_velocity_limits: true, max_velocity: 3.15, has_acceleration_limits: true, max_acceleration: 2.0}
+  j4: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
+  j5: {has_position_limits: true, min_position: -2.9671, max_position: -0.1745,
+       has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}
+  j6: {has_velocity_limits: true, max_velocity: 3.2, has_acceleration_limits: true, max_acceleration: 2.0}

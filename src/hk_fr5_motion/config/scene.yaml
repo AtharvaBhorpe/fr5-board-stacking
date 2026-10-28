@@ -1,0 +1,16 @@
+# scene_manager parameters (ROS parameter file). Metres / radians / seconds. Decisions: decision-log 5n (S-*).
+/**/scene_manager:
+  ros__parameters:
+    base_frame: base_link             # static / dynamic boxes and kept boards (F1)
+    tcp_link: tcp                     # attached board hangs under this link (F2)
+    group: arm                        # planning group for the state check after attach / add_box
+    touch_links: [gripper_link, tcp]  # links allowed to touch the attached board (the cup sits on it)
+    board_id: board                   # name of the attached board (reserved for add_box)
+    stack_prefix: stack_              # kept boards: stack_0, stack_1, ... (S-6)
+    contact_margin: 0.002             # m, attached box shorter at its bottom; per request 0 -> this (S-4, 5n-1)
+    load_static: true                 # add obstacles.yaml boxes once move_group is up (former obstacle_loader)
+    obstacles_file: ""                # "" -> <hk_fr5_motion share>/config/obstacles.yaml
+    wait_timeout: 30.0                # s to wait for move_group before giving up on the static boxes
+    service_timeout: 5.0              # s per MoveIt service call
+    apply_service: /apply_planning_scene
+    validity_service: /check_state_validity

@@ -1,0 +1,9 @@
+# Current robot state. Everything in base_link, metres / radians.
+---
+bool success                    # false -> no valid state yet (no /joint_states or TF); other fields invalid
+string message
+sensor_msgs/JointState joints
+geometry_msgs/PoseStamped tcp_pose
+float64 roll                    # R = Rz(yaw) * Ry(pitch) * Rx(roll) (fixed axes)
+float64 pitch                   #   tool pointing down: roll = +-pi, pitch = 0
+float64 yaw                     # usable as MoveTo yaw in MODE_DOWN_YAW

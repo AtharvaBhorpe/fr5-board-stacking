@@ -1,0 +1,9 @@
+# Start pose of the mock hardware (radians). = SRDF state "ready":
+# [0, -90, 90, -90, -90, 0] deg -> tcp pointing down at about (-0.50, -0.10, 0.36) m.
+initial_positions:
+  j1: 0.0
+  j2: -1.570796
+  j3: 1.570796
+  j4: -1.570796
+  j5: -1.570796
+  j6: 0.0

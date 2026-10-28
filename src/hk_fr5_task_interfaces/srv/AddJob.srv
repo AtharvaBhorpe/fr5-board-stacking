@@ -1,0 +1,6 @@
+# Add a job to the queue (dashboard / LLM). Validated before it is accepted.
+Job job
+---
+bool success
+string message              # reason when rejected
+string id                   # assigned job id
