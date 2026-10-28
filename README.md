@@ -51,7 +51,9 @@ tools/trial_down.sh                # stop everything cleanly, in the right order
 tools/trial_attach.sh              # attach a terminal (Ctrl+b <n> = window n, Ctrl+b d = detach, keeps running)
 ```
 
-Windows: 0 monitor, 1 motion, 2 vision (or fake), 3 world, 4 skills, 5 ctrl, 6 cli (`tc ...`), 7 bridge.
+Windows: 0 monitor, 1 motion, 2 vision (or fake), 3 world, 4 skills, 5 ctrl, 6 cli (`tc ...`), 7 bridge, 8 demo-ui.
+**Vacuum-failure demo page:** http://localhost:8765 (`tools/vacuum_demo_ui.py`, `--lan` for a phone on the same
+network): *Simulate vacuum failure* arms it (fires 1.5 s into the next carry), *Now* fires at once while holding.
 Options: `--rviz`, `--no-gui`. Env: `ROS_DOMAIN_ID`, `HK_MOTION_WT`, `HK_VISION1_WT`, `HK_LIVE_ROOT`, `HK_TMUX_SESSION`.
 
 Commands (window 6, or `pixi run python3 tools/task_cli.py ...`; `help` lists all):

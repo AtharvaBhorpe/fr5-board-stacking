@@ -9,7 +9,7 @@
 #     --no-gui: do not open a terminal window (attach later: tmux attach -t trial)
 #
 # Windows: 0 monitor | 1 motion | 2 vision (or fake) | 3 world | 4 skills | 5 ctrl | 6 cli (tc = task_cli function)
-#          | 7 bridge (agent_bridge: $HK_LIVE_DIR/bridge/state.txt, events.txt, cmd pipe)
+#          | 7 bridge (agent_bridge: $HK_LIVE_DIR/bridge/state.txt, events.txt, cmd pipe) | 8 demo-ui (vacuum failure page)
 # In tmux: Ctrl+b then a window number = switch window, Ctrl+b d = detach (everything keeps running).
 # The real robot does NOT move at start-up: motion only on a job / command (user's OK, CLAUDE.md section 3).
 set -u
@@ -79,8 +79,10 @@ win 5 ctrl $WT "$PX run ros2 run hk_fr5_task task_main_controller --ros-args \$H
 wait_for "controller (/task/list_jobs)" 60 svc /task/list_jobs
 win 6 cli $WT "tc() { $PX run python3 $WT/tools/task_cli.py \"\$@\"; }; echo 'tc help = all commands'; sleep 3; tc status"
 win 7 bridge $WT "$PX run python3 tools/agent_bridge.py"
+win 8 demo-ui $WT "$PX run python3 tools/vacuum_demo_ui.py"     # TM-47: 'Simulate vacuum failure' page
 $TMUX_BIN select-window -t $S:6
 echo "all started. Logs: $HK_LIVE_DIR"
+echo "vacuum-failure demo page: http://localhost:${HK_DEMO_UI_PORT:-8765}"
 echo "attach: $WT/tools/trial_attach.sh   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: $WT/tools/trial_down.sh"
 if [ $GUI = 1 ] && [ -n "${DISPLAY:-}" ]; then
   gnome-terminal --maximize --title="trial ($MODE)" -- $TMUX_BIN attach -t $S > /dev/null 2>&1 &
