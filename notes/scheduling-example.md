@@ -94,8 +94,9 @@ no board on the table currently makes the robot go home before lower-priority wo
 
 Job result: `delivered`, `to_fault`, `lost`, `skipped` + `message`; DONE can be partial (reason in `message`).
 The controller handles by itself: retries, a board without vacuum (skipped for good), a hand in the work area (waits),
-stale camera (waits), a board lost on the way (counted `lost`; when it falls on the table it is a new input board that
-a job with deliveries still missing picks again after the next home move; tested in sim, not yet on the robot).
+stale camera (waits), a board lost on the way (counted `lost`; when it falls on the table it is a new input board and
+its job picks that board next, nearest to the loss point, if deliveries are still missing; tested on the real robot
+2026-10-28), nothing to do -> the robot parks at home.
 
 Alerts that need a **person** (tell the human, do not cancel the job):
 

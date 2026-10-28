@@ -15,9 +15,9 @@ home_pose: [-0.233, 0.0, 0.243, 1.543]   # tcp x, y, z, yaw of 'home': STRICTLY 
 unstick_lift: 0.015            # straight lift after the seal, before the board is attached in the scene (S-12)
 max_stack: 10                  # drop-off / fault stacks (same as world.yaml)
 default_thickness: 0.005       # board thickness when the variant is unknown
-speed: 0.20                    # velocity scaling of the free moves without a board: hover, home (TM-37: was 0.15)
-carry_speed: 0.15              # free move WITH a board (carry, incl. the fault drop): slower, board slip (TM-37)
-approach_speed: 0.10           # LIN down / up near the board (TM-37: was 0.075)
+speed: 0.40                    # velocity scaling of the free moves without a board: hover, home (TM-41 user 2x; 0.20)
+carry_speed: 0.30              # free move WITH a board (carry, incl. the fault drop): board slip (TM-41 2x; 0.15)
+approach_speed: 0.20           # LIN down / up near the board (TM-41 user 2x; was 0.10)
 ref_yaw: 1.5708                # tcp yaw reference (home 'ready'), see skill_math.tcp_yaw_for
 grip_timeout: 3.0              # grip at a known height
 search_timeout: 12.0           # contact search (grip goal running while descending)

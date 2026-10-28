@@ -100,7 +100,8 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
   world and count as pickable (priority is never changed by occlusion); a place not followed by home is confirmed by
   the camera later (warning only if not).
 - **Failures:** grip failed -> the board is skipped (problem board), vision stale -> wait, obstacle -> wait_clear,
-  board lost -> counted (a board that fell on the table is a new input board and is picked again if its job still needs one), 3 motion failures in a row or a failed release -> HALTED (check, then `tc resume`). A board
+  board lost -> counted (a board that fell on the table is a new input board; its job picks the board nearest to the loss
+  point next if it still needs one), nothing to do with the arm away from home -> parks at home, 3 motion failures in a row or a failed release -> HALTED (check, then `tc resume`). A board
   that cannot go anywhere is dropped into the **fault zone** (fixed spot behind the base, a void).
 
 ## Configuration (`src/hk_fr5_task/config/`)
@@ -108,7 +109,7 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
 | File | Main values |
 |---|---|
 | `world.yaml` | variants VARa 0.295 x 0.210, VARb 0.210 x 0.150, VARc 0.210 x 0.135 (5 mm), table_z -0.060, zone margin, timers (gone / back / unknown_after 2 s, stale_after 1.5 s, lost_after 2 s), **fault zone position**, zone_unknown_boards |
-| `skills.yaml` | speeds (free moves 0.20 / carry with a board 0.15 / approach 0.10 / search 0.015), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
+| `skills.yaml` | speeds (free moves 0.40 / carry with a board 0.30 / approach 0.20 / search 0.015), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
 | `main.yaml` | home_xy (= home_pose x / y), retry / halt policy, alert times, per-skill timeouts, deferred_verify |
 | `scenario_demo.yaml` | the simulated table for `--sim` and the tests |
 
@@ -119,7 +120,7 @@ Logging: `tools/live_env.sh` (sessions, `debug` / `demo`), `tools/live_monitor.p
 
 `tests/README.md`. Logic tests run in seconds without ROS (`pixi run python3 tests/world_core_check.py`, ...); ROS /
 sim tests need a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 pixi run python3 tests/skills_ros_check.py`).
-Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 45, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
+Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 50, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
 
 ## Limitations / open
 
