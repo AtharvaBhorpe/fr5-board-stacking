@@ -23,17 +23,28 @@ for name, want in EXPECTED.items():
 rej = []
 table.pickable(CALIB, detect(cv2.imread(os.path.join(root, "06.jpg")), rej), rej)
 assert any(r["u"] < 1300 for r in rej), rej  # arm rejected (any reason), never published
-# zones: centre = template board pose (same offsets as DEST for the placeholders), yaw = long side, mod pi
+# zones (ZONES table, real lab values 2026-10-27): centre = tag centre + offset along the tag's +X / +Y, yaw = tag +X
+# + rotation (then folded mod pi by the node), size [long, short], top_z and name / kind exactly as configured
 import math
+import numpy as np
 tags = []
 detect(cv2.imread(os.path.join(root, "composite_vara_dest.png")), None, tags)
 zs = {z["tag_id"]: z for z in (table.zone(CALIB, t) for t in tags) if z}
-ds = {d["tag_id"]: d for d in (table.destination(CALIB, t) for t in tags) if d}
-assert sorted(zs) == [1, 2, 16], zs
-for i, z in zs.items():
-    assert (z["x"], z["y"]) == (ds[i]["x"], ds[i]["y"]), (z, ds[i])
-    long_is_x = table.SIZES_MM[ds[i]["variant"]][0] > table.SIZES_MM[ds[i]["variant"]][1]
-    d = (z["yaw"] - ds[i]["yaw"] - (0 if long_is_x else math.pi / 2)) % math.pi
-    assert min(d, math.pi - d) < 1e-3, (z, ds[i])
+assert sorted(zs) == sorted(table.ZONES), zs
+for t in tags:
+    if t["id"] not in zs:
+        continue
+    z, (name, kind, off, dyaw, size, top_z) = zs[t["id"]], table.ZONES[t["id"]]
+    xy = table.to_base(CALIB, t["corners"])
+    e = np.roll(xy, -1, axis=0) - xy
+    xa = e[0] / np.linalg.norm(e[0]) - e[2] / np.linalg.norm(e[2])
+    xa /= np.linalg.norm(xa)
+    ya = np.array([-xa[1], xa[0]])
+    cx, cy = xy.mean(0) + off[0] * xa + off[1] * ya
+    assert abs(z["x"] - cx) < 1e-3 and abs(z["y"] - cy) < 1e-3, (z, cx, cy)
+    d = (z["yaw"] - math.atan2(xa[1], xa[0]) - dyaw) % (2 * math.pi)
+    assert min(d, 2 * math.pi - d) < 1e-3, (z, math.atan2(xa[1], xa[0]))
+    assert (z["name"], z["kind"], z["size"], z["top_z"]) == (name, kind, list(size), top_z), z
     assert z["size"][0] >= z["size"][1]
+assert len({z[0] for z in table.ZONES.values()}) == len(table.ZONES)    # unique zone names
 print("ok")

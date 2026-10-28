@@ -333,8 +333,18 @@ One per template tag seen (ArUco `DICT_5X5_100`; ids 1 / 2 / 16 = VARa / VARb / 
 
 One per zone tag seen; the zone table is `ZONES` in `vision1/table.py` (tag id -> name, kind, offset, rotation, size,
 top_z). Same median / 60 s memory as `destinations`, but one entry per zone **name**. Geometry comes from the tag +
-config only (no sheet detection). **Today the values are placeholders** = the three templates (tags 1 / 2 / 16 ->
-`drop_off_a` / `drop_off_b` / `drop_off_c`); replace with the measured cardboard sheets and add `processing_1`, ...
+config only (no sheet detection). The zones move with their tags (dynamic). Current lab values (2026-10-27, used in
+the first real-robot trial of the main controller):
+
+| Tag | Zone | Kind | Offset (along tag +X, across) | Rotation | Board area [long, short] | `top_z` |
+|---|---|---|---|---|---|---|
+| 2 | `processing_1` | processing | (0.205, 0.0) m | 0 | [0.34, 0.25] m | -0.055 |
+| 1 | `drop_off_a` | drop_off | (0.205, 0.0) m | 0 | [0.34, 0.25] m | -0.055 |
+| 16 | `drop_off_b` | drop_off | (0.205, 0.0) m | 0 | [0.34, 0.25] m | -0.055 |
+
+Sheets: brown cardboard, 5 mm (table -0.060 + 5 mm), tag (DICT_5X5_100, ~39 mm) printed with its +X along the sheet's
+long side, beside the board area. Tags 1 / 2 / 16 are also `DEST` templates: with the sheets on them `destinations[]`
+is not valid for `pick_one.py --place` (the main controller uses `zones[]` only).
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -695,7 +705,9 @@ moved aside when they cover a requested board.*
   trained on the right one; left-table boards measured 207x292 / 154x207 mm on 450 frames). Tags anywhere.
 - Board on a zone sheet (model mode, synthetic test on the white templates): 8 / 9 found, 1-3 mm; a red VARc rotated
   8 deg merged with its white sheet (`UNKWN`). Classic mode merges white boards with white sheets and reports the
-  empty yellow-framed VARa template as a board: use model mode with zones.
+  empty yellow-framed VARa template as a board: use model mode with zones. With the brown cardboard sheets (real
+  robot, 2026-10-27, model mode, GPU 5 Hz): white and red boards on the sheets detected; a small white board on a large
+  white one (and red on red) reads as one board (stack top not separable).
 - Classic mode: boards must not touch or overlap. Model mode handles touching boards and stacks, but stacked white
   boards can still be misread (a 2-VARa stack once read as VARb): check the hover before confirming.
 - `z` in `/vision/boards` is always one board on the table; real heights come from the D405.

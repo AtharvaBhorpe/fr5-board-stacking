@@ -75,12 +75,14 @@ TAG_SIDE = 0.039
 # Zones for the main controller (vision1-changes.md C2 / C3 / C7 / C15): tag id -> name (unique), kind (drop_off /
 # processing), offset (tag centre -> centre of the board area, marker frame, m), rotation (zone long side relative to
 # marker +X), size [long, short] (m), top_z (sheet top, base_link, m).
-# ponytail: PLACEHOLDERS = today's templates (tags 1 / 2 / 16, same offsets as DEST). Replace with the cardboard sheets
-# (ids, offsets, sizes, top_z) measured in the lab; add processing_1, ... the same way.
+# Lab values 2026-10-27 (measured, used in the first real-robot trial): brown cardboard sheets 5 mm on the table
+# (-0.060) -> top_z -0.055; each tag's +X along its sheet's long side (rotation 0); board area 0.34 x 0.25 m centred
+# 0.205 m along +X from the tag centre. Add zones the same way (new tag id -> unique name). Tags 1 / 2 / 16 are also in
+# DEST above (pick_one.py templates): with the sheets on them, destinations[] is NOT valid for pick_one.py --place.
 ZONES = {
-    1: ("drop_off_a", "drop_off", (-0.150, 0.0), math.pi / 2, (0.295, 0.210), -0.055),
-    2: ("drop_off_b", "drop_off", (-0.150, 0.0), math.pi, (0.210, 0.150), -0.055),
-    16: ("drop_off_c", "drop_off", (0.140, 0.0), 0.0, (0.210, 0.135), -0.055),
+    2: ("processing_1", "processing", (0.205, 0.0), 0.0, (0.34, 0.25), -0.055),
+    1: ("drop_off_a", "drop_off", (0.205, 0.0), 0.0, (0.34, 0.25), -0.055),
+    16: ("drop_off_b", "drop_off", (0.205, 0.0), 0.0, (0.34, 0.25), -0.055),
 }
 
 
