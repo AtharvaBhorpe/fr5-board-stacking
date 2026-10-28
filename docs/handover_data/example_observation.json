@@ -1,0 +1,184 @@
+{
+  "snapshot_id": "3affeb837a974b3fb01039f7814f9aed",
+  "source_timestamp_sec": 1793170240.140921,
+  "source_stamp": {
+    "sec": 1793170240,
+    "nanosec": 140921059
+  },
+  "observation_age_s": 0.037215471267700195,
+  "frame_id": "scene_camera_optical_frame",
+  "coordinate_system": "raw_image_pixels",
+  "model_backend": "yolo11_seg",
+  "checkpoint_sha256": "67ee9c19255eea65462b4289ebb6b8f3cf0f88347ff5325e5dded77a3da64a58",
+  "angle_convention": "clockwise image angle from +u/right, modulo 180 degrees",
+  "units": {
+    "centre_px": "pixels",
+    "orientation_image_deg": "degrees"
+  },
+  "hand_count": 4,
+  "human_safety_validated": false,
+  "image_size": [
+    1920,
+    1080
+  ],
+  "objects": [
+    {
+      "instance_id": "3affeb837a974b3fb01039f7814f9aed:1",
+      "candidate_id": "candidate_1",
+      "centre_px": [
+        1369.864406779661,
+        828.1864406779661
+      ],
+      "orientation_image_deg": 5.710593137499642,
+      "outline_kind": "supported_mask_quadrilateral",
+      "supported_pixel_corners": [
+        [
+          1228.0,
+          721.0
+        ],
+        [
+          1228.0,
+          907.0
+        ],
+        [
+          1498.0,
+          925.0
+        ],
+        [
+          1498.0,
+          757.0
+        ]
+      ],
+      "text_prompt_label": "VARa",
+      "class_name": "VARa",
+      "class_id": 0,
+      "confidence": 0.96533203125,
+      "mask_origin": "yolo11_seg",
+      "rectangle_consistency": null,
+      "near_square_orientation_ambiguous": false,
+      "layer_order_verified": false,
+      "instance_isolation_verified": false
+    },
+    {
+      "instance_id": "3affeb837a974b3fb01039f7814f9aed:2",
+      "candidate_id": "candidate_4",
+      "centre_px": [
+        1296.0305466237942,
+        554.9340836012861
+      ],
+      "orientation_image_deg": 8.214086099809663,
+      "outline_kind": "supported_mask_quadrilateral",
+      "supported_pixel_corners": [
+        [
+          1246.0,
+          514.0
+        ],
+        [
+          1246.0,
+          583.0
+        ],
+        [
+          1378.0,
+          622.0
+        ],
+        [
+          1369.0,
+          514.0
+        ]
+      ],
+      "text_prompt_label": "VARc",
+      "class_name": "VARc",
+      "class_id": 2,
+      "confidence": 0.947265625,
+      "mask_origin": "yolo11_seg",
+      "rectangle_consistency": null,
+      "near_square_orientation_ambiguous": false,
+      "layer_order_verified": false,
+      "instance_isolation_verified": false
+    },
+    {
+      "instance_id": "3affeb837a974b3fb01039f7814f9aed:3",
+      "candidate_id": "candidate_5",
+      "centre_px": [
+        1311.012658227848,
+        368.253164556962
+      ],
+      "orientation_image_deg": 87.13759477388825,
+      "outline_kind": "supported_mask_quadrilateral",
+      "supported_pixel_corners": [
+        [
+          1252.0,
+          298.0
+        ],
+        [
+          1252.0,
+          448.0
+        ],
+        [
+          1378.0,
+          448.0
+        ],
+        [
+          1363.0,
+          298.0
+        ]
+      ],
+      "text_prompt_label": "VARc",
+      "class_name": "VARc",
+      "class_id": 2,
+      "confidence": 0.94580078125,
+      "mask_origin": "yolo11_seg",
+      "rectangle_consistency": null,
+      "near_square_orientation_ambiguous": false,
+      "layer_order_verified": false,
+      "instance_isolation_verified": false
+    },
+    {
+      "instance_id": "3affeb837a974b3fb01039f7814f9aed:4",
+      "candidate_id": "candidate_8",
+      "centre_px": [
+        1581.5588235294117,
+        254.76470588235293
+      ],
+      "orientation_image_deg": 5.906141113770511,
+      "outline_kind": "supported_mask_quadrilateral",
+      "supported_pixel_corners": [
+        [
+          1492.0,
+          193.0
+        ],
+        [
+          1492.0,
+          298.0
+        ],
+        [
+          1666.0,
+          313.0
+        ],
+        [
+          1666.0,
+          214.0
+        ]
+      ],
+      "text_prompt_label": "VARb",
+      "class_name": "VARb",
+      "class_id": 1,
+      "confidence": 0.91650390625,
+      "mask_origin": "yolo11_seg",
+      "rectangle_consistency": null,
+      "near_square_orientation_ambiguous": false,
+      "layer_order_verified": false,
+      "instance_isolation_verified": false
+    }
+  ],
+  "geometry_image_size": [
+    640,
+    360
+  ],
+  "geometry_pixel_scale": [
+    3.0,
+    3.0
+  ],
+  "uncertain_count": 6,
+  "execution_allowed": false
+}

@@ -1,0 +1,87 @@
+{
+  "settings": {
+    "backend": "yolo11_seg",
+    "weights": ".local/brev_results/yolo_cloud_001/weights/best.pt",
+    "scene_config": "config/perception_full_table.toml",
+    "confidence": 0.25,
+    "nms_iou": 0.7,
+    "imgsz": 960,
+    "max_detections": 30,
+    "fp16": true,
+    "geometry_max_width": 640
+  },
+  "splits": {
+    "val": {
+      "fixed_confidence_per_class": {
+        "VARa": {
+          "tp": 98,
+          "fp": 14,
+          "fn": 32,
+          "precision": 0.875,
+          "recall": 0.7538461538461538
+        },
+        "VARb": {
+          "tp": 64,
+          "fp": 11,
+          "fn": 18,
+          "precision": 0.8533333333333334,
+          "recall": 0.7804878048780488
+        },
+        "VARc": {
+          "tp": 60,
+          "fp": 4,
+          "fn": 4,
+          "precision": 0.9375,
+          "recall": 0.9375
+        },
+        "hand": {
+          "tp": 78,
+          "fp": 18,
+          "fn": 24,
+          "precision": 0.8125,
+          "recall": 0.7647058823529411
+        }
+      },
+      "images": 48,
+      "coordinate_targets": 79,
+      "uncertain_proposals": 137
+    },
+    "test": {
+      "fixed_confidence_per_class": {
+        "VARa": {
+          "tp": 94,
+          "fp": 44,
+          "fn": 93,
+          "precision": 0.6811594202898551,
+          "recall": 0.5026737967914439
+        },
+        "VARb": {
+          "tp": 69,
+          "fp": 29,
+          "fn": 33,
+          "precision": 0.7040816326530612,
+          "recall": 0.6764705882352942
+        },
+        "VARc": {
+          "tp": 70,
+          "fp": 10,
+          "fn": 26,
+          "precision": 0.875,
+          "recall": 0.7291666666666666
+        },
+        "hand": {
+          "tp": 78,
+          "fp": 18,
+          "fn": 18,
+          "precision": 0.8125,
+          "recall": 0.8125
+        }
+      },
+      "images": 46,
+      "coordinate_targets": 85,
+      "uncertain_proposals": 198
+    }
+  },
+  "execution_allowed": false,
+  "timing_scope": "Includes full-resolution diagnostic masks; use ROS replay for live timing"
+}

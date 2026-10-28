@@ -1,0 +1,1127 @@
+[
+  {
+    "file": "docs/images/perception/hardware-workcell.jpg",
+    "caption": "Historical workcell overview; the arrangement changed later.",
+    "source_file": "approximate_robot_scene.jpeg",
+    "source_sha256": "3fa5d755d47eef6646526ebda703f96483be621a22f336d1bdf6353516722707",
+    "original_size": [
+      1280,
+      960
+    ],
+    "display_size": [
+      1280,
+      960
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/hardware-workcell-side.jpg",
+    "caption": "Historical opposite view of FR5, black table and camera post.",
+    "source_file": "approximate_robot_scene-2.jpeg",
+    "source_sha256": "42dc35d3072eb40ace62c436ab25b2f976e1f08235b54b25e87c1643c18dea3c",
+    "original_size": [
+      1280,
+      960
+    ],
+    "display_size": [
+      1280,
+      960
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/hardware-logitech-mount.jpg",
+    "caption": "Historical Logitech mounting on the wooden post.",
+    "source_file": "webcam_placement.jpeg",
+    "source_sha256": "88156212fdf3086858f4a82fbab0ef3bcdb12f4b60596e8761e662900a584a20",
+    "original_size": [
+      960,
+      1280
+    ],
+    "display_size": [
+      960,
+      1280
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/hardware-scene-reference.jpg",
+    "caption": "Earlier Logitech view with destination fixture and substrates.",
+    "source_file": "logitech_scene.jpeg",
+    "source_sha256": "b26b1653c906cb5611aaf4fbf54fe8913259fa3deb95d568b90ef62e79a98f34",
+    "original_size": [
+      1600,
+      900
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/calibration-view-0001.jpg",
+    "caption": "Historical calibration view; not proof of validated robot registration.",
+    "source_file": "view_0001.png",
+    "source_sha256": "2ee700526fd5f5394b5cf83802f3543c5feea66ff517917f0ead234924286913",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/calibration-view-0048.jpg",
+    "caption": "Historical calibration view; not proof of validated robot registration.",
+    "source_file": "view_0048.png",
+    "source_sha256": "d7d360d757392d8bf6aa592f29abaec4919eb2f22c289b8d2bea69516685558c",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-01-full-coordinates.jpg",
+    "caption": "scene_01: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_01_coordinates.jpg",
+    "source_sha256": "708b6f86cc22dc8472baae56ce890f7119bec231e06cf554db98edd1278e179a",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-01-fast-coordinates.jpg",
+    "caption": "scene_01: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_01_coordinates.jpg",
+    "source_sha256": "956861a369eda10df840938bc1632be05f9fba25a5280e7f6bd43c3eb45bdb98",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-01-raw-masks.jpg",
+    "caption": "scene_01: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_01_masks.jpg",
+    "source_sha256": "6b54f02a1920122841a719ad4fc914deb5025eaffc4c41a1bc9a366f4ba10ab2",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-02-full-coordinates.jpg",
+    "caption": "scene_02: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_02_coordinates.jpg",
+    "source_sha256": "3156953a6f2609189d8be073877285ae9d47e03b46b5db8881b102c1b7a7f765",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-02-fast-coordinates.jpg",
+    "caption": "scene_02: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_02_coordinates.jpg",
+    "source_sha256": "e18033bb1ecf9ca5cace9a8050900a9c0b79aad3727baf184819f5f0289dc4b1",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-02-raw-masks.jpg",
+    "caption": "scene_02: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_02_masks.jpg",
+    "source_sha256": "19bdad38525d23384ec68873ab67ed74692f7d5f41e28d238bfcf60e11a87fa5",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-03-full-coordinates.jpg",
+    "caption": "scene_03: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_03_coordinates.jpg",
+    "source_sha256": "6d441742d861d3347856674a490cab64c252d6ac6b7b5e449a6d53b738d2c42a",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-03-fast-coordinates.jpg",
+    "caption": "scene_03: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_03_coordinates.jpg",
+    "source_sha256": "985abdbf669286d16af189d3fbcd5207c7a69a83a7a25f2a2639c97732ea947c",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-03-raw-masks.jpg",
+    "caption": "scene_03: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_03_masks.jpg",
+    "source_sha256": "630368ca3414ef39595c6c64ae02628feed9c6246524be79ed72a92c3937ebe1",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-04-full-coordinates.jpg",
+    "caption": "scene_04: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_04_coordinates.jpg",
+    "source_sha256": "2d8210ee012dd73fc2cb50c807cbfa7a032c9354c3793386665aaad51bd4e0c4",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-04-fast-coordinates.jpg",
+    "caption": "scene_04: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_04_coordinates.jpg",
+    "source_sha256": "3f795bf754e65bea272b42cbb9cef6b82da09e97c792513fb2e7c6e9b1cf6985",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-04-raw-masks.jpg",
+    "caption": "scene_04: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_04_masks.jpg",
+    "source_sha256": "eda311062fb40853d2ed541257383f36d57630f20dd848eb9e5203f459e55a01",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-05-full-coordinates.jpg",
+    "caption": "scene_05: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_05_coordinates.jpg",
+    "source_sha256": "6478248a98072bc9d0b1f61ec8f6c73835b9280b4f5a545172b26e7149eb6d3e",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-05-fast-coordinates.jpg",
+    "caption": "scene_05: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_05_coordinates.jpg",
+    "source_sha256": "787f7bcc273260d59fb34d76c83202c693c69bf05ff1f44b48f02b44b9226cde",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-05-raw-masks.jpg",
+    "caption": "scene_05: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_05_masks.jpg",
+    "source_sha256": "31d94ef9932aa632976d07c79d43bb45504e2150650086b6c748e392dc8bc8d8",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-06-full-coordinates.jpg",
+    "caption": "scene_06: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_06_coordinates.jpg",
+    "source_sha256": "d5720dfa3197891841a1c8f65b07019157a2e740abc6f8dc0d105e3d8d75589f",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-06-fast-coordinates.jpg",
+    "caption": "scene_06: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_06_coordinates.jpg",
+    "source_sha256": "96adb36bc5ad52058369f75bfa26585ee0c3ce66abbc1062671fea4936cdd1c5",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-06-raw-masks.jpg",
+    "caption": "scene_06: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_06_masks.jpg",
+    "source_sha256": "23aeb0b8cff0334a72938a090842657b1a04c2c82d58be2bf32ee70679d070b5",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-07-full-coordinates.jpg",
+    "caption": "scene_07: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_07_coordinates.jpg",
+    "source_sha256": "bb463d8756e3cff58990c7aef98dc4efeb725cee754a659222ef2f92d6648fcc",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-07-fast-coordinates.jpg",
+    "caption": "scene_07: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_07_coordinates.jpg",
+    "source_sha256": "12c91701ba3896a8977499212d8a134eb09815bafef80fd8fe95ddada97e73ac",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-07-raw-masks.jpg",
+    "caption": "scene_07: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_07_masks.jpg",
+    "source_sha256": "b852e3b1e4ca912e4dca45f4246014c48ddfd5f9e07936469747a64fc66a990f",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-08-full-coordinates.jpg",
+    "caption": "scene_08: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_08_coordinates.jpg",
+    "source_sha256": "2e28dfcd4881ba035046256014cd4335ddd35d1fab78bfc3cb19014915ee3756",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-08-fast-coordinates.jpg",
+    "caption": "scene_08: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_08_coordinates.jpg",
+    "source_sha256": "e1473f45722983c5642180813e3605b8f3a301b911c20e1a0b896d776a7f867c",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-08-raw-masks.jpg",
+    "caption": "scene_08: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_08_masks.jpg",
+    "source_sha256": "60cb39357402a243fbdb60aede71da792094137d4fc051fb415111505a12e4a4",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-09-full-coordinates.jpg",
+    "caption": "scene_09: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_09_coordinates.jpg",
+    "source_sha256": "4ea34bb6a1871127513dde2d82c99cd699b959db9eeaa04762ecee3b48e8d605",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-09-fast-coordinates.jpg",
+    "caption": "scene_09: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_09_coordinates.jpg",
+    "source_sha256": "c71b6c11ba0ec67e6c9de692f92e64efb4bd0fe98c067081fa481b0f729fd471",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-09-raw-masks.jpg",
+    "caption": "scene_09: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_09_masks.jpg",
+    "source_sha256": "f71e808be7776c853db70a681b58afa684f094a5744b696b235805feb7e0d39d",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-10-full-coordinates.jpg",
+    "caption": "scene_10: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_10_coordinates.jpg",
+    "source_sha256": "8100be810fdca513082c75490761abc48dd649435bd306571008f40f865884d6",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-10-fast-coordinates.jpg",
+    "caption": "scene_10: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_10_coordinates.jpg",
+    "source_sha256": "e8f4f4d3b0db8d4f87760a4563afac5aa61789a013839666b633257099ebe759",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-10-raw-masks.jpg",
+    "caption": "scene_10: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_10_masks.jpg",
+    "source_sha256": "b11e67e40a7972a7b9bf15779b768b9726679503b803e27bac31026a2b6775aa",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-11-full-coordinates.jpg",
+    "caption": "scene_11: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_11_coordinates.jpg",
+    "source_sha256": "ab67d82f6121722c04dab5d5d4b0d9cb8ba51965b9c848867e886171a48a0ea9",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-11-fast-coordinates.jpg",
+    "caption": "scene_11: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_11_coordinates.jpg",
+    "source_sha256": "01e146440f250a11c8b7910b9e6dd8a4f964c7fb8217e0228f09f81ea8e10a8c",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-11-raw-masks.jpg",
+    "caption": "scene_11: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_11_masks.jpg",
+    "source_sha256": "7a5b3643ad8921c6b8c54aed64ba14967d3ee7f715ea8759ef1732e8b1e022c3",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-12-full-coordinates.jpg",
+    "caption": "scene_12: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_12_coordinates.jpg",
+    "source_sha256": "125fac793d3fee9262e751f9e3203951749072e180a88400a065beb7282a2152",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-12-fast-coordinates.jpg",
+    "caption": "scene_12: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_12_coordinates.jpg",
+    "source_sha256": "cc5b297209c752a9e9a67a8ad7a548f0761d93cf038db3db03bf53dca50bfb5f",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-12-raw-masks.jpg",
+    "caption": "scene_12: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_12_masks.jpg",
+    "source_sha256": "53829c28b9c8f328902ce13437060cc87221ab6fba8eb4a3ccdfdf7682a8fdf1",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-13-full-coordinates.jpg",
+    "caption": "scene_13: full_resolution, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_13_coordinates.jpg",
+    "source_sha256": "f2935b6afa6d2c75b353e04b70385de1eb06bab099e29aabe8fcddf977452427",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-13-fast-coordinates.jpg",
+    "caption": "scene_13: fast_live, green supported outlines and orange uncertain proposals.",
+    "source_file": "scene_13_coordinates.jpg",
+    "source_sha256": "bcd403801e770e686bba6047e89e77810650ff1ef3356d46c76141a8ea69eff5",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/sim-13-raw-masks.jpg",
+    "caption": "scene_13: raw predicted mask contours before outline acceptance.",
+    "source_file": "scene_13_masks.jpg",
+    "source_sha256": "5f36d01d16f1ab2dd4594fe0d1251986a7850af2786f6b091d956871f7f22e83",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0065.jpg",
+    "caption": "s0_scene_0065: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0065.jpg",
+    "source_sha256": "c932ee48a68ebe1134d9c35e30457f20d41474d085d56753c3885d3abe06fa12",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0071.jpg",
+    "caption": "s0_scene_0071: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0071.jpg",
+    "source_sha256": "8d4426f1bcf2af672e1b95e7753af756385e127dbe9a543be3a0c19fc12cd47e",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0111.jpg",
+    "caption": "s0_scene_0111: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0111.jpg",
+    "source_sha256": "e0524e0688d4426548ecbca82dba2205dc666a477917cb0b86ecff7b4392f0a3",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0137.jpg",
+    "caption": "s0_scene_0137: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0137.jpg",
+    "source_sha256": "f44e89a663b6e38ed3accd1058e48849095175ab9c23cad9c0d468ae820c7d50",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0143.jpg",
+    "caption": "s0_scene_0143: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0143.jpg",
+    "source_sha256": "db4bb13ff1b719ed13afe0ba9ce83ff09fc216295fa28314043fa86d2665d464",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0213.jpg",
+    "caption": "s0_scene_0213: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0213.jpg",
+    "source_sha256": "b2509e3cf01036a392f2b46d606c9f0e778c9021342600c8fb28bc8902484f72",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/evaluation-s0_scene_0214.jpg",
+    "caption": "s0_scene_0214: exported labels on left, checkpoint predictions on right.",
+    "source_file": "s0_scene_0214.jpg",
+    "source_sha256": "eca09fdae8b005920c5b2a0d3e56faaaa89b717cf723bafcda3eee9221cd7dc3",
+    "original_size": [
+      1920,
+      540
+    ],
+    "display_size": [
+      1600,
+      450
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/geometry-oct25_scene_0173.jpg",
+    "caption": "oct25_scene_0173: supported outline recovery diagnostic, not a grasp success.",
+    "source_file": "oct25_scene_0173_geometry.jpg",
+    "source_sha256": "40e6f8928066e01670fe08618eee375bd9bc8c11aa717c07a2822b529d632ca3",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/geometry-s0_scene_0065.jpg",
+    "caption": "s0_scene_0065: supported outline recovery diagnostic, not a grasp success.",
+    "source_file": "s0_scene_0065_geometry.jpg",
+    "source_sha256": "cae4a563a701c10549fe596fd660b98ca5b60de01ae4386ae8439697160d1fdb",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/geometry-s0_scene_0213.jpg",
+    "caption": "s0_scene_0213: supported outline recovery diagnostic, not a grasp success.",
+    "source_file": "s0_scene_0213_geometry.jpg",
+    "source_sha256": "628faceee04abb41374571e727fdf03e663226accec3c089fd1e67ca95429949",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/geometry-s0_scene_0214.jpg",
+    "caption": "s0_scene_0214: supported outline recovery diagnostic, not a grasp success.",
+    "source_file": "s0_scene_0214_geometry.jpg",
+    "source_sha256": "dbc1eb69eb61112185f4d2f0807ea481b099dab3f1ed81f43fc93da67027b1ec",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "display_size": [
+      1600,
+      900
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-results.jpg",
+    "caption": "Cloud training diagnostic: results.png",
+    "source_file": "results.png",
+    "source_sha256": "35c8fa30f550cb85511318329efd10f6aaaa98790c161bcd0e5aef5f67011358",
+    "original_size": [
+      3600,
+      1200
+    ],
+    "display_size": [
+      1600,
+      533
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-MaskPR_curve.jpg",
+    "caption": "Cloud training diagnostic: MaskPR_curve.png",
+    "source_file": "MaskPR_curve.png",
+    "source_sha256": "23b9b6a4be0ea9c942e02caad1aa9e46fa5140eb09f8bb3dc368747766ef899e",
+    "original_size": [
+      2250,
+      1500
+    ],
+    "display_size": [
+      1600,
+      1067
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-MaskF1_curve.jpg",
+    "caption": "Cloud training diagnostic: MaskF1_curve.png",
+    "source_file": "MaskF1_curve.png",
+    "source_sha256": "67a1a142694ace5cd12cd989a607961192f79b956456bf8d6a8f37def83fc7f8",
+    "original_size": [
+      2250,
+      1500
+    ],
+    "display_size": [
+      1600,
+      1067
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-confusion_matrix_normalized.jpg",
+    "caption": "Cloud training diagnostic: confusion_matrix_normalized.png",
+    "source_file": "confusion_matrix_normalized.png",
+    "source_sha256": "07e1e0c9f0f0667da3b4164e069afecffe74a563d5bed4abf69e35dc93955df9",
+    "original_size": [
+      3000,
+      2250
+    ],
+    "display_size": [
+      1600,
+      1200
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-train_batch0.jpg",
+    "caption": "Cloud training diagnostic: train_batch0.jpg",
+    "source_file": "train_batch0.jpg",
+    "source_sha256": "6bc76a1a67fd99f2e627e050abceba161c6f086a6ebb9a52814b69a25e63a874",
+    "original_size": [
+      1920,
+      1920
+    ],
+    "display_size": [
+      1600,
+      1600
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-train_batch1.jpg",
+    "caption": "Cloud training diagnostic: train_batch1.jpg",
+    "source_file": "train_batch1.jpg",
+    "source_sha256": "5b4ea9c2bed59cdbdb795481969094b02e20f8a616c791b6250ede5a4926ef19",
+    "original_size": [
+      1920,
+      1920
+    ],
+    "display_size": [
+      1600,
+      1600
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-val_batch0_labels.jpg",
+    "caption": "Cloud training diagnostic: val_batch0_labels.jpg",
+    "source_file": "val_batch0_labels.jpg",
+    "source_sha256": "f7829408cbcae997a8e7940dd5b32e104c7b1201f4700ed8e652d7a6664ac6a7",
+    "original_size": [
+      1920,
+      1116
+    ],
+    "display_size": [
+      1600,
+      930
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/training-val_batch0_pred.jpg",
+    "caption": "Cloud training diagnostic: val_batch0_pred.jpg",
+    "source_file": "val_batch0_pred.jpg",
+    "source_sha256": "d5c83bf3eebb9e160e1da7efdd352dae2fce2dc156d5ce05ef2b1acd29552930",
+    "original_size": [
+      1920,
+      1116
+    ],
+    "display_size": [
+      1600,
+      930
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/test-MaskPR_curve.jpg",
+    "caption": "Independent test diagnostic: MaskPR_curve.png",
+    "source_file": "MaskPR_curve.png",
+    "source_sha256": "b3615b6ed551c4f5b69ee3a96b575ae0fec4f224f8fbeca8ca74b592260528d1",
+    "original_size": [
+      2250,
+      1500
+    ],
+    "display_size": [
+      1600,
+      1067
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/test-confusion_matrix_normalized.jpg",
+    "caption": "Independent test diagnostic: confusion_matrix_normalized.png",
+    "source_file": "confusion_matrix_normalized.png",
+    "source_sha256": "b43aa236d527017b702d9f53649f1aca0d4c8b5d71d7f0a9b732bfdbc3764fe0",
+    "original_size": [
+      3000,
+      2250
+    ],
+    "display_size": [
+      1600,
+      1200
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/test-val_batch0_labels.jpg",
+    "caption": "Independent test diagnostic: val_batch0_labels.jpg",
+    "source_file": "val_batch0_labels.jpg",
+    "source_sha256": "52f618e1d48ffb681f4ea824dd37f919fa964158ec2069b51e03cbd953f83bac",
+    "original_size": [
+      1920,
+      1116
+    ],
+    "display_size": [
+      1600,
+      930
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/test-val_batch0_pred.jpg",
+    "caption": "Independent test diagnostic: val_batch0_pred.jpg",
+    "source_file": "val_batch0_pred.jpg",
+    "source_sha256": "90752c0c0ab2e6fbb4d752b263516209cdf9b09a2991fe0292ac7ffccd32fc8e",
+    "original_size": [
+      1920,
+      1116
+    ],
+    "display_size": [
+      1600,
+      930
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/test-val_batch1_labels.jpg",
+    "caption": "Independent test diagnostic: val_batch1_labels.jpg",
+    "source_file": "val_batch1_labels.jpg",
+    "source_sha256": "901f5193b123ba6c97fa6caced6950da19497ec02f5a6d0fd2666308fa4bf759",
+    "original_size": [
+      1920,
+      1116
+    ],
+    "display_size": [
+      1600,
+      930
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/test-val_batch1_pred.jpg",
+    "caption": "Independent test diagnostic: val_batch1_pred.jpg",
+    "source_file": "val_batch1_pred.jpg",
+    "source_sha256": "a11481eb2bc6b2816f13aa8751115cf4f59610a85e6cb6519723c993327874d7",
+    "original_size": [
+      1920,
+      1116
+    ],
+    "display_size": [
+      1600,
+      930
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/augmentation-preview.jpg",
+    "caption": "Training-only appearance variants: original, dim, bright, shadow, surface marks.",
+    "source_file": "augmentation_preview.jpg",
+    "source_sha256": "27271fdf092236b025f4d270e1b2242e23a6ba08a535f779a6243a95e6688845",
+    "original_size": [
+      1600,
+      1440
+    ],
+    "display_size": [
+      1600,
+      1440
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/capture-guide-013.jpg",
+    "caption": "Synthetic capture guide; instructions, not labelled ground truth.",
+    "source_file": "scene_013.png",
+    "source_sha256": "41d0e9a91c46aa142ecd381d6502b2a5d40dd16814892307df6ea087e6d32bfa",
+    "original_size": [
+      1920,
+      1400
+    ],
+    "display_size": [
+      1600,
+      1167
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/capture-guide-026.jpg",
+    "caption": "Synthetic capture guide; instructions, not labelled ground truth.",
+    "source_file": "scene_026.png",
+    "source_sha256": "4a8040088ca328c65787dcaf8655870d4dbcc5b62115cfb3b99eecffd673af89",
+    "original_size": [
+      1920,
+      1400
+    ],
+    "display_size": [
+      1600,
+      1167
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/capture-guide-045.jpg",
+    "caption": "Synthetic capture guide; instructions, not labelled ground truth.",
+    "source_file": "scene_045.png",
+    "source_sha256": "c1389b64d3937c537f66c93b4edca58dbf74b77f9d2da50ecdba3442382b708a",
+    "original_size": [
+      1920,
+      1400
+    ],
+    "display_size": [
+      1600,
+      1167
+    ],
+    "preview_only": true
+  },
+  {
+    "file": "docs/images/perception/capture-guide-059.jpg",
+    "caption": "Synthetic capture guide; instructions, not labelled ground truth.",
+    "source_file": "scene_059.png",
+    "source_sha256": "02cb3f4c9aa937bef34c34be9720f5f15920a018504dd5daa495837c66750911",
+    "original_size": [
+      1920,
+      1400
+    ],
+    "display_size": [
+      1600,
+      1167
+    ],
+    "preview_only": true
+  }
+]

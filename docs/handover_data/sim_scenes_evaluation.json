@@ -1,0 +1,555 @@
+{
+  "archive_sha256": "b7a01b01e40c3669ab13f3ae5b281153932f87d58fde03501e923d9c7c18a79a",
+  "ground_truth_present": false,
+  "execution_allowed": false,
+  "modes": {
+    "full_resolution": {
+      "settings": {
+        "backend": "yolo11_seg",
+        "weights": ".local/brev_results/yolo_cloud_001/weights/best.pt",
+        "scene_config": "config/perception_full_table.toml",
+        "confidence": 0.25,
+        "nms_iou": 0.7,
+        "imgsz": 960,
+        "max_detections": 30,
+        "fp16": false,
+        "geometry_max_width": 0,
+        "frame_buffer_directory": "/dev/shm",
+        "preview_period_s": 1.0
+      },
+      "checkpoint_sha256": "67ee9c19255eea65462b4289ebb6b8f3cf0f88347ff5325e5dded77a3da64a58",
+      "images": [
+        {
+          "image": "scene_01.jpg",
+          "raw_class_counts": {
+            "VARc": 1,
+            "VARa": 5,
+            "hand": 1,
+            "VARb": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 3
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 490.9220160006953
+        },
+        {
+          "image": "scene_02.jpg",
+          "raw_class_counts": {
+            "VARc": 1,
+            "VARa": 5,
+            "VARb": 1,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 3
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 2,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 50.5054180011939
+        },
+        {
+          "image": "scene_03.jpg",
+          "raw_class_counts": {
+            "VARc": 2,
+            "VARa": 5,
+            "VARb": 2,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARc": 1,
+            "VARa": 1,
+            "VARb": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 4,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 51.073222000923124
+        },
+        {
+          "image": "scene_04.jpg",
+          "raw_class_counts": {
+            "VARb": 3,
+            "VARa": 4,
+            "VARc": 2,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARb": 2,
+            "VARa": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 2,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 50.59692400027416
+        },
+        {
+          "image": "scene_05.jpg",
+          "raw_class_counts": {
+            "VARb": 2,
+            "VARc": 2,
+            "VARa": 4,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARb": 2,
+            "VARa": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 2
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 44.00476199953118
+        },
+        {
+          "image": "scene_06.jpg",
+          "raw_class_counts": {
+            "VARa": 5,
+            "VARc": 2,
+            "VARb": 3,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 3,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 3
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 58.268775001124595
+        },
+        {
+          "image": "scene_07.jpg",
+          "raw_class_counts": {
+            "VARa": 4,
+            "VARb": 3,
+            "VARc": 1,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 3,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARa": 2
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 45.316067999010556
+        },
+        {
+          "image": "scene_08.jpg",
+          "raw_class_counts": {
+            "VARa": 3,
+            "VARb": 3,
+            "VARc": 2
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 3,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 36.452876000112155
+        },
+        {
+          "image": "scene_09.jpg",
+          "raw_class_counts": {
+            "VARa": 3,
+            "VARc": 2,
+            "VARb": 4
+          },
+          "coordinate_class_counts": {
+            "VARa": 3,
+            "VARb": 3
+          },
+          "uncertain_class_counts": {
+            "VARc": 2,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 52.09589900005085
+        },
+        {
+          "image": "scene_10.jpg",
+          "raw_class_counts": {
+            "VARa": 4,
+            "VARb": 3,
+            "VARc": 2
+          },
+          "coordinate_class_counts": {
+            "VARb": 1
+          },
+          "uncertain_class_counts": {
+            "VARa": 4,
+            "VARc": 2,
+            "VARb": 2
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 40.81914400012465
+        },
+        {
+          "image": "scene_11.jpg",
+          "raw_class_counts": {
+            "VARb": 4,
+            "VARa": 6,
+            "VARc": 2
+          },
+          "coordinate_class_counts": {
+            "VARc": 1,
+            "VARa": 1,
+            "VARb": 1
+          },
+          "uncertain_class_counts": {
+            "VARb": 3,
+            "VARa": 5,
+            "VARc": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 59.55513800108747
+        },
+        {
+          "image": "scene_12.jpg",
+          "raw_class_counts": {
+            "VARa": 7,
+            "VARb": 2,
+            "VARc": 2,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 3,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARb": 2,
+            "VARa": 4,
+            "VARc": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 59.359192000556504
+        },
+        {
+          "image": "scene_13.jpg",
+          "raw_class_counts": {
+            "VARa": 4,
+            "VARb": 2,
+            "VARc": 2,
+            "hand": 2
+          },
+          "coordinate_class_counts": {
+            "VARa": 3,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARa": 1,
+            "VARb": 2,
+            "VARc": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 48.63357199974416
+        }
+      ]
+    },
+    "fast_live": {
+      "settings": {
+        "backend": "yolo11_seg",
+        "weights": ".local/brev_results/yolo_cloud_001/weights/best.pt",
+        "scene_config": "config/perception_full_table.toml",
+        "confidence": 0.25,
+        "nms_iou": 0.7,
+        "imgsz": 960,
+        "max_detections": 30,
+        "fp16": true,
+        "geometry_max_width": 640,
+        "frame_buffer_directory": "/dev/shm",
+        "preview_period_s": 1.0
+      },
+      "checkpoint_sha256": "67ee9c19255eea65462b4289ebb6b8f3cf0f88347ff5325e5dded77a3da64a58",
+      "images": [
+        {
+          "image": "scene_01.jpg",
+          "raw_class_counts": {
+            "VARc": 1,
+            "VARa": 5,
+            "hand": 1,
+            "VARb": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 2
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 3,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 346.2052289996791
+        },
+        {
+          "image": "scene_02.jpg",
+          "raw_class_counts": {
+            "VARc": 1,
+            "VARa": 5,
+            "VARb": 1,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 3
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 2,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 23.61540300080378
+        },
+        {
+          "image": "scene_03.jpg",
+          "raw_class_counts": {
+            "VARc": 2,
+            "VARa": 5,
+            "VARb": 2,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARc": 1,
+            "VARa": 1,
+            "VARb": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 4,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 21.366940000007162
+        },
+        {
+          "image": "scene_04.jpg",
+          "raw_class_counts": {
+            "VARb": 3,
+            "VARa": 4,
+            "VARc": 2,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARb": 2,
+            "VARa": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 2,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 22.494140001072083
+        },
+        {
+          "image": "scene_05.jpg",
+          "raw_class_counts": {
+            "VARb": 2,
+            "VARc": 2,
+            "VARa": 4,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARb": 2,
+            "VARa": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARa": 2
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 21.258851998936734
+        },
+        {
+          "image": "scene_06.jpg",
+          "raw_class_counts": {
+            "VARa": 5,
+            "VARc": 2,
+            "VARb": 3,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARc": 1,
+            "VARb": 1,
+            "VARa": 3
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 23.717551999652642
+        },
+        {
+          "image": "scene_07.jpg",
+          "raw_class_counts": {
+            "VARa": 4,
+            "VARb": 3,
+            "VARc": 1,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARb": 1,
+            "VARa": 2
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 25.4208460009977
+        },
+        {
+          "image": "scene_08.jpg",
+          "raw_class_counts": {
+            "VARa": 3,
+            "VARb": 3,
+            "VARc": 2
+          },
+          "coordinate_class_counts": {
+            "VARa": 2,
+            "VARb": 2,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARb": 1,
+            "VARc": 1,
+            "VARa": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 17.247740001039347
+        },
+        {
+          "image": "scene_09.jpg",
+          "raw_class_counts": {
+            "VARa": 3,
+            "VARc": 2,
+            "VARb": 4
+          },
+          "coordinate_class_counts": {
+            "VARa": 3,
+            "VARb": 3
+          },
+          "uncertain_class_counts": {
+            "VARc": 2,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 17.663462000200525
+        },
+        {
+          "image": "scene_10.jpg",
+          "raw_class_counts": {
+            "VARa": 4,
+            "VARb": 3,
+            "VARc": 2
+          },
+          "coordinate_class_counts": {
+            "VARb": 1,
+            "VARa": 1
+          },
+          "uncertain_class_counts": {
+            "VARa": 3,
+            "VARb": 2,
+            "VARc": 2
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 18.04355100102839
+        },
+        {
+          "image": "scene_11.jpg",
+          "raw_class_counts": {
+            "VARb": 4,
+            "VARa": 6,
+            "VARc": 2
+          },
+          "coordinate_class_counts": {
+            "VARc": 1,
+            "VARb": 1
+          },
+          "uncertain_class_counts": {
+            "VARb": 3,
+            "VARa": 6,
+            "VARc": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 20.311020998633467
+        },
+        {
+          "image": "scene_12.jpg",
+          "raw_class_counts": {
+            "VARa": 7,
+            "VARb": 2,
+            "VARc": 2,
+            "hand": 1
+          },
+          "coordinate_class_counts": {
+            "VARa": 3,
+            "VARb": 1,
+            "VARc": 1
+          },
+          "uncertain_class_counts": {
+            "VARa": 4,
+            "VARc": 1,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 21.001120998334954
+        },
+        {
+          "image": "scene_13.jpg",
+          "raw_class_counts": {
+            "VARa": 4,
+            "VARb": 2,
+            "VARc": 2,
+            "hand": 2
+          },
+          "coordinate_class_counts": {
+            "VARa": 3,
+            "VARb": 1,
+            "VARc": 2
+          },
+          "uncertain_class_counts": {
+            "VARa": 1,
+            "VARb": 1
+          },
+          "rejections": [],
+          "detector_ms_with_diagnostic_masks": 19.18381900031818
+        }
+      ]
+    }
+  }
+}

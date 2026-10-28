@@ -1,0 +1,115 @@
+{
+  "checkpoint": ".local/brev_results/yolo_cloud_001/weights/best.pt",
+  "confidence": 0.25,
+  "mask_iou_threshold": 0.5,
+  "imgsz": 960,
+  "splits": {
+    "val": {
+      "standard_metrics": {
+        "metrics/precision(B)": 0.8786366323721196,
+        "metrics/recall(B)": 0.8017973089876156,
+        "metrics/mAP50(B)": 0.8565366970699099,
+        "metrics/mAP50-95(B)": 0.7675091356300184,
+        "metrics/precision(M)": 0.9240156027970332,
+        "metrics/recall(M)": 0.7760597421029712,
+        "metrics/mAP50(M)": 0.8605650227242971,
+        "metrics/mAP50-95(M)": 0.730309930164016,
+        "fitness": 1.4978190657940345
+      },
+      "fixed_confidence_per_class": {
+        "VARa": {
+          "tp": 102,
+          "fp": 10,
+          "fn": 28,
+          "precision": 0.9107142857142857,
+          "recall": 0.7846153846153846
+        },
+        "VARb": {
+          "tp": 64,
+          "fp": 11,
+          "fn": 18,
+          "precision": 0.8533333333333334,
+          "recall": 0.7804878048780488
+        },
+        "VARc": {
+          "tp": 60,
+          "fp": 4,
+          "fn": 4,
+          "precision": 0.9375,
+          "recall": 0.9375
+        },
+        "hand": {
+          "tp": 78,
+          "fp": 18,
+          "fn": 24,
+          "precision": 0.8125,
+          "recall": 0.7647058823529411
+        }
+      },
+      "annotation_warnings": [],
+      "prediction_ms_median": 16.506655999990016,
+      "prediction_ms_p95": 23.950709249936605
+    },
+    "test": {
+      "standard_metrics": {
+        "metrics/precision(B)": 0.8339341691153561,
+        "metrics/recall(B)": 0.6374527452819242,
+        "metrics/mAP50(B)": 0.7532729966605215,
+        "metrics/mAP50-95(B)": 0.6127148663873708,
+        "metrics/precision(M)": 0.7973699917445605,
+        "metrics/recall(M)": 0.648311518872124,
+        "metrics/mAP50(M)": 0.7598241393574149,
+        "metrics/mAP50-95(M)": 0.5790842111940048,
+        "fitness": 1.1917990775813756
+      },
+      "fixed_confidence_per_class": {
+        "VARa": {
+          "tp": 98,
+          "fp": 40,
+          "fn": 89,
+          "precision": 0.7101449275362319,
+          "recall": 0.5240641711229946
+        },
+        "VARb": {
+          "tp": 69,
+          "fp": 29,
+          "fn": 33,
+          "precision": 0.7040816326530612,
+          "recall": 0.6764705882352942
+        },
+        "VARc": {
+          "tp": 72,
+          "fp": 8,
+          "fn": 24,
+          "precision": 0.9,
+          "recall": 0.75
+        },
+        "hand": {
+          "tp": 78,
+          "fp": 18,
+          "fn": 18,
+          "precision": 0.8125,
+          "recall": 0.8125
+        }
+      },
+      "annotation_warnings": [
+        {
+          "image": "s0_scene_0213.png",
+          "annotation_ids": [
+            0,
+            14
+          ],
+          "mask_iou": 0.9821009061416266,
+          "reason": "Near-duplicate ground-truth masks"
+        }
+      ],
+      "prediction_ms_median": 32.351382999991074,
+      "prediction_ms_p95": 41.123446749992354
+    }
+  },
+  "execution_allowed": false,
+  "limits": [
+    "Scores compare predictions against exported annotation rows, which may contain errors or fragmented physical instances.",
+    "Pixel centres and angles are not robot coordinates. No physical grasp was tested."
+  ]
+}

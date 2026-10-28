@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "transport_checks_passed": true,
+  "requested_cadence_passed": true,
+  "boards": 4,
+  "hands": 4,
+  "detector_ms": 21.39953200094169,
+  "fresh_service": true,
+  "matching_debug_stamp": true,
+  "median_detector_ms": 18.776337999952375,
+  "received_updates_per_second": 29.666548474721626,
+  "published_images_per_second": 30.00152327784448,
+  "received_images_per_second": 29.766773300649742,
+  "timing_medians_ms": {
+    "pipeline_ms": 25.630682001064997,
+    "worker_ms": 20.223149000230478,
+    "frame_transfer_write_ms": 2.633891999721527,
+    "frame_transfer_read_ms": 0.796188000094844,
+    "ros_image_decode_ms": 2.037087000644533,
+    "worker_roundtrip_ms": 20.76457300063339
+  },
+  "source_to_result_age": {
+    "median_ms": 35.115718841552734,
+    "p95_ms": 48.18062782287598
+  },
+  "stream_seconds": 20.0,
+  "timing_unique_updates": 593,
+  "replay_input_fps": 30.0,
+  "backend": "yolo11_seg",
+  "samples": 15,
+  "unique_snapshots": true,
+  "camera_loss_rejected": true,
+  "camera_reconnect_recovered": true,
+  "worker_crash_rejected": true,
+  "repeated_source_timestamp_rejected": true,
+  "ROS_DOMAIN_ID": 173,
+  "real_hardware_used": false,
+  "model_accuracy_validated": false
+}

@@ -1,0 +1,1678 @@
+{
+  "image_size": [
+    1920,
+    1080
+  ],
+  "model_backend": "yolo11_seg",
+  "uncertain_candidates": [
+    {
+      "pixel_corners": [
+        [
+          1537.0,
+          694.0
+        ],
+        [
+          1396.0,
+          694.0
+        ],
+        [
+          1396.0,
+          505.0
+        ],
+        [
+          1537.0,
+          505.0
+        ]
+      ],
+      "pixel_center": [
+        1467.586671658555,
+        595.0696368401348
+      ],
+      "pixel_contours": [
+        [
+          [
+            1408.0,
+            505.0
+          ],
+          [
+            1408.0,
+            541.0
+          ],
+          [
+            1405.0,
+            544.0
+          ],
+          [
+            1405.0,
+            553.0
+          ],
+          [
+            1402.0,
+            556.0
+          ],
+          [
+            1396.0,
+            556.0
+          ],
+          [
+            1396.0,
+            667.0
+          ],
+          [
+            1402.0,
+            667.0
+          ],
+          [
+            1405.0,
+            670.0
+          ],
+          [
+            1411.0,
+            670.0
+          ],
+          [
+            1414.0,
+            673.0
+          ],
+          [
+            1441.0,
+            673.0
+          ],
+          [
+            1444.0,
+            676.0
+          ],
+          [
+            1453.0,
+            676.0
+          ],
+          [
+            1456.0,
+            679.0
+          ],
+          [
+            1471.0,
+            679.0
+          ],
+          [
+            1474.0,
+            682.0
+          ],
+          [
+            1486.0,
+            682.0
+          ],
+          [
+            1489.0,
+            685.0
+          ],
+          [
+            1507.0,
+            685.0
+          ],
+          [
+            1510.0,
+            688.0
+          ],
+          [
+            1510.0,
+            694.0
+          ],
+          [
+            1525.0,
+            694.0
+          ],
+          [
+            1525.0,
+            685.0
+          ],
+          [
+            1528.0,
+            682.0
+          ],
+          [
+            1528.0,
+            658.0
+          ],
+          [
+            1531.0,
+            655.0
+          ],
+          [
+            1531.0,
+            643.0
+          ],
+          [
+            1534.0,
+            640.0
+          ],
+          [
+            1537.0,
+            640.0
+          ],
+          [
+            1537.0,
+            520.0
+          ],
+          [
+            1528.0,
+            520.0
+          ],
+          [
+            1525.0,
+            517.0
+          ],
+          [
+            1501.0,
+            517.0
+          ],
+          [
+            1498.0,
+            514.0
+          ],
+          [
+            1489.0,
+            514.0
+          ],
+          [
+            1486.0,
+            511.0
+          ],
+          [
+            1486.0,
+            505.0
+          ]
+        ]
+      ],
+      "area_pixels": 24039.0,
+      "rectangularity": 0.9020601148260723,
+      "visible_components": 1,
+      "largest_component_fraction": 1.0,
+      "appearance_measurement_scope": "not computed; class supplied by neural detector",
+      "rectangle_scope": "minimum-area rectangle enclosing predicted visible mask; not an amodal outline",
+      "metric_pose": null,
+      "grasp_validated": false,
+      "occlusion_verified": false,
+      "appearance": null,
+      "size": {
+        "long_side_px": 188.99996948242188,
+        "short_side_px": 140.99996948242188,
+        "long_side_m": null,
+        "short_side_m": null
+      },
+      "id": "candidate_3",
+      "class_name": "VARb",
+      "class_id": 1,
+      "confidence": 0.9609375,
+      "detector_score": 0.9609375,
+      "text_label": "VARb",
+      "mask_origin": "yolo11_seg",
+      "layer_order_verified": false,
+      "supported_mask_quad": null,
+      "detection_status": "uncertain",
+      "uncertainty_reason": "Instance detected; full outline not supported"
+    },
+    {
+      "pixel_corners": [
+        [
+          1267.6826171875,
+          716.0885620117188
+        ],
+        [
+          1106.9916381835938,
+          663.5549621582031
+        ],
+        [
+          1164.0066528320312,
+          489.15606689453125
+        ],
+        [
+          1324.6976318359375,
+          541.6896667480469
+        ]
+      ],
+      "pixel_center": [
+        1230.9952718676122,
+        607.1323877068558
+      ],
+      "pixel_contours": [
+        [
+          [
+            1192.0,
+            514.0
+          ],
+          [
+            1192.0,
+            526.0
+          ],
+          [
+            1189.0,
+            529.0
+          ],
+          [
+            1189.0,
+            535.0
+          ],
+          [
+            1186.0,
+            538.0
+          ],
+          [
+            1186.0,
+            547.0
+          ],
+          [
+            1183.0,
+            550.0
+          ],
+          [
+            1183.0,
+            556.0
+          ],
+          [
+            1180.0,
+            559.0
+          ],
+          [
+            1180.0,
+            571.0
+          ],
+          [
+            1177.0,
+            574.0
+          ],
+          [
+            1177.0,
+            577.0
+          ],
+          [
+            1174.0,
+            580.0
+          ],
+          [
+            1174.0,
+            598.0
+          ],
+          [
+            1168.0,
+            604.0
+          ],
+          [
+            1168.0,
+            613.0
+          ],
+          [
+            1165.0,
+            616.0
+          ],
+          [
+            1165.0,
+            619.0
+          ],
+          [
+            1162.0,
+            622.0
+          ],
+          [
+            1162.0,
+            631.0
+          ],
+          [
+            1159.0,
+            634.0
+          ],
+          [
+            1159.0,
+            637.0
+          ],
+          [
+            1153.0,
+            643.0
+          ],
+          [
+            1150.0,
+            643.0
+          ],
+          [
+            1150.0,
+            673.0
+          ],
+          [
+            1162.0,
+            673.0
+          ],
+          [
+            1165.0,
+            676.0
+          ],
+          [
+            1171.0,
+            676.0
+          ],
+          [
+            1174.0,
+            679.0
+          ],
+          [
+            1180.0,
+            679.0
+          ],
+          [
+            1186.0,
+            685.0
+          ],
+          [
+            1198.0,
+            685.0
+          ],
+          [
+            1201.0,
+            688.0
+          ],
+          [
+            1204.0,
+            688.0
+          ],
+          [
+            1207.0,
+            691.0
+          ],
+          [
+            1219.0,
+            691.0
+          ],
+          [
+            1225.0,
+            697.0
+          ],
+          [
+            1231.0,
+            697.0
+          ],
+          [
+            1234.0,
+            700.0
+          ],
+          [
+            1240.0,
+            700.0
+          ],
+          [
+            1246.0,
+            706.0
+          ],
+          [
+            1246.0,
+            709.0
+          ],
+          [
+            1270.0,
+            709.0
+          ],
+          [
+            1270.0,
+            700.0
+          ],
+          [
+            1273.0,
+            697.0
+          ],
+          [
+            1273.0,
+            688.0
+          ],
+          [
+            1276.0,
+            685.0
+          ],
+          [
+            1276.0,
+            679.0
+          ],
+          [
+            1279.0,
+            676.0
+          ],
+          [
+            1279.0,
+            664.0
+          ],
+          [
+            1285.0,
+            658.0
+          ],
+          [
+            1285.0,
+            646.0
+          ],
+          [
+            1288.0,
+            643.0
+          ],
+          [
+            1288.0,
+            640.0
+          ],
+          [
+            1291.0,
+            637.0
+          ],
+          [
+            1291.0,
+            625.0
+          ],
+          [
+            1294.0,
+            622.0
+          ],
+          [
+            1294.0,
+            616.0
+          ],
+          [
+            1297.0,
+            613.0
+          ],
+          [
+            1297.0,
+            607.0
+          ],
+          [
+            1300.0,
+            604.0
+          ],
+          [
+            1300.0,
+            601.0
+          ],
+          [
+            1303.0,
+            598.0
+          ],
+          [
+            1303.0,
+            586.0
+          ],
+          [
+            1306.0,
+            583.0
+          ],
+          [
+            1306.0,
+            580.0
+          ],
+          [
+            1309.0,
+            577.0
+          ],
+          [
+            1309.0,
+            568.0
+          ],
+          [
+            1312.0,
+            565.0
+          ],
+          [
+            1312.0,
+            562.0
+          ],
+          [
+            1315.0,
+            559.0
+          ],
+          [
+            1315.0,
+            556.0
+          ],
+          [
+            1318.0,
+            553.0
+          ],
+          [
+            1321.0,
+            553.0
+          ],
+          [
+            1318.0,
+            553.0
+          ],
+          [
+            1309.0,
+            544.0
+          ],
+          [
+            1306.0,
+            544.0
+          ],
+          [
+            1303.0,
+            541.0
+          ],
+          [
+            1297.0,
+            541.0
+          ],
+          [
+            1294.0,
+            538.0
+          ],
+          [
+            1285.0,
+            538.0
+          ],
+          [
+            1282.0,
+            535.0
+          ],
+          [
+            1279.0,
+            535.0
+          ],
+          [
+            1276.0,
+            532.0
+          ],
+          [
+            1267.0,
+            532.0
+          ],
+          [
+            1261.0,
+            526.0
+          ],
+          [
+            1252.0,
+            526.0
+          ],
+          [
+            1249.0,
+            523.0
+          ],
+          [
+            1246.0,
+            523.0
+          ],
+          [
+            1240.0,
+            517.0
+          ],
+          [
+            1240.0,
+            514.0
+          ]
+        ],
+        [
+          [
+            1162.0,
+            514.0
+          ],
+          [
+            1162.0,
+            523.0
+          ],
+          [
+            1153.0,
+            532.0
+          ],
+          [
+            1150.0,
+            532.0
+          ],
+          [
+            1150.0,
+            550.0
+          ],
+          [
+            1153.0,
+            550.0
+          ],
+          [
+            1156.0,
+            547.0
+          ],
+          [
+            1156.0,
+            544.0
+          ],
+          [
+            1159.0,
+            541.0
+          ],
+          [
+            1159.0,
+            538.0
+          ],
+          [
+            1165.0,
+            532.0
+          ],
+          [
+            1165.0,
+            529.0
+          ],
+          [
+            1171.0,
+            523.0
+          ],
+          [
+            1171.0,
+            514.0
+          ]
+        ]
+      ],
+      "area_pixels": 22842.0,
+      "rectangularity": 0.7363746526447057,
+      "visible_components": 2,
+      "largest_component_fraction": 0.9799054373522459,
+      "appearance_measurement_scope": "not computed; class supplied by neural detector",
+      "rectangle_scope": "minimum-area rectangle enclosing predicted visible mask; not an amodal outline",
+      "metric_pose": null,
+      "grasp_validated": false,
+      "occlusion_verified": false,
+      "appearance": null,
+      "size": {
+        "long_side_px": 183.48208618164062,
+        "short_side_px": 169.06033325195312,
+        "long_side_m": null,
+        "short_side_m": null
+      },
+      "id": "candidate_5",
+      "class_name": "VARc",
+      "class_id": 2,
+      "confidence": 0.95068359375,
+      "detector_score": 0.95068359375,
+      "text_label": "VARc",
+      "mask_origin": "yolo11_seg",
+      "layer_order_verified": false,
+      "supported_mask_quad": null,
+      "detection_status": "uncertain",
+      "uncertainty_reason": "Instance detected; full outline not supported"
+    },
+    {
+      "pixel_corners": [
+        [
+          1464.9326171875,
+          387.2921142578125
+        ],
+        [
+          1374.2584228515625,
+          242.21346282958984
+        ],
+        [
+          1474.8426513671875,
+          179.34829711914062
+        ],
+        [
+          1565.516845703125,
+          324.4269485473633
+        ]
+      ],
+      "pixel_center": [
+        1471.3980827447022,
+        282.85166498486376
+      ],
+      "pixel_contours": [
+        [
+          [
+            1447.0,
+            202.0
+          ],
+          [
+            1447.0,
+            205.0
+          ],
+          [
+            1441.0,
+            211.0
+          ],
+          [
+            1438.0,
+            211.0
+          ],
+          [
+            1435.0,
+            214.0
+          ],
+          [
+            1432.0,
+            214.0
+          ],
+          [
+            1429.0,
+            217.0
+          ],
+          [
+            1426.0,
+            217.0
+          ],
+          [
+            1423.0,
+            220.0
+          ],
+          [
+            1417.0,
+            220.0
+          ],
+          [
+            1411.0,
+            226.0
+          ],
+          [
+            1408.0,
+            226.0
+          ],
+          [
+            1405.0,
+            229.0
+          ],
+          [
+            1399.0,
+            229.0
+          ],
+          [
+            1396.0,
+            232.0
+          ],
+          [
+            1393.0,
+            232.0
+          ],
+          [
+            1387.0,
+            238.0
+          ],
+          [
+            1381.0,
+            238.0
+          ],
+          [
+            1381.0,
+            253.0
+          ],
+          [
+            1387.0,
+            253.0
+          ],
+          [
+            1396.0,
+            262.0
+          ],
+          [
+            1396.0,
+            265.0
+          ],
+          [
+            1399.0,
+            268.0
+          ],
+          [
+            1399.0,
+            271.0
+          ],
+          [
+            1402.0,
+            274.0
+          ],
+          [
+            1402.0,
+            277.0
+          ],
+          [
+            1408.0,
+            283.0
+          ],
+          [
+            1408.0,
+            286.0
+          ],
+          [
+            1414.0,
+            292.0
+          ],
+          [
+            1414.0,
+            295.0
+          ],
+          [
+            1420.0,
+            301.0
+          ],
+          [
+            1420.0,
+            307.0
+          ],
+          [
+            1423.0,
+            307.0
+          ],
+          [
+            1426.0,
+            310.0
+          ],
+          [
+            1426.0,
+            313.0
+          ],
+          [
+            1429.0,
+            316.0
+          ],
+          [
+            1429.0,
+            319.0
+          ],
+          [
+            1432.0,
+            322.0
+          ],
+          [
+            1432.0,
+            325.0
+          ],
+          [
+            1435.0,
+            325.0
+          ],
+          [
+            1438.0,
+            328.0
+          ],
+          [
+            1438.0,
+            331.0
+          ],
+          [
+            1441.0,
+            334.0
+          ],
+          [
+            1441.0,
+            337.0
+          ],
+          [
+            1444.0,
+            340.0
+          ],
+          [
+            1444.0,
+            343.0
+          ],
+          [
+            1450.0,
+            349.0
+          ],
+          [
+            1450.0,
+            355.0
+          ],
+          [
+            1453.0,
+            355.0
+          ],
+          [
+            1456.0,
+            358.0
+          ],
+          [
+            1456.0,
+            364.0
+          ],
+          [
+            1459.0,
+            367.0
+          ],
+          [
+            1480.0,
+            367.0
+          ],
+          [
+            1486.0,
+            361.0
+          ],
+          [
+            1492.0,
+            361.0
+          ],
+          [
+            1498.0,
+            355.0
+          ],
+          [
+            1501.0,
+            355.0
+          ],
+          [
+            1504.0,
+            352.0
+          ],
+          [
+            1507.0,
+            352.0
+          ],
+          [
+            1510.0,
+            349.0
+          ],
+          [
+            1516.0,
+            349.0
+          ],
+          [
+            1522.0,
+            343.0
+          ],
+          [
+            1531.0,
+            343.0
+          ],
+          [
+            1531.0,
+            340.0
+          ],
+          [
+            1534.0,
+            337.0
+          ],
+          [
+            1543.0,
+            337.0
+          ],
+          [
+            1546.0,
+            334.0
+          ],
+          [
+            1549.0,
+            334.0
+          ],
+          [
+            1552.0,
+            331.0
+          ],
+          [
+            1555.0,
+            331.0
+          ],
+          [
+            1561.0,
+            325.0
+          ],
+          [
+            1561.0,
+            319.0
+          ],
+          [
+            1555.0,
+            313.0
+          ],
+          [
+            1555.0,
+            310.0
+          ],
+          [
+            1552.0,
+            307.0
+          ],
+          [
+            1552.0,
+            304.0
+          ],
+          [
+            1549.0,
+            301.0
+          ],
+          [
+            1549.0,
+            298.0
+          ],
+          [
+            1543.0,
+            292.0
+          ],
+          [
+            1543.0,
+            289.0
+          ],
+          [
+            1537.0,
+            283.0
+          ],
+          [
+            1537.0,
+            280.0
+          ],
+          [
+            1534.0,
+            280.0
+          ],
+          [
+            1531.0,
+            277.0
+          ],
+          [
+            1531.0,
+            274.0
+          ],
+          [
+            1528.0,
+            271.0
+          ],
+          [
+            1528.0,
+            268.0
+          ],
+          [
+            1525.0,
+            265.0
+          ],
+          [
+            1525.0,
+            262.0
+          ],
+          [
+            1522.0,
+            262.0
+          ],
+          [
+            1519.0,
+            259.0
+          ],
+          [
+            1519.0,
+            253.0
+          ],
+          [
+            1513.0,
+            247.0
+          ],
+          [
+            1513.0,
+            244.0
+          ],
+          [
+            1501.0,
+            232.0
+          ],
+          [
+            1501.0,
+            226.0
+          ],
+          [
+            1498.0,
+            226.0
+          ],
+          [
+            1495.0,
+            223.0
+          ],
+          [
+            1495.0,
+            220.0
+          ],
+          [
+            1489.0,
+            214.0
+          ],
+          [
+            1489.0,
+            202.0
+          ]
+        ]
+      ],
+      "area_pixels": 17838.0,
+      "rectangularity": 0.8790276627330759,
+      "visible_components": 1,
+      "largest_component_fraction": 1.0,
+      "appearance_measurement_scope": "not computed; class supplied by neural detector",
+      "rectangle_scope": "minimum-area rectangle enclosing predicted visible mask; not an amodal outline",
+      "metric_pose": null,
+      "grasp_validated": false,
+      "occlusion_verified": false,
+      "appearance": null,
+      "size": {
+        "long_side_px": 171.08364868164062,
+        "short_side_px": 118.61371612548828,
+        "long_side_m": null,
+        "short_side_m": null
+      },
+      "id": "candidate_7",
+      "class_name": "VARa",
+      "class_id": 0,
+      "confidence": 0.93798828125,
+      "detector_score": 0.93798828125,
+      "text_label": "VARa",
+      "mask_origin": "yolo11_seg",
+      "layer_order_verified": false,
+      "supported_mask_quad": null,
+      "detection_status": "uncertain",
+      "uncertainty_reason": "Instance detected; full outline not supported"
+    }
+  ],
+  "hand_detections": [],
+  "rejected_proposals": [],
+  "execution_allowed": false,
+  "calibration_valid": false,
+  "geometry_image_size": [
+    640,
+    360
+  ],
+  "geometry_pixel_scale": [
+    3.0,
+    3.0
+  ],
+  "detector_ms": 17.247740001039347,
+  "checkpoint_sha256": "67ee9c19255eea65462b4289ebb6b8f3cf0f88347ff5325e5dded77a3da64a58",
+  "prediction_class_names": [
+    "VARa",
+    "VARb",
+    "VARb",
+    "VARa",
+    "VARc",
+    "VARb",
+    "VARa",
+    "VARc"
+  ],
+  "prediction_scores": [
+    0.9658203125,
+    0.96142578125,
+    0.9609375,
+    0.95556640625,
+    0.95068359375,
+    0.94580078125,
+    0.93798828125,
+    0.9345703125
+  ],
+  "source_image": "scene_08.jpg",
+  "source_sha256": "52b4fafc652b303f48d46666fdb9effaf32a8901fc8067e091c7bb6f9b32f8dd",
+  "objects": [
+    {
+      "candidate_id": "candidate_1",
+      "rectangle_center_px": [
+        791.7463684082031,
+        787.9212036132812
+      ],
+      "mask_centroid_px": [
+        792.8984346559885,
+        791.6272297051328
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          868.4661865234375,
+          939.5252990722656
+        ],
+        [
+          675.2283935546875,
+          911.5872497558594
+        ],
+        [
+          715.0265502929688,
+          636.3171081542969
+        ],
+        [
+          908.2643432617188,
+          664.2551574707031
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 98.22673550779311,
+      "centre_px": [
+        793.0832716506292,
+        796.1532198371576
+      ],
+      "orientation_image_deg": 97.9293151336809,
+      "supported_pixel_corners": [
+        [
+          718.0,
+          658.0
+        ],
+        [
+          685.0,
+          913.0
+        ],
+        [
+          868.0,
+          934.0
+        ],
+        [
+          907.0,
+          673.0
+        ]
+      ],
+      "outline_kind": "supported_mask_quadrilateral",
+      "text_prompt_label": "VARa",
+      "detector_score": 0.9658203125,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARa",
+      "class_id": 0,
+      "confidence": 0.9658203125,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "candidate",
+      "uncertainty_reason": null
+    },
+    {
+      "candidate_id": "candidate_2",
+      "rectangle_center_px": [
+        1671.9417724609375,
+        737.9420051574707
+      ],
+      "mask_centroid_px": [
+        1672.5243339253998,
+        742.0042628774422
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          1627.32666015625,
+          854.6383361816406
+        ],
+        [
+          1580.4794921875,
+          652.8350982666016
+        ],
+        [
+          1716.556884765625,
+          621.2456970214844
+        ],
+        [
+          1763.404052734375,
+          823.0488891601562
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 76.93068540698462,
+      "centre_px": [
+        1678.1656441717791,
+        734.5928611266035
+      ],
+      "orientation_image_deg": 79.51871838959275,
+      "supported_pixel_corners": [
+        [
+          1597.0,
+          649.0
+        ],
+        [
+          1624.0,
+          838.0
+        ],
+        [
+          1762.0,
+          823.0
+        ],
+        [
+          1723.0,
+          649.0
+        ]
+      ],
+      "outline_kind": "supported_mask_quadrilateral",
+      "text_prompt_label": "VARb",
+      "detector_score": 0.96142578125,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARb",
+      "class_id": 1,
+      "confidence": 0.96142578125,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "candidate",
+      "uncertainty_reason": null
+    },
+    {
+      "candidate_id": "candidate_4",
+      "rectangle_center_px": [
+        264.4945888519287,
+        610.9187316894531
+      ],
+      "mask_centroid_px": [
+        267.16280487804875,
+        610.8993902439024
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          314.4904098510742,
+          769.2580871582031
+        ],
+        [
+          137.5718002319336,
+          717.9773406982422
+        ],
+        [
+          214.4987564086914,
+          452.5793762207031
+        ],
+        [
+          391.4173889160156,
+          503.86012268066406
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 106.164505692393,
+      "centre_px": [
+        265.3979690005345,
+        612.5183324425441
+      ],
+      "orientation_image_deg": 105.70814117134354,
+      "supported_pixel_corners": [
+        [
+          214.0,
+          481.0
+        ],
+        [
+          148.0,
+          721.0
+        ],
+        [
+          316.0,
+          742.0
+        ],
+        [
+          385.0,
+          502.0
+        ]
+      ],
+      "outline_kind": "supported_mask_quadrilateral",
+      "text_prompt_label": "VARa",
+      "detector_score": 0.95556640625,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARa",
+      "class_id": 0,
+      "confidence": 0.95556640625,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "candidate",
+      "uncertainty_reason": null
+    },
+    {
+      "candidate_id": "candidate_6",
+      "rectangle_center_px": [
+        486.02646827697754,
+        633.4384155273438
+      ],
+      "mask_centroid_px": [
+        486.56775199844026,
+        635.9337102749073
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          612.4390563964844,
+          739.5905609130859
+        ],
+        [
+          343.49344635009766,
+          716.7015533447266
+        ],
+        [
+          359.6138916015625,
+          527.2862701416016
+        ],
+        [
+          628.5594787597656,
+          550.1752777099609
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 4.864518557761613,
+      "centre_px": [
+        485.9411032766487,
+        637.5985068436333
+      ],
+      "orientation_image_deg": 3.7905242428095525,
+      "supported_pixel_corners": [
+        [
+          376.0,
+          544.0
+        ],
+        [
+          349.0,
+          715.0
+        ],
+        [
+          598.0,
+          733.0
+        ],
+        [
+          625.0,
+          559.0
+        ]
+      ],
+      "outline_kind": "supported_mask_quadrilateral",
+      "text_prompt_label": "VARb",
+      "detector_score": 0.94580078125,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARb",
+      "class_id": 1,
+      "confidence": 0.94580078125,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "candidate",
+      "uncertainty_reason": null
+    },
+    {
+      "candidate_id": "candidate_8",
+      "rectangle_center_px": [
+        767.5,
+        433.0
+      ],
+      "mask_centroid_px": [
+        767.1659028414299,
+        432.33593033913843
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          826.0,
+          514.0
+        ],
+        [
+          709.0,
+          514.0
+        ],
+        [
+          709.0,
+          352.0
+        ],
+        [
+          826.0,
+          352.0
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 90.0,
+      "centre_px": [
+        768.6037735849056,
+        431.47169811320754
+      ],
+      "orientation_image_deg": 90.0,
+      "supported_pixel_corners": [
+        [
+          709.0,
+          352.0
+        ],
+        [
+          709.0,
+          514.0
+        ],
+        [
+          826.0,
+          508.0
+        ],
+        [
+          826.0,
+          352.0
+        ]
+      ],
+      "outline_kind": "supported_mask_quadrilateral",
+      "text_prompt_label": "VARc",
+      "detector_score": 0.9345703125,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARc",
+      "class_id": 2,
+      "confidence": 0.9345703125,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "candidate",
+      "uncertainty_reason": null
+    }
+  ],
+  "uncertain_objects": [
+    {
+      "candidate_id": "candidate_3",
+      "rectangle_center_px": [
+        1466.5,
+        599.5
+      ],
+      "mask_centroid_px": [
+        1467.586671658555,
+        595.0696368401348
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          1537.0,
+          694.0
+        ],
+        [
+          1396.0,
+          694.0
+        ],
+        [
+          1396.0,
+          505.0
+        ],
+        [
+          1537.0,
+          505.0
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 90.0,
+      "centre_px": [
+        1466.5,
+        599.5
+      ],
+      "orientation_image_deg": 90.0,
+      "supported_pixel_corners": null,
+      "outline_kind": "enclosing_rectangle_only",
+      "text_prompt_label": "VARb",
+      "detector_score": 0.9609375,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARb",
+      "class_id": 1,
+      "confidence": 0.9609375,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "uncertain",
+      "uncertainty_reason": "Instance detected; full outline not supported"
+    },
+    {
+      "candidate_id": "candidate_5",
+      "rectangle_center_px": [
+        1215.8446350097656,
+        602.622314453125
+      ],
+      "mask_centroid_px": [
+        1230.9952718676122,
+        607.1323877068558
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          1267.6826171875,
+          716.0885620117188
+        ],
+        [
+          1106.9916381835938,
+          663.5549621582031
+        ],
+        [
+          1164.0066528320312,
+          489.15606689453125
+        ],
+        [
+          1324.6976318359375,
+          541.6896667480469
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 108.10376042164229,
+      "centre_px": [
+        1215.8446350097656,
+        602.622314453125
+      ],
+      "orientation_image_deg": 108.10376042164229,
+      "supported_pixel_corners": null,
+      "outline_kind": "enclosing_rectangle_only",
+      "text_prompt_label": "VARc",
+      "detector_score": 0.95068359375,
+      "near_square_orientation_ambiguous": true,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARc",
+      "class_id": 2,
+      "confidence": 0.95068359375,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "uncertain",
+      "uncertainty_reason": "Instance detected; full outline not supported"
+    },
+    {
+      "candidate_id": "candidate_7",
+      "rectangle_center_px": [
+        1469.8876342773438,
+        283.32020568847656
+      ],
+      "mask_centroid_px": [
+        1471.3980827447022,
+        282.85166498486376
+      ],
+      "enclosing_rectangle_corners": [
+        [
+          1464.9326171875,
+          387.2921142578125
+        ],
+        [
+          1374.2584228515625,
+          242.21346282958984
+        ],
+        [
+          1474.8426513671875,
+          179.34829711914062
+        ],
+        [
+          1565.516845703125,
+          324.4269485473633
+        ]
+      ],
+      "enclosing_rectangle_angle_deg": 57.99460622924599,
+      "centre_px": [
+        1469.8876342773438,
+        283.32020568847656
+      ],
+      "orientation_image_deg": 57.99460622924599,
+      "supported_pixel_corners": null,
+      "outline_kind": "enclosing_rectangle_only",
+      "text_prompt_label": "VARa",
+      "detector_score": 0.93798828125,
+      "near_square_orientation_ambiguous": false,
+      "instance_isolation_verified": false,
+      "execution_allowed": false,
+      "mask_origin": "yolo11_seg",
+      "class_name": "VARa",
+      "class_id": 0,
+      "confidence": 0.93798828125,
+      "rectangle_consistency": null,
+      "layer_order_verified": false,
+      "detection_status": "uncertain",
+      "uncertainty_reason": "Instance detected; full outline not supported"
+    }
+  ],
+  "ground_truth_present": false
+}
