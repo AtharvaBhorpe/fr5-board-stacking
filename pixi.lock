@@ -344,7 +344,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-64/tinyxml-2.6.2-h4dbf13b_4.conda
       - conda: https://prefix.dev/conda-forge/linux-64/tinyxml2-11.0.0-hee9eb32_1.conda
       - conda: https://prefix.dev/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
-      - conda: https://prefix.dev/conda-forge/linux-64/tmux-3.8_-hd13ee6d_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/uncrustify-0.83.0-h54a6638_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/urdfdom-6.0.2-hf2e7533_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/urdfdom-py-1.2.1-py314h52e538e_7.conda
@@ -7154,20 +7153,6 @@ packages:
     - tk >=8.6.13,<8.7.0a0
   size: 3566806
   timestamp: 1787272857910
-- conda: https://prefix.dev/conda-forge/linux-64/tmux-3.8_-hd13ee6d_0.conda
-  sha256: 155010f0b5ec8b6a367a92118d0689331c847d9bd045745397735333c256605a
-  md5: 8d6fdd6eccbc64f6db8d96b9bd621d02
-  depends:
-  - libevent
-  - ncurses
-  - libgcc >=15
-  - __glibc >=2.17,<3.0.a0
-  - libevent >=2.1.12,<2.1.13.0a0
-  - ncurses >=6.6,<7.0a0
-  license: ISC
-  run_exports: {}
-  size: 679185
-  timestamp: 1791448667477
 - conda: https://prefix.dev/conda-forge/linux-64/triton-3.7.1-cuda129py312h811769c_1.conda
   sha256: f6057dfe20a473f0b1ab7e1a231ebce774ba934a3c54176efb58bf1133aaa44b
   md5: b32d0cc6a3091264c0b61db49ecc8718

@@ -3,7 +3,7 @@
 `tc stop`; stop = smooth software stop now, a held board goes to the fault zone on resume - NOT an e-stop).
 
     pixi run python3 tools/vacuum_demo_ui.py [--port 8765] [--lan] [--delay 1.3] [--bridge DIR]
-    (started by tools/up.sh as window 8 'demo-ui'; open http://localhost:8765)
+    (started by tools/stack.py; open http://localhost:8765)
 
 Simulate vacuum failure = ARM: at the next carry (skill place, phase HOVER, gripper HOLDING) wait DELAY s (the board
 falls clear of its stack), then 'inject vacuum_loss' into the agent bridge. Now = inject at once (the tool refuses
@@ -117,7 +117,7 @@ async function poll(){try{const r=await (await fetch('/status')).json();armed=r.
  const s=r.state;document.getElementById('pause').classList.toggle('on',!!s.paused);
  document.getElementById('st').innerHTML=s.ctrl?('controller <b>'+s.ctrl+(s.paused?' (PAUSED)':'')+'</b> | skill <b>'+s.skill+'</b> '+
   s.detail+' | phase <b>'+s.phase+'</b><br>gripper <b>'+s.gripper+'</b>'+(s.held?' holding <b>'+s.held+'</b>':'')+
-  (r.age!==null&&r.age>10?' | state '+Math.round(r.age)+' s old (bridge running?)':'')):'no bridge state (is tools/up.sh running?)';
+  (r.age!==null&&r.age>10?' | state '+Math.round(r.age)+' s old (bridge running?)':'')):'no bridge state (is pixi run up running?)';
  document.getElementById('ev').textContent=r.events.join('\\n');}catch(e){document.getElementById('msg').textContent='page server not reachable';}}
 setInterval(poll,500);poll();
 </script></body></html>"""

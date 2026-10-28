@@ -1,5 +1,5 @@
 """Send one command to the main controller through its agent bridge
-(tools/agent_bridge.py, started by tools/up.sh): a line into <bridge>/cmd, the answer from <bridge>/events.txt
+(tools/agent_bridge.py, started by tools/stack.py): a line into <bridge>/cmd, the answer from <bridge>/events.txt
 ("CMD <command> -> OK j3 ..." / "-> REJECTED <reason>"). The same text commands as the tc command line.
 
     python conversation/task_link.py transfer VARa drop_off_a 1
@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def bridge_dir():
-    """$HK_LIVE_DIR/bridge (set by tools/up.sh), else the newest <repo>/live_logs/session_*/bridge."""
+    """$HK_LIVE_DIR/bridge (set by tools/stack.py), else the newest <repo>/live_logs/session_*/bridge."""
     if os.environ.get("HK_LIVE_DIR"):
         return os.path.join(os.environ["HK_LIVE_DIR"], "bridge")
     pipes = glob.glob(os.path.join(HERE, "..", "live_logs", "session_*", "bridge", "cmd"))

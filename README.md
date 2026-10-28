@@ -30,7 +30,8 @@ It uses the rules of ASD-STE100 Simplified Technical English.
 
 ## 1. System overview
 
-The system has five parts. Each part is one or more processes. One script, `tools/up.sh`, starts all of them in one tmux session.
+The system has five parts. Each part is one or more processes.
+The launcher, `tools/stack.py`, starts and monitors them from one terminal.
 
 | Part | Folder | What it does |
 |---|---|---|
@@ -97,7 +98,7 @@ samples/                  six camera images for the offline check of Vision 1
 config/                   camera calibration, D405 settings, udev rule for the D405
 conversation/             chat bridge, planner, grammar, model server, Gemma launcher
 web/                      web app (Vite) and its HTTPS gateway
-tools/                    up.sh, down.sh, task_cli.py (tc), agent bridge, live monitor, vacuum demo page
+tools/                    stack.py, task_cli.py (tc), agent bridge, live monitor, vacuum demo page
 tests/                    test scripts and tests/run.sh
 notes/                    design records and decision logs
 ```
@@ -143,7 +144,7 @@ pixi install --locked -a
 
 This command installs two environments:
 
-- `default`: ROS 2 Humble, MoveIt 2, the RealSense driver, OpenCV, ONNX Runtime with CUDA, Node.js, tmux.
+- `default`: ROS 2 Humble, MoveIt 2, the RealSense driver, OpenCV, ONNX Runtime with CUDA, Node.js.
 - `models`: PyTorch with CUDA, llama.cpp with CUDA, Transformers, Phonon.
 
 The download is about 8 GB. The two environments use about 14 GB of disk.
@@ -208,15 +209,22 @@ The simulation needs no robot and no cameras. A fake arm, a fake gripper and a f
 pixi run up --sim
 ```
 
-The script starts each process in order and waits until each part is ready.
-If a part does not become ready, the script stops with a nonzero exit code.
-The existing windows stay open for diagnosis. Run `pixi run attach` to read the error.
-After you correct the problem, run `pixi run down`. Then start the system again.
-The robot does not move at start-up. When all parts are ready, the script:
+The launcher starts each process in order and waits until each part is ready.
+If startup fails, the launcher stops its processes and returns a nonzero exit code.
+During operation, the launcher reports process exits and keeps the remaining processes running.
+A speech or web error does not switch off the gripper during a job.
+The log files stay on disk. Run `pixi run logs` in another terminal to read them.
+After you correct the problem, start the system again.
 
-- opens a terminal that shows the tmux session `fr5`,
-- opens the web app on http://localhost:8088,
-- opens the vacuum-failure page on http://localhost:8765.
+Keep the launcher terminal open. Ctrl+C stops the whole stack.
+From another terminal in this checkout, `pixi run down` also stops the stack.
+The launcher refuses a second start in the same checkout.
+If another program uses a required HTTP port, startup fails before any stack process starts.
+
+The robot does not move at start-up.
+When all parts are ready, the launcher opens the web app on http://localhost:8088.
+It also opens the vacuum-failure page on http://localhost:8765.
+Use `--no-gui` to keep both pages closed.
 
 The first start takes up to 4 minutes, because Gemma and Parakeet load into the GPU. Later starts take about 1 minute.
 
@@ -224,32 +232,33 @@ Options of `pixi run up`:
 
 | Option | Effect |
 |---|---|
-| `debug` | Default. Our nodes log each step. The node windows stay quiet. All output goes to the log files. |
-| `demo` | Normal logging. The monitor window shows less. |
+| `debug` | Default. Our nodes log each step. All process output goes to log files. |
+| `demo` | Normal logging. The monitor records less data. |
 | `--sim` | Simulation. Sets `ROS_LOCALHOST_ONLY=1`, so the simulation cannot talk to a real robot stack on the network. |
 | `--rviz` | Also starts RViz with the robot model and the planning scene. |
-| `--no-gui` | Does not open a terminal or a browser. Use `pixi run attach` to see the session. |
+| `--no-gui` | Does not open a browser. The launcher stays in the current terminal. |
 
-The tmux session has one window for each process:
+Each process writes to `live_logs/current/processes/<name>.log`:
 
-| Window | Name | Process |
-|---|---|---|
-| 0 | `monitor` | live monitor: warnings, errors, job progress |
-| 1 | `motion` | MoveIt 2, Fairino driver (or fake arm), gripper node |
-| 2 | `vision` or `fake` | Vision 1 (real) or `fake_world` (simulation) |
-| 3 | `world` | world model |
-| 4 | `skills` | skill server |
-| 5 | `ctrl` | main controller |
-| 6 | `cli` | command line with the `tc` command |
-| 7 | `bridge` | agent bridge (text commands in, results out) |
-| 8 | `demo-ui` | vacuum-failure page, port 8765 |
-| 9 | `llm` | Gemma on llama.cpp, port 8770 |
-| 10 | `speech` | model server: Parakeet, Phonon, port 8766 |
-| 11 | `chat` | chat bridge |
-| 12 | `web` | web gateway, ports 8088 (HTTP) and 8443 (HTTPS) |
-| 13 | `wrist` | D405 driver (real robot only) |
+| Name | Process |
+|---|---|
+| `monitor` | live monitor: warnings, errors, job progress |
+| `motion` | MoveIt 2, Fairino driver (or fake arm), gripper node |
+| `vision` or `fake` | Vision 1 (real) or `fake_world` (simulation) |
+| `world` | world model |
+| `skills` | skill server |
+| `ctrl` | main controller |
+| `bridge` | agent bridge (text commands in, results out) |
+| `demo-ui` | vacuum-failure page, port 8765 |
+| `llm` | Gemma on llama.cpp, port 8770 |
+| `speech` | model server: Parakeet, Phonon, port 8766 |
+| `chat` | chat bridge |
+| `web` | web gateway, ports 8088 (HTTP) and 8443 (HTTPS) |
+| `wrist` | D405 driver (real robot only) |
 
-To move between windows, push Ctrl+b and then the window number. To leave the session and keep it running, push Ctrl+b and then d.
+To follow all process logs, run `pixi run logs` in another terminal.
+To follow one process, run `tail -F live_logs/current/processes/motion.log`, for example.
+Ctrl+C in a log terminal stops only the log view.
 
 ## 6. Start on the real robot
 
@@ -287,7 +296,7 @@ By default, the web app refuses all robot jobs on the real robot. The web app sh
 WORKCELL_REAL=1 pixi run up demo
 ```
 
-Without `WORKCELL_REAL=1`, use the `tc` command line in window 6 for jobs.
+Without `WORKCELL_REAL=1`, use `pixi run tc <command>` in another terminal for jobs.
 
 The gripper node switches both pumps off at start. If a board is on the suction cup at start, the board falls.
 
@@ -408,7 +417,8 @@ WARNING: On the real robot, this page switches the real pumps. Use it only with 
 
 ## 8. Use the command line
 
-Window 6 (`cli`) has the `tc` command. In another terminal, use `pixi run tc <command>`.
+In another terminal, use `pixi run tc <command>`.
+In the command table below, replace `tc` with `pixi run tc`.
 
 If the simulation runs, set `ROS_LOCALHOST_ONLY=1` in each other terminal before you use `tc` or `ros2`. The simulation uses only localhost, and a terminal without this setting cannot find its nodes:
 
@@ -453,16 +463,21 @@ cat live_logs/current/bridge/state.txt      # compact controller state
    ```
 3. On the real robot: in the robot web UI, set manual mode and disable the robot.
 
-`pixi run down` stops each window in the correct sequence. Then it closes the tmux session. At the end, it shows the processes that still run. This list must be empty. If a process still runs, stop it with `kill <pid>`.
+`pixi run down` asks the launcher to stop its process groups in sequence.
+The web app and chat stop first. The motion stack and monitor stop last.
+The launcher sends SIGINT first. If a process does not exit, the launcher sends SIGTERM, then SIGKILL.
+The launcher reports any process group that stays active. It does not stop unrelated processes.
+Ctrl+C in the launcher terminal uses the same shutdown sequence.
 
 `pixi run down` switches the pumps off. If a board is on the suction cup, the board falls.
 
 ## 10. Logs
 
-Each start makes a new folder `live_logs/session_<date>_<time>/`. The link `live_logs/current` points to the newest folder.
+Each start makes a new folder `live_logs/session_<date>_<time>_<pid>/`. The link `live_logs/current` points to the newest folder.
 
 | Path | Content |
 |---|---|
+| `processes/<name>.log` | standard output and errors from each process |
 | `ros/` | the log file of each ROS node |
 | `monitor/main.jsonl` | controller state, task events, world changes, gripper state, tool position at 10 Hz, skill results |
 | `monitor/vision_raw.jsonl` | each `/vision/boards` message |
@@ -550,19 +565,21 @@ HTTP ports on the PC:
 | Problem | Cause | Do this |
 |---|---|---|
 | `pixi run up` shows `not built` | `install/` or `web/dist/` does not exist | Run `pixi run build`. |
-| `pixi run up` shows `session 'fr5' already runs` | an earlier start still runs | Run `pixi run down`. |
-| A `waiting for ...` line ends with `NOT ready` | startup stopped because a process did not become ready | Run `pixi run attach`. Read the window of that process. Correct the problem. Run `pixi run down`. Then start again. |
+| `pixi run up` shows `A stack is already running` | an earlier start still runs in this checkout | Run `pixi run down`. |
+| A readiness check shows `NOT ready` | startup failed and the launcher stopped its processes | Run `pixi run logs`. Read the process log. Correct the problem. Then start again. |
+| Startup shows `Address already in use` | another process uses a required HTTP port | Stop the conflicting application. Then start again. |
+| The launcher reports that a process exited | a stack process stopped unexpectedly | Read the named log file. Follow section 9 to stop the stack. Correct the problem. Then start again. |
 | `No space left on device` during `pixi install` | the disk is full | Erase old `live_logs/` sessions. Run `pixi clean cache`. |
-| `Gemma (:8770)` is not ready after 180 s | the model download is slow, or the GPU memory is full | Read window 9. Run `nvidia-smi` and stop other GPU programs. |
-| `CUDA error: out of memory` in window 9 or 10 | another program uses the GPU | Stop the other program. Gemma, Parakeet and Vision 1 need about 7 GB together. |
+| Gemma is not ready after 180 s | the model download is slow, or the GPU memory is full | Read `processes/llm.log`. Run `nvidia-smi`. Stop other GPU programs. |
+| `CUDA error: out of memory` in `llm.log` or `speech.log` | another program uses the GPU | Stop the other program. Gemma, Parakeet and Vision 1 need about 7 GB together. |
 | The web app shows `Speech recognition is still loading` | Parakeet loads for about 20 s | Wait. Typed chat works in that time. |
-| The web app shows `Web control is simulation-only` | real robot without `WORKCELL_REAL=1` | Use `tc` in window 6, or restart with `WORKCELL_REAL=1 pixi run up demo`. |
+| The web app shows `Web control is simulation-only` | real robot without `WORKCELL_REAL=1` | Use `pixi run tc`, or restart with `WORKCELL_REAL=1 pixi run up demo`. |
 | `tc` shows `/task/list_jobs not available` in your own terminal | the simulation uses only localhost | Run `export ROS_LOCALHOST_ONLY=1` in that terminal. |
-| The chat shows `The main controller is not running` | no `/task/status` for 3 s | Read windows 3, 4 and 5. |
+| The chat shows `The main controller is not running` | no `/task/status` for 3 s | Read `world.log`, `skills.log` and `ctrl.log` in `live_logs/current/processes/`. |
 | The chat shows `The main controller refused ...` | the controller found an error in the job | Read the reason in the message. For example, a zone name that does not exist. |
 | The planner made a wrong plan | the request had no clear variant, zone or count | Use the words in section 7.2. Name the variant, the zone and the count. |
-| The motion window shows `robot hardware: MOCK` on the real robot | a simulation process still runs | Run `pixi run down`. Then do step 1 of section 6.1. |
-| The motion window shows `机械臂SDK连接失败` (SDK connection failed) | no network to the robot, or another client is connected | Run `ping 192.168.58.2`. Close the other client. |
+| The motion log shows `robot hardware: MOCK` on the real robot | a simulation process still runs | Run `pixi run down`. Then do step 1 of section 6.1. |
+| The motion log shows `机械臂SDK连接失败` (SDK connection failed) | no network to the robot, or another client is connected | Run `ping 192.168.58.2`. Close the other client. |
 | Controller state HALTED `3 motion failures` or `release failed` | the robot or the gripper has a problem | Examine the robot and the gripper as the message says. Then run `tc resume`. |
 | Controller state HALTED `the gripper holds something the world does not know` | a board is on the suction cup | Hold the board. Run `pixi run ros2 action send_goal /gripper/release hk_fr5_interfaces/action/Release "{blow_off_time: 1.0}"`. Then run `tc resume`. |
 | A board is skipped (`PLAN_FAILED` or `NO_IK`) | the board is out of reach | Move the board into the ring 0.30 m to 0.80 m from the base. |
@@ -575,7 +592,7 @@ HTTP ports on the PC:
 | `NO_VACUUM` | the suction cup did not seal | Make sure that the board is flat. Make sure that the air line is connected. |
 | The board stays on the cup after a place | the blow-off pulse is too short | Increase `blow_off_time` in `skills.yaml`. Listen for the blow-off sound. |
 | The phone cannot open the HTTPS page | guest Wi-Fi isolates devices, or the PC address changed | Use a private network. If the address changed, erase `web/.local/server.crt` and restart. |
-| `pixi run down` lists processes that still run | a process did not stop on Ctrl+C | Stop each listed process with `kill <pid>`. |
+| Shutdown reports that processes did not stop | a process did not exit after the shutdown signals | Read the launcher terminal and the named process logs. Examine the remaining processes before a restart. |
 
 ## 15. Known limits
 

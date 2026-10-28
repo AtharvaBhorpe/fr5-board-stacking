@@ -1,6 +1,6 @@
 """Live monitor for real runs (TM-O8, TM-26): extreme logging of the whole pipeline + a readable live view.
 
-    (started by tools/up.sh, window 0; session folder = $HK_LIVE_DIR)
+    (started by tools/stack.py; session folder = $HK_LIVE_DIR)
     pixi run python3 tools/live_monitor.py [--verbose] [--dir DIR]
 
 Read-only (sends nothing). Files always complete, in DIR (default: the session's monitor/ folder $HK_LIVE_DIR/monitor;

@@ -31,7 +31,6 @@ numpy = "==2.5.4"
 pyyaml = "==6.0.3"
 onnxruntime = { version = "*", build = "*cuda*" }   # Vision 1 model on the GPU
 nodejs = "*"                                        # builds the web app (web/dist)
-tmux = "*"                                          # tools/up.sh runs every process in one tmux session
 
 [activation]
 scripts = ["install/setup.sh"]
@@ -43,11 +42,11 @@ LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/external/frcobot_ros2/fairino_hardware_v3_
 
 [tasks]
 build = { cmd = 'CXXFLAGS="$CXXFLAGS -include unistd.h" colcon build --symlink-install --paths external/frcobot_ros2/fairino_description external/frcobot_ros2/fairino_msgs external/frcobot_ros2/fairino_hardware_v3_9_0_1 src/* && npm --prefix web ci && npm --prefix web run build' }
-up = "tools/up.sh"
-down = "tools/down.sh"
-attach = "env -u TERMINFO TERM=xterm-256color tmux -L fr5 attach -t fr5"
+up = "python tools/stack.py up"
+down = "python tools/stack.py down"
+logs = "tail -n 30 -F live_logs/current/processes/*.log"
 test = "tests/run.sh"
-# single processes (tools/up.sh starts all of them)
+# single processes (tools/stack.py starts all of them)
 sim = "ros2 launch hk_fr5_moveit_config bringup.launch.py"
 robot = "ros2 launch hk_fr5_moveit_config bringup.launch.py use_fake_hardware:=false"
 vision = "python vision1/node.py"
@@ -73,7 +72,7 @@ faster-whisper = ">=1.1,<2"   # voice activity detection before Parakeet
 ptts = "==0.5.0"
 
 [feature.models.activation.env]
-PYTHONPATH = ""   # tools/up.sh windows inherit the ROS PYTHONPATH (Python 3.14 packages): never mix it into 3.12
+PYTHONPATH = ""   # Model processes inherit the ROS PYTHONPATH (Python 3.14 packages): never mix it into 3.12.
 
 [feature.models.tasks]
 llm = "conversation/llm.sh"
