@@ -68,7 +68,9 @@ def until(fn, secs):
 
 
 try:
-    until(lambda: os.path.exists(os.path.join(bridge_dir, "cmd")), 20)
+    # the pipe exists before the bridge reads it: wait for its "bridge up" line (a press before that is lost)
+    ev = os.path.join(bridge_dir, "events.txt")
+    until(lambda: os.path.exists(ev) and "bridge up" in open(ev).read(), 30)
     procs["ui"] = subprocess.Popen([sys.executable, os.path.join(TOOLS, "vacuum_demo_ui.py"), "--port", str(port),
                                     "--bridge", bridge_dir], stdout=logs["ui"], stderr=subprocess.STDOUT)
     for _ in range(100):
