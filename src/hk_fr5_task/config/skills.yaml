@@ -7,7 +7,8 @@ search_clear: 0.010            #   + this
 search_speed: 0.0225           # contact search LIN velocity scaling (TM-44 user 1.5x; was 0.015: over-press ~20 mm)
 press: 0.004                   # go this far below the expected surface (cup is soft); teammate's real-robot value (TM-25)
 place_press: 0.001             # release with the board this far INTO the surface (teammate's real-robot value, TM-25)
-blow_off_time: 4.0             # s blow-off at every release (2 s left boards stuck to the pressed cup, TM-32)
+blow_off_time: 2.0             # s blow-off at every release (TM-46 user: 4 s kept the arm waiting after the retract;
+                               #   2 s once left boards stuck in trial 1, but the retract now starts 0.5 s into it, TM-32)
 retract_delay: 0.5             # s after the release is accepted: retract starts while the blow-off runs (TM-32)
 home_pose: [-0.233, 0.0, 0.243, 1.543]   # tcp x, y, z, yaw of 'home': STRICTLY above the aluminium profile (y = 0,
                                #   user), arm out of the overhead view; x / z / yaw = teammate's park pose (TM-25);

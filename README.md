@@ -95,7 +95,7 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
   holds one board: every detection in it is that board (duplicate detections ignored, TM-42). **Operator rule:** take the board only after the arm has left the zone and keep it away >= 2 s (the camera
   must see the zone empty; while the arm covers it the zone state is frozen).
 - **Pick:** hover, then a slow contact search until the vacuum seals (input stacks: height unknown) or a known height
-  (zone boards). **Place:** 1 mm into the stack top, vacuum off + 4 s blow-off, the retract starts 0.5 s into it.
+  (zone boards). **Place:** 1 mm into the stack top, vacuum off + 2 s blow-off, the retract starts 0.5 s into it.
   If another board is queued (by priority) the next pick starts right there; otherwise home (park pose above the
   robot's aluminium profile, out of the camera view) and a camera check. Boards hidden by the arm are remembered by the
   world and count as pickable (priority is never changed by occlusion); a place not followed by home is confirmed by
@@ -110,7 +110,7 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
 | File | Main values |
 |---|---|
 | `world.yaml` | variants VARa 0.295 x 0.210, VARb 0.210 x 0.150, VARc 0.210 x 0.135 (5 mm), table_z -0.060, zone margin, timers (gone / back / unknown_after 2 s, stale_after 1.5 s, lost_after 2 s), **fault zone position**, zone_unknown_boards |
-| `skills.yaml` | speeds (free moves 0.60 / carry with a board 0.45 / approach 0.30 / search 0.0225), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 4 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
+| `skills.yaml` | speeds (free moves 0.60 / carry with a board 0.45 / approach 0.30 / search 0.0225), hover_z 0.040 (100 mm above the table), input stacks <= 5 boards, press 4 mm, place_press 1 mm, blow_off_time 2 s, retract_delay 0.5 s, home_pose, fault_drop_z, timeouts |
 | `main.yaml` | home_xy (= home_pose x / y), retry / halt policy, alert times, per-skill timeouts, deferred_verify |
 | `scenario_demo.yaml` | the simulated table for `--sim` and the tests |
 
