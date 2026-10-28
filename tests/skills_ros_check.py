@@ -39,7 +39,7 @@ def check(name, cond, extra=""):
     ok += bool(cond); bad += not cond
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MOTION_WT = os.path.realpath(os.path.join(HERE, "..", "..", "feat-robot-motion-gripper"))
+MOTION_WT = os.environ.get("HK_MOTION_WT") or os.path.realpath(os.path.join(HERE, "..", "..", "feat-robot-motion-gripper"))
 PIXI = shutil.which("pixi") or os.path.expanduser("~/.pixi/bin/pixi")
 TABLE = -0.060
 def exe(pkg, name):

@@ -13,12 +13,11 @@
 # In tmux: Ctrl+b then a window number = switch window, Ctrl+b d = detach (everything keeps running).
 # The real robot does NOT move at start-up: motion only on a job / command (user's OK, CLAUDE.md section 3).
 set -u
-WT=~/hackathon/wt/feat-task-main-controller
-MW=~/hackathon/wt/feat-robot-motion-gripper
-VW=~/hackathon/wt/feat-vision1-overhead
-PX=~/.pixi/bin/pixi
-TMUX_BIN="env -u TERMINFO TERM=xterm-256color $HOME/.pixi/bin/tmux"   # kitty: TERM / TERMINFO unusable for pixi tmux
-export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/usr/share/terminfo:/lib/terminfo"   # pixi tmux: system terminfo
+source "$(dirname "${BASH_SOURCE[0]}")/paths.sh"      # this worktree + its siblings, pixi, tmux (TM-34)
+WT=$HK_WT; MW=$HK_MOTION_WT; VW=$HK_VISION1_WT; PX=$HK_PIXI; TMUX_BIN=$HK_TMUX_CMD
+for d in "$MW" "$VW"; do
+  [ -d "$d" ] || { echo "missing worktree $d (README: layout; or set HK_MOTION_WT / HK_VISION1_WT)"; exit 1; }
+done
 S=${HK_TMUX_SESSION:-trial}   # HK_TMUX_SESSION: offline tests next to a running trial
 MODE=debug; SIM=0; RVIZ=false; GUI=1
 for a in "$@"; do
@@ -36,7 +35,7 @@ fi
 
 # new log session (all windows join it: tools/live_env.sh without 'new')
 source $WT/tools/live_env.sh new $MODE
-ENV="export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}; ${ROS_LOCALHOST_ONLY:+export ROS_LOCALHOST_ONLY=$ROS_LOCALHOST_ONLY;} ${HK_LIVE_ROOT:+export HK_LIVE_ROOT=$HK_LIVE_ROOT;}"
+ENV="export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}; ${ROS_LOCALHOST_ONLY:+export ROS_LOCALHOST_ONLY=$ROS_LOCALHOST_ONLY;} export HK_LIVE_ROOT=$HK_LIVE_ROOT;"
 JOIN="source $WT/tools/live_env.sh > /dev/null"
 
 win() {  # win <index> <name> <dir> <command>
@@ -82,7 +81,7 @@ win 6 cli $WT "tc() { $PX run python3 $WT/tools/task_cli.py \"\$@\"; }; echo 'tc
 win 7 bridge $WT "$PX run python3 tools/agent_bridge.py"
 $TMUX_BIN select-window -t $S:6
 echo "all started. Logs: $HK_LIVE_DIR"
-echo "attach: tools/trial_attach.sh   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: tools/trial_down.sh"
+echo "attach: $WT/tools/trial_attach.sh   (Ctrl+b <n> = window n, Ctrl+b d = detach) | stop: $WT/tools/trial_down.sh"
 if [ $GUI = 1 ] && [ -n "${DISPLAY:-}" ]; then
   gnome-terminal --maximize --title="trial ($MODE)" -- $TMUX_BIN attach -t $S > /dev/null 2>&1 &
 fi

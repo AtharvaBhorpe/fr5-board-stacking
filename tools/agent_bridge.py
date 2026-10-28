@@ -1,6 +1,6 @@
 """Fast agent bridge (demo mode, TM-31): ONE persistent node instead of a new process per command.
 
-    pixi run python3 tools/agent_bridge.py [DIR]      (DIR default: $HK_LIVE_DIR/bridge or ~/hackathon/live_logs/bridge)
+    pixi run python3 tools/agent_bridge.py [DIR]      (DIR default: $HK_LIVE_DIR/bridge or <worktrees>/../live_logs/bridge)
 
 DIR/state.txt   compact current state, rewritten on every change (controller, current skill, jobs, zones, boards)
 DIR/events.txt  one line per command result, job change, alert (append)
@@ -23,9 +23,11 @@ from std_msgs.msg import String
 from hk_fr5_task_interfaces.msg import Job, World
 from hk_fr5_task_interfaces.srv import AddJob, Control
 
+LIVE_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+                         "live_logs")              # <worktrees>/../live_logs (TM-34, as tools/paths.sh)
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 D = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    os.environ.get("HK_LIVE_DIR") or os.path.expanduser("~/hackathon/live_logs"), "bridge")
+    os.environ.get("HK_LIVE_DIR") or os.environ.get("HK_LIVE_ROOT") or LIVE_ROOT, "bridge")
 os.makedirs(D, exist_ok=True)
 FIFO = os.path.join(D, "cmd")
 if not os.path.exists(FIFO):

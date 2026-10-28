@@ -1,9 +1,10 @@
 # Live-run session for every terminal of a real run (TM-27). SOURCE it, do not run it:
 #
-#   source ~/hackathon/wt/feat-task-main-controller/tools/live_env.sh new [debug|demo]   # 1st terminal: new session
-#   source ~/hackathon/wt/feat-task-main-controller/tools/live_env.sh                    # every other terminal: join it
+#   source <this worktree>/tools/live_env.sh new [debug|demo]   # 1st terminal: new session
+#   source <this worktree>/tools/live_env.sh                    # every other terminal: join it
 #
-# Session folder ~/hackathon/live_logs/session_<date>_<time of the 'new'>/ (symlink ~/hackathon/live_logs/current):
+# Session folder $HK_LIVE_ROOT/session_<date>_<time of the 'new'>/ (symlink $HK_LIVE_ROOT/current); HK_LIVE_ROOT default
+# <worktrees>/../live_logs (tools/paths.sh):
 #   ros/      every node's own log file (ROS_LOG_DIR): motion, move_group, gripper, Vision 1, world_model, skill_server,
 #             task_main_controller, launch logs
 #   monitor/  tools/live_monitor.py files (main / vision_raw / world_raw / joints .jsonl, rosout.log = all nodes)
@@ -12,7 +13,8 @@
 # HK_NODE_ARGS: '--disable-stdout-logs' in debug (node terminals stay quiet, everything still goes to the files and
 # /rosout; the monitor console shows every WARN / ERROR); empty in demo.
 
-_hk_root="${HK_LIVE_ROOT:-$HOME/hackathon/live_logs}"   # HK_LIVE_ROOT: tests only
+source "$(dirname "${BASH_SOURCE[0]}")/paths.sh"      # HK_LIVE_ROOT (TM-34)
+_hk_root="$HK_LIVE_ROOT"
 mkdir -p "$_hk_root"
 _hk_new=0; _hk_mode=""
 for _a in "$@"; do

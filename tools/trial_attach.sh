@@ -1,4 +1,4 @@
 #!/bin/bash
 # Attach this terminal to the running trial session (works from kitty too).   tools/trial_attach.sh
-export TERMINFO_DIRS="/usr/share/terminfo:/lib/terminfo"
-exec env -u TERMINFO TERM=xterm-256color "$HOME/.pixi/bin/tmux" attach -t trial
+source "$(dirname "${BASH_SOURCE[0]}")/paths.sh"      # tmux (TM-34)
+exec $HK_TMUX_CMD attach -t "${HK_TMUX_SESSION:-trial}"

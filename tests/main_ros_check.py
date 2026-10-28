@@ -43,7 +43,7 @@ def check(name, cond, extra=""):
     ok += bool(cond); bad += not cond
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MOTION_WT = os.path.realpath(os.path.join(HERE, "..", "..", "feat-robot-motion-gripper"))
+MOTION_WT = os.environ.get("HK_MOTION_WT") or os.path.realpath(os.path.join(HERE, "..", "..", "feat-robot-motion-gripper"))
 PIXI = shutil.which("pixi") or os.path.expanduser("~/.pixi/bin/pixi")
 SHARE = get_package_share_directory("hk_fr5_task")
 LOG_DIR = os.environ.get("HK_TEST_LOG_DIR", tempfile.gettempdir())

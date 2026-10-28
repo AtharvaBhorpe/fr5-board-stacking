@@ -4,7 +4,7 @@
     pixi run python3 tools/live_monitor.py [--verbose] [--dir DIR]
 
 Read-only (sends nothing). Files always complete, in DIR (default: the session's monitor/ folder $HK_LIVE_DIR/monitor;
-without a session: a new ~/hackathon/live_logs/session_<date>_<time>/monitor):
+without a session: a new <worktrees>/../live_logs/session_<date>_<time>/monitor):
     main.jsonl        everything with a kind: status (full), task events, world summary on change, gripper, tcp (10 Hz),
                       skill action status + feedback, motion action status, vision stats (10 s), rosout (all nodes)
     vision_raw.jsonl  every /vision/boards frame as received (+ arrival time, gap, now - stamp, parse problems)
@@ -36,6 +36,8 @@ from hk_fr5_task import vision1
 from hk_fr5_task_interfaces.action import Home, Pick, Place, ReleaseSafe, WaitClear
 from hk_fr5_task_interfaces.msg import World
 
+LIVE_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+                         "live_logs")              # <worktrees>/../live_logs (TM-34, as tools/paths.sh)
 LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 SKILLS = {"pick": Pick, "place": Place, "home": Home, "wait_clear": WaitClear, "release_safe": ReleaseSafe}
 LEVEL = {10: "DEBUG", 20: "INFO", 30: "WARN", 40: "ERROR", 50: "FATAL"}
@@ -52,7 +54,7 @@ ap.add_argument("--lite", action="store_true", help="demo: no raw vision / world
 args = ap.parse_args()
 args.quiet = not args.verbose
 RUN = args.dir or (os.path.join(os.environ["HK_LIVE_DIR"], "monitor") if os.environ.get("HK_LIVE_DIR") else
-                   os.path.join(os.path.expanduser("~/hackathon/live_logs"), time.strftime("session_%Y%m%d_%H%M%S"), "monitor"))
+                   os.path.join(os.environ.get("HK_LIVE_ROOT") or LIVE_ROOT, time.strftime("session_%Y%m%d_%H%M%S"), "monitor"))
 os.makedirs(RUN, exist_ok=True)
 F = {k: open(os.path.join(RUN, k), "a", buffering=1) for k in
      ("main.jsonl", "vision_raw.jsonl", "world_raw.jsonl", "joints.jsonl", "rosout.log")}
