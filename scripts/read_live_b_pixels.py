@@ -63,6 +63,8 @@ def handoff(packet,now,max_age=2.):
             'hand_count':len(packet.get('hand_detections',[])),
             'human_safety_validated':False,
             'image_size':[width,height],'objects':objects,
+            'geometry_image_size':packet.get('geometry_image_size',[width,height]),
+            'geometry_pixel_scale':packet.get('geometry_pixel_scale',[1.,1.]),
             'uncertain_count':len(packet.get('uncertain_objects',[])),'execution_allowed':False}
 
 

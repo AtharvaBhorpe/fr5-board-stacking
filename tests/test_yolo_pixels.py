@@ -1,13 +1,16 @@
 import copy
 import json
+import os
+import tempfile
 import tomllib
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import unittest
 import cv2
 import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from yolo_pixels import class_names,translate_predictions
+from yolo_pixels import class_names,translate_predictions,restore_geometry
 from b_live_geometry import measure
 from read_live_b_pixels import handoff
 
@@ -80,6 +83,39 @@ class YoloAdapterTests(unittest.TestCase):
 
     def test_bad_checkpoint_names_rejected(self):
         with self.assertRaises(ValueError):class_names(['person','book'])
+
+    def test_invalid_mask_payload_rejected_before_geometry(self):
+        image,masks,classes,scores=self.inputs();names=['VARa','VARb','VARc','hand']
+        invalid=masks.astype(float);invalid[0,40,50]=np.nan
+        with self.assertRaisesRegex(ValueError,'Non-finite'):
+            translate_predictions(image,invalid,classes,scores,names,self.config())
+        with self.assertRaisesRegex(ValueError,'numeric'):
+            translate_predictions(image,masks.astype(object),classes,scores,names,self.config())
+
+    def test_fast_geometry_restores_original_coordinates_and_hand_masks(self):
+        report,accepted,_,_=translate_predictions(*self.inputs(),['VARa','VARb','VARc','hand'],self.config())
+        before=measure(*accepted[0]);hand_centre=report['hand_detections'][0]['centre_px'].copy()
+        restored=restore_geometry(report,accepted,(1200,720),(400,240))
+        after=measure(*restored[0])
+        self.assertEqual(report['image_size'],[1200,720])
+        self.assertIsNone(restored[0][1])
+        np.testing.assert_allclose(after['centre_px'],(np.array(before['centre_px'])+.5)*3-.5,atol=1e-5)
+        np.testing.assert_allclose(after['supported_pixel_corners'],(np.array(before['supported_pixel_corners'])+.5)*3-.5)
+        self.assertAlmostEqual(after['orientation_image_deg'],before['orientation_image_deg'])
+        np.testing.assert_allclose(report['hand_detections'][0]['centre_px'],(np.array(hand_centre)+.5)*3-.5)
+        self.assertEqual(report['hand_detections'][0]['box_xyxy'],[0,0,90,60])
+
+    def test_native_letterboxing_removed_before_coordinate_restoration(self):
+        import torch
+        with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'YOLO_CONFIG_DIR':folder}):
+            from ultralytics.utils.ops import scale_masks
+        native=torch.zeros((1,1,384,640));native[:,:,112:212,200:400]=1
+        mask=(scale_masks(native,(360,640))[0]>.5).numpy()
+        image=np.zeros((360,640,3),np.uint8)
+        report,accepted,_,_=translate_predictions(image,mask,np.array([0]),np.array([.9]),
+                                                 ['VARa','VARb','VARc','hand'],self.config())
+        accepted=restore_geometry(report,accepted,(1920,1080),(640,360))
+        np.testing.assert_allclose(measure(*accepted[0])['centre_px'],[899.5,449.5],atol=1e-5)
 
     def test_renamed_and_legacy_checkpoints_emit_same_canonical_names(self):
         for names in (['VARa','VARb','VARc','hand'],['large_white','small_white','small_red','hand']):

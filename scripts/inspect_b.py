@@ -34,27 +34,41 @@ def nms(boxes,scores,threshold):
     return keep
 
 
-def describe_mask(image,mask,roi,settings):
+def describe_mask(image,mask,roi,settings,roi_boundary=None,measure_appearance=True):
     mask=np.asarray(mask,dtype=bool)
     if mask.shape!=image.shape[:2]:raise ValueError('Mask and image shapes differ')
-    area=int(mask.sum());fraction=area/mask.size
+    x,y,w,h=cv2.boundingRect(mask.astype(np.uint8))
+    if not w or not h:raise ValueError('Empty mask')
+    x0=max(0,x-3);y0=max(0,y-3)
+    x1=min(mask.shape[1],x+w+3);y1=min(mask.shape[0],y+h+3)
+    cropped=mask[y0:y1,x0:x1]
+    area=int(np.count_nonzero(cropped));fraction=area/mask.size
     if not settings['min_area_fraction']<=fraction<=settings['max_area_fraction']:
         raise ValueError('Mask area outside configured limits')
-    if np.any(mask & (roi==0)):
+    if np.any(cropped & (roi[y0:y1,x0:x1]==0)):
         raise ValueError('Mask extends outside pickup region')
-    boundary=cv2.subtract(roi,cv2.erode(roi,np.ones((5,5),np.uint8),borderType=cv2.BORDER_CONSTANT,borderValue=0))
-    if np.any(mask & (boundary>0)):
+    boundary=roi_boundary if roi_boundary is not None else cv2.subtract(roi,cv2.erode(roi,np.ones((5,5),np.uint8),borderType=cv2.BORDER_CONSTANT,borderValue=0))
+    if np.any(cropped & (boundary[y0:y1,x0:x1]>0)):
         raise ValueError('Mask touches pickup/image boundary')
-    binary=mask.astype(np.uint8)*255
-    contours,_=cv2.findContours(binary,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    binary=cropped.astype(np.uint8)*255
+    moments=cv2.moments(binary,binaryImage=True)
+    # Preserve original-image coordinates while doing component/colour work locally.
+    contours,_=cv2.findContours(binary,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE,offset=(x0,y0))
     rect=cv2.minAreaRect(np.concatenate(contours))
     if min(rect[1])<=0:raise ValueError('Degenerate visible mask')
     components,labels,stats,_=cv2.connectedComponentsWithStats(binary)
     largest=1+int(np.argmax(stats[1:,cv2.CC_STAT_AREA]))
     component=(labels==largest).astype(np.uint8)*255
-    measurement=describe_region(image,component)
+    if measure_appearance:
+        measurement=describe_region(image[y0:y1,x0:x1],component)
+    else:
+        short_side,long_side=sorted(float(v) for v in rect[1])
+        measurement={'appearance':None,
+                     'appearance_measurement_scope':'not computed; class supplied by neural detector',
+                     'size':{'long_side_px':long_side,'short_side_px':short_side,
+                             'long_side_m':None,'short_side_m':None}}
     return {'pixel_corners':cv2.boxPoints(rect).tolist(),
-            'pixel_center':np.mean(np.column_stack(np.where(mask))[:,::-1],axis=0).tolist(),
+            'pixel_center':[float(moments['m10']/moments['m00']+x0),float(moments['m01']/moments['m00']+y0)],
             'pixel_contours':[c.reshape(-1,2).tolist() for c in contours],
             'area_pixels':area,'rectangularity':float(area/(rect[1][0]*rect[1][1])),
             'visible_components':components-1,

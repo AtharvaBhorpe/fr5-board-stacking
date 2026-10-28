@@ -25,20 +25,35 @@ def quad_center_and_axis(points):
 
 
 def supported_quad(mask,allow_rectangle_fit=False):
-    contours,_=cv2.findContours(mask.astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-    if len(contours)!=1:return None
+    binary=(np.asarray(mask)>0).astype(np.uint8)
+    x,y,w,h=cv2.boundingRect(binary)
+    if not w or not h:return None
+    observed=binary[y:y+h,x:x+w]>0
+    contours,_=cv2.findContours(observed.astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours)!=1:
+        count,labels,stats,_=cv2.connectedComponentsWithStats(observed.astype(np.uint8))
+        if count<2:return None
+        largest=1+int(np.argmax(stats[1:,cv2.CC_STAT_AREA]))
+        # Ignore at most 0.5% satellite pixels; retain the original mask in fit scoring.
+        if 1-float(stats[largest,cv2.CC_STAT_AREA])/np.count_nonzero(observed)>.005:return None
+        contours,_=cv2.findContours((labels==largest).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     c=contours[0];length=cv2.arcLength(c,True)
-    q=cv2.approxPolyDP(c,.01*length,True)
-    if len(q)!=4 or not cv2.isContourConvex(q):
-        if not allow_rectangle_fit:return None
-        q=np.rint(cv2.boxPoints(cv2.minAreaRect(c))).astype(np.int32)
-    q=q.reshape(4,2)
-    approximated=np.zeros(mask.shape,np.uint8)
-    cv2.fillConvexPoly(approximated,q,1)
-    observed=mask>0;predicted=approximated>0
-    union=np.count_nonzero(observed|predicted)
-    if not union or np.count_nonzero(observed&predicted)/union<.93:return None
-    return q.astype(float)
+    options=[cv2.approxPolyDP(c,epsilon*length,True) for epsilon in (.01,.015,.02)]
+    if allow_rectangle_fit:
+        options.append(np.rint(cv2.boxPoints(cv2.minAreaRect(c))).astype(np.int32))
+    for q in options:
+        if len(q)!=4 or not cv2.isContourConvex(q):continue
+        q=q.reshape(4,2)
+        # A legacy enclosing-rectangle fallback can extend beyond the mask bbox.
+        full_score=bool(np.any(q<0) or np.any(q[:,0]>=w) or np.any(q[:,1]>=h))
+        reference=binary>0 if full_score else observed
+        approximated=np.zeros(reference.shape,np.uint8)
+        cv2.fillConvexPoly(approximated,q+[x,y] if full_score else q,1)
+        predicted=approximated>0
+        union=np.count_nonzero(reference|predicted)
+        if union and np.count_nonzero(reference&predicted)/union>=.93:
+            return q.astype(float)+[x,y]
+    return None
 
 
 def measure(candidate,mask=None):
@@ -61,7 +76,12 @@ def measure(candidate,mask=None):
                   detection_status=candidate.get('detection_status','candidate'),
                   uncertainty_reason=candidate.get('uncertainty_reason'))
     checked=bool((candidate.get('rectangle_consistency') or {}).get('passed'))
-    q=supported_quad(mask,allow_rectangle_fit=checked) if mask is not None else None
+    q=candidate.get('supported_mask_quad')
+    if q is not None:
+        q=np.asarray(q,float)
+        if q.shape!=(4,2) or not np.isfinite(q).all() or not cv2.isContourConvex(q.astype(np.float32)):
+            raise ValueError('Invalid cached supported quadrilateral')
+    elif mask is not None:q=supported_quad(mask,allow_rectangle_fit=checked)
     if q is not None:
         centre,angle=quad_center_and_axis(q)
         result.update(centre_px=centre.tolist(),orientation_image_deg=angle,

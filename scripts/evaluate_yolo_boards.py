@@ -120,8 +120,10 @@ def main():
             for i in range(len(gt_masks)):
                 for j in range(i+1,len(gt_masks)):
                     if gt_iou[i,j]>=.9:label_warnings.append({'image':path.name,'annotation_ids':[i,j],'mask_iou':float(gt_iou[i,j]),'reason':'Near-duplicate ground-truth masks'})
+            geometry_started=time.perf_counter()
             report,accepted,_,_=translate_predictions(image,raw_masks,source_classes,scores,names,config)
             objects=[measure(c,m) for c,m in accepted]
+            geometry_ms=(time.perf_counter()-geometry_started)*1000
             pixel_checks=[]
             matches={j:i for i,j,_ in checked['matches']}
             for obj in objects:
@@ -136,7 +138,7 @@ def main():
                     'image_angle_error_deg':float(abs((angle-obj['orientation_image_deg']+90)%180-90))})
             for name,count in checked['per_class'].items():totals[name].update(count)
             checked.update(image=path.name,predicted_classes=[NAMES[c] for c in pred_classes],
-                ground_truth_classes=[NAMES[c] for c in gt_classes],prediction_ms=elapsed,
+                ground_truth_classes=[NAMES[c] for c in gt_classes],prediction_ms=elapsed,geometry_ms=geometry_ms,
                 adapter_boards=len(accepted),adapter_uncertain=len(report['uncertain_candidates']),
                 adapter_objects=objects,supported_outline_pixel_checks=pixel_checks)
             rows.append(checked)
@@ -155,7 +157,9 @@ def main():
         split_report={'standard_metrics':standard,'fixed_confidence_per_class':counts,'images':rows,
                       'annotation_warnings':label_warnings,
                       'prediction_ms_median':float(np.median([r['prediction_ms'] for r in rows])),
-                      'prediction_ms_p95':float(np.percentile([r['prediction_ms'] for r in rows],95))}
+                      'prediction_ms_p95':float(np.percentile([r['prediction_ms'] for r in rows],95)),
+                      'geometry_ms_median':float(np.median([r['geometry_ms'] for r in rows])),
+                      'geometry_ms_p95':float(np.percentile([r['geometry_ms'] for r in rows],95))}
         (folder/'report.json').write_text(json.dumps(split_report,indent=2,allow_nan=False))
         # Four comparison images per page, with all images available individually.
         for start in range(0,len(rows),4):

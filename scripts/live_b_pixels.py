@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import uuid
@@ -51,24 +52,32 @@ def worker(args):
     print(json.dumps({'ready':True}),flush=True)
     for line in sys.stdin:
         try:
+            worker_started=time.monotonic()
             request=json.loads(line)
             image=read_frame(request['image'])
+            read_ms=(time.monotonic()-worker_started)*1000
             with contextlib.redirect_stdout(sys.stderr):
-                report,accepted,masks,roi=models.detect(image,config)
+                if backend=='yolo11_seg':report,accepted,masks,roi=models.detect(image,config,include_masks=False)
+                else:report,accepted,masks,roi=models.detect(image,config)
             objects=[measure(candidate,mask) for candidate,mask in accepted]
             uncertain=[measure(candidate) for candidate in report.get('uncertain_candidates',[])]
             hands=report.get('hand_detections',[])
-            overlay=Path(request['overlay'])
-            visual=draw(image,uncertain+objects)
-            if hands:
-                from yolo_pixels import draw_hands
-                draw_hands(visual,hands)
-            if not cv2.imwrite(str(overlay),visual):raise OSError('Overlay save failed')
+            if request.get('overlay'):
+                overlay=Path(request['overlay'])
+                visual=draw(image,uncertain+objects)
+                if hands:
+                    from yolo_pixels import draw_hands
+                    draw_hands(visual,hands)
+                if not cv2.imwrite(str(overlay),visual):raise OSError('Overlay save failed')
             response={'ok':True,'objects':objects,'uncertain_objects':uncertain,'image_size':report['image_size'],
+                      'geometry_image_size':report.get('geometry_image_size',report['image_size']),
+                      'geometry_pixel_scale':report.get('geometry_pixel_scale',[1.,1.]),
                       'model_backend':report.get('model_backend','grounded_sam2'),
                       'checkpoint_sha256':report.get('checkpoint_sha256'),
                       'hand_detections':hands,
                       'detector_ms':report['detector_ms'],
+                      'worker_ms':(time.monotonic()-worker_started)*1000,
+                      'frame_transfer_read_ms':read_ms,
                       'prompt_refinement':report.get('prompt_refinement'),
                       'rejected_proposals':report['rejected_proposals']}
         except Exception as error:
@@ -89,11 +98,13 @@ def worker_command(root,settings):
 
 def serve(args):
     import cv2
+    cv2.setNumThreads(1)
     import rclpy
     from rclpy.node import Node
     from rclpy.qos import qos_profile_sensor_data
+    from rclpy.serialization import deserialize_message
     from rclpy.callback_groups import ReentrantCallbackGroup
-    from rclpy.executors import MultiThreadedExecutor
+    from rclpy.executors import SingleThreadedExecutor,ExternalShutdownException
     from sensor_msgs.msg import Image
     from std_msgs.msg import String
     from std_srvs.srv import Trigger
@@ -104,22 +115,27 @@ def serve(args):
     command=worker_command(Path.cwd(),args.settings)
     process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
     print('Loading perception model once on GPU; waiting for worker...',flush=True)
-    node=None;executor=None
+    node=None;executor=None;service_node=None;service_executor=None;service_thread=None;frame_buffer=None
     try:
+        live_settings=json.loads(args.settings.read_text())
+        buffer_directory=live_settings.get('frame_buffer_directory',str(run))
+        preview_period=live_settings.get('preview_period_s',.2)
+        if not math.isfinite(preview_period) or preview_period<=0:raise ValueError('Invalid preview_period_s')
+        frame_buffer=tempfile.TemporaryDirectory(prefix='fr5_frames_',dir=buffer_directory)
         if read_reply(process,120).get('ready') is not True:raise RuntimeError('Worker startup failed')
         rclpy.init()
+        service_node=Node('live_b_pixels_snapshot')
         class LiveB(Node):
             def __init__(self):
                 super().__init__('live_b_pixels')
                 self.condition=threading.Condition();self.stop=threading.Event()
-                self.latest=None;self.cached=None;self.bridge=CvBridge()
+                self.latest=None;self.received=0;self.cached=None;self.bridge=CvBridge()
                 group=ReentrantCallbackGroup()
                 self.sub=self.create_subscription(Image,'/scene/image_raw',self.receive,
-                    qos_profile_sensor_data,callback_group=group)
+                    qos_profile_sensor_data,callback_group=group,raw=True)
                 self.pub=self.create_publisher(String,'/perception/boards_pixels',1)
                 self.debug=self.create_publisher(Image,'/perception/boards_pixels/debug_image',1)
-                self.service=self.create_service(Trigger,'/perception/get_boards_pixels',
-                    self.snapshot,callback_group=group)
+                self.service=service_node.create_service(Trigger,'/perception/get_boards_pixels',self.snapshot)
                 self.thread=threading.Thread(target=self.loop,daemon=True);self.thread.start()
                 self.get_logger().info('READY: continuous /perception/boards_pixels and /perception/get_boards_pixels')
 
@@ -127,7 +143,7 @@ def serve(args):
 
             def receive(self,msg):
                 with self.condition:
-                    self.latest=msg;self.condition.notify_all()
+                    self.received+=1;self.latest=(self.received,msg);self.condition.notify_all()
 
             def publish_error(self,error):
                 packet={'status':'error','objects':[],'error':str(error),'execution_allowed':False}
@@ -136,33 +152,46 @@ def serve(args):
                 self.get_logger().error(str(error))
 
             def loop(self):
-                last=None
+                last=None;last_source_stamp=None;last_preview=0.
                 while not self.stop.is_set():
                     with self.condition:
                         ready=self.condition.wait_for(lambda:self.stop.is_set() or (
-                            self.latest is not None and (self.latest.header.stamp.sec,self.latest.header.stamp.nanosec)!=last),timeout=1)
+                            self.latest is not None and self.latest[0]!=last),timeout=1)
                         if self.stop.is_set():return
                         if not ready:
                             if self.cached is not None and not fresh(self.cached,self.now_seconds(),args.max_age):
                                 self.publish_error('Camera stopped producing fresh images')
                             continue
-                        msg=self.latest
-                        last=(msg.header.stamp.sec,msg.header.stamp.nanosec)
+                        last,raw=self.latest
                     started=time.monotonic()
                     try:
-                        stamp=last[0]+last[1]*1e-9
+                        # Deserialize only the newest frame, rather than every queued ROS image.
+                        msg=deserialize_message(raw,Image)
+                        source_stamp=(msg.header.stamp.sec,msg.header.stamp.nanosec)
+                        if source_stamp==last_source_stamp:
+                            if self.cached is not None and not fresh(self.cached,self.now_seconds(),args.max_age):
+                                self.publish_error('Camera source timestamp stopped advancing')
+                            continue
+                        last_source_stamp=source_stamp
+                        stamp=source_stamp[0]+source_stamp[1]*1e-9
                         if not -.1<=self.now_seconds()-stamp<=args.max_age:
                             raise ValueError('Latest camera image is stale or clock-incompatible')
                         if msg.header.frame_id!='scene_camera_optical_frame':raise ValueError('Unexpected scene image frame')
                         image=self.bridge.imgmsg_to_cv2(msg,'bgr8')
+                        decode_ms=(time.monotonic()-started)*1000
                         transfer_started=time.monotonic()
-                        temporary=run/'input_next.npy';input_path=run/'input.npy';overlay=run/'overlay.bmp'
+                        temporary=Path(frame_buffer.name)/'input_next.npy'
+                        input_path=Path(frame_buffer.name)/'input.npy';overlay=run/'overlay.bmp'
                         write_frame(temporary,image)
                         temporary.replace(input_path)
                         transfer_ms=(time.monotonic()-transfer_started)*1000
-                        process.stdin.write(json.dumps({'image':str(input_path.resolve()),'overlay':str(overlay.resolve())})+'\n')
+                        preview=self.debug.get_subscription_count()>0 and started-last_preview>=preview_period
+                        process.stdin.write(json.dumps({'image':str(input_path.resolve()),
+                            'overlay':str(overlay.resolve()) if preview else None})+'\n')
                         process.stdin.flush()
+                        reply_started=time.monotonic()
                         result=read_reply(process,30)
+                        reply_ms=(time.monotonic()-reply_started)*1000
                         if not result.get('ok'):raise RuntimeError(result.get('error','Worker error'))
                         age=self.now_seconds()-stamp
                         snapshot=uuid.uuid4().hex
@@ -174,15 +203,21 @@ def serve(args):
                             item['instance_id']=f'{snapshot}:hand:{index}'
                         packet={'status':'ok' if -.1<=age<=args.max_age else 'stale',
                                 'coordinate_system':'raw_image_pixels','frame_id':msg.header.frame_id,
-                                'source_timestamp_sec':stamp,'source_stamp':{'sec':last[0],'nanosec':last[1]},
+                                'source_timestamp_sec':stamp,'source_stamp':{'sec':source_stamp[0],'nanosec':source_stamp[1]},
                                 'snapshot_id':snapshot,'observation_age_s':age,
                                 'image_size':result['image_size'],'detector_ms':result['detector_ms'],
+                                'geometry_image_size':result.get('geometry_image_size',result['image_size']),
+                                'geometry_pixel_scale':result.get('geometry_pixel_scale',[1.,1.]),
                                 'model_backend':result.get('model_backend','grounded_sam2'),
                                 'checkpoint_sha256':result.get('checkpoint_sha256'),
                                 'hand_detections':result.get('hand_detections',[]),
                                 'human_safety_validated':False,
                                 'prompt_refinement':result.get('prompt_refinement'),
                                 'frame_transfer_write_ms':transfer_ms,
+                                'worker_ms':result.get('worker_ms'),
+                                'frame_transfer_read_ms':result.get('frame_transfer_read_ms'),
+                                'ros_image_decode_ms':decode_ms,'worker_roundtrip_ms':reply_ms,
+                                'received_frame_count':last,
                                 'pipeline_ms':(time.monotonic()-started)*1000,
                                 'objects':result['objects'],'rejected_proposals':result['rejected_proposals'],
                                 'uncertain_objects':result.get('uncertain_objects',[]),
@@ -197,10 +232,11 @@ def serve(args):
                         with self.condition:self.cached=packet;self.condition.notify_all()
                         self.pub.publish(String(data=text))
                         temp_report=run/'latest_next.json';temp_report.write_text(text);temp_report.replace(run/'latest.json')
-                        visual=cv2.imread(str(overlay))
+                        visual=cv2.imread(str(overlay)) if preview else None
                         if visual is not None:
                             debug=self.bridge.cv2_to_imgmsg(visual,'bgr8');debug.header=msg.header
                             self.debug.publish(debug)
+                            last_preview=started
                     except Exception as error:
                         if not self.stop.is_set():self.publish_error(error)
                         if process.poll() is not None:return
@@ -218,9 +254,14 @@ def serve(args):
                 packet['observation_age_s']=self.now_seconds()-packet['source_timestamp_sec']
                 response.success=True;response.message=json.dumps(packet,allow_nan=False)
                 return response
-        node=LiveB();executor=MultiThreadedExecutor(num_threads=3);executor.add_node(node)
+        node=LiveB();executor=SingleThreadedExecutor();executor.add_node(node)
+        # A blocking fresh-snapshot request must not stall camera subscriptions.
+        service_executor=SingleThreadedExecutor();service_executor.add_node(service_node)
+        def spin_service():
+            with contextlib.suppress(ExternalShutdownException):service_executor.spin()
+        service_thread=threading.Thread(target=spin_service,daemon=True);service_thread.start()
         try:executor.spin()
-        except KeyboardInterrupt:pass
+        except (KeyboardInterrupt,ExternalShutdownException):pass
     finally:
         if node is not None:
             node.stop.set()
@@ -230,9 +271,16 @@ def serve(args):
             try:process.wait(timeout=5)
             except subprocess.TimeoutExpired:process.kill();process.wait()
         if node is not None:node.thread.join(timeout=3)
+        for stream in (process.stdin,process.stdout):
+            try:stream.close()
+            except BrokenPipeError:pass
         if executor is not None:executor.shutdown()
+        if service_executor is not None:service_executor.shutdown()
+        if service_thread is not None:service_thread.join(timeout=3)
+        if service_node is not None:service_node.destroy_node()
         if node is not None:node.destroy_node()
         if rclpy.ok():rclpy.shutdown()
+        if frame_buffer is not None:frame_buffer.cleanup()
 
 
 def self_test():

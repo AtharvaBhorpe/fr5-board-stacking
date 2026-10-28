@@ -78,6 +78,47 @@ include model_backend, checkpoint_sha256, class_name/class_id/confidence, and
 separate hand_detections. IDs remain snapshot-local. All execution/safety validation
 flags stay false. Pixel angle is not robot yaw; metric mapping remains external.
 
+## Mask measurement and outline noise
+
+YOLO still runs on CUDA. Component analysis and moments run on tightly cropped
+board masks, with the original-image offset restored. The pickup boundary is
+computed once per frame. YOLO supplies its trained class directly, so the YOLO
+adapter skips unused median colour/Lab measurements; its internal appearance
+diagnostic is null. Legacy detectors retain those measurements by default.
+
+Supported outlines try polygon tolerances of 1%, 1.5% and 2% of perimeter, keeping
+the first four-corner convex fit with mask IoU at least .93. Satellite components
+must occupy no more than .5% of foreground pixels. Larger disconnected fragments,
+substantial holes and nonrectangular overlap unions stay uncertain. These checks
+do not establish layer order or prove that a rectangle contains only one board.
+Centre/orientation fields and freshness/error contracts are unchanged.
+
+## GPU fast mode and measured limits
+
+`pixi run --frozen live-yolo-fast` selects `config/yolo_live_fast.json`:
+the cloud checkpoint, 960-pixel network input, FP16, and 640-pixel-wide mask
+measurement. Letterboxing is removed on GPU before transferring masks to CPU.
+Measured centres/corners are mapped back to original image pixel centres;
+`image_size` remains the source size (1920 x 1080 in these tests).
+`geometry_image_size` and `geometry_pixel_scale` disclose the measurement scale.
+The existing default task/config remain available for full-resolution masks.
+
+The fast worker exchanges lossless frames through a unique temporary directory
+under `/dev/shm`, removed on normal shutdown. If RAM storage is unavailable,
+startup fails visibly; change `frame_buffer_directory` to a writable directory
+with space for two uncompressed images. Camera reception and blocking snapshot
+requests use separate single-thread executors. Only the newest serialized camera
+image is decoded. Repeated source timestamps cannot become fresh observations.
+
+The debug image is generated only with a subscriber. Fast mode limits it to one
+image/second (`preview_period_s: 1.0`); coordinate messages run independently at
+the inference rate. The raw camera viewer can run separately. The GPU process
+still loads once. The ROS topics, fresh-snapshot service, class names, original
+pixel units, image-angle convention, and snapshot-local identities are unchanged.
+
+See [perception_speed_validation.md](perception_speed_validation.md) for measured
+throughput, accuracy tradeoffs, reproducible checks and camera-format limits.
+
 ## Current combined review plan
 
 The two supplied ZIPs were merged into

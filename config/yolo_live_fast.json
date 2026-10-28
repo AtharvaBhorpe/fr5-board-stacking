@@ -1,0 +1,13 @@
+{
+  "backend": "yolo11_seg",
+  "weights": ".local/brev_results/yolo_cloud_001/weights/best.pt",
+  "scene_config": "config/perception_full_table.toml",
+  "confidence": 0.25,
+  "nms_iou": 0.7,
+  "imgsz": 960,
+  "max_detections": 30,
+  "fp16": true,
+  "geometry_max_width": 640,
+  "frame_buffer_directory": "/dev/shm",
+  "preview_period_s": 1.0
+}
