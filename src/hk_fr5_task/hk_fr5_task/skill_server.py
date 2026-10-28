@@ -322,42 +322,47 @@ class SkillServer(Node):
         self._update_stacks(skip=b.id)                   # S-11: the picked board is not part of its stack box
         self._phase(gh, Pick, "HOVER")
         self._goto(gh, b.x, b.y, hover, yaw, what="hover over the board")
-        gripped = False
-        for attempt in range(self.c["retries"] + 1):
-            self._phase(gh, Pick, "DESCEND" if attempt == 0 else "RETRY")
-            if search:
-                self._vertical(gh, max(end, sm.search_end_z(self.c) + 0.001), speed, what="down to the search start")
-                gfut = self.grip.send_goal_async(Grip.Goal(timeout=float(self.c["search_timeout"])))
-                if not self._wait_future(gfut, 3.0) or not gfut.result().accepted:
-                    raise SkillError(C.GRIPPER_ERROR, "grip goal not accepted")
-                gres = gfut.result().get_result_async()
-                self._phase(gh, Pick, "GRIP")
-                # same depth on a retry: the table is a hard floor (deeper = cup collision box in the table, refused)
-                self._vertical(gh, sm.search_end_z(self.c), self.c["search_speed"],
-                               stop_when=lambda: gres.done(), what="contact search")
-                if not gres.done():                        # reached the bottom without a seal: give it a moment
-                    self._wait_future(gres, 0.7, gh)
-                if not gres.done():
-                    gfut.result().cancel_goal_async()
-                    self._wait_future(gres, 2.0)
-                if gh.is_cancel_requested:
-                    gfut.result().cancel_goal_async()
-                    raise SkillError(C.CANCELLED, "cancelled during the contact search")
-                gripped = gres.done() and gres.result().result.success
-                self._grip_log("contact search" if search else "known top", attempt, gres, gripped)
-            else:
-                self._vertical(gh, max(end - 0.003 * attempt, sm.search_end_z(self.c)), speed, what="down to the board")
-                self._phase(gh, Pick, "GRIP")
-                gfut = self.grip.send_goal_async(Grip.Goal(timeout=float(self.c["grip_timeout"])))
-                if not self._wait_future(gfut, 3.0) or not gfut.result().accepted:
-                    raise SkillError(C.GRIPPER_ERROR, "grip goal not accepted")
-                gres = gfut.result().get_result_async()
-                self._wait_future(gres, self.c["grip_timeout"] + 2.0, gh)
-                gripped = gres.done() and gres.result().result.success
-                self._grip_log("contact search" if search else "known top", attempt, gres, gripped)
-            if gripped:
-                break
-            self._vertical(gh, min(hover, self._tcp()[2] + 0.02), speed, what="lift after a failed grip")
+        gripped, gfut = False, None
+        try:
+            for attempt in range(self.c["retries"] + 1):
+                self._phase(gh, Pick, "DESCEND" if attempt == 0 else "RETRY")
+                if search:
+                    self._vertical(gh, max(end, sm.search_end_z(self.c) + 0.001), speed, what="down to the search start")
+                    gfut = self.grip.send_goal_async(Grip.Goal(timeout=float(self.c["search_timeout"])))
+                    if not self._wait_future(gfut, 3.0) or not gfut.result().accepted:
+                        raise SkillError(C.GRIPPER_ERROR, "grip goal not accepted")
+                    gres = gfut.result().get_result_async()
+                    self._phase(gh, Pick, "GRIP")
+                    # same depth on a retry: the table is a hard floor (deeper = cup collision box in the table, refused)
+                    self._vertical(gh, sm.search_end_z(self.c), self.c["search_speed"],
+                                   stop_when=lambda: gres.done(), what="contact search")
+                    if not gres.done():                        # reached the bottom without a seal: give it a moment
+                        self._wait_future(gres, 0.7, gh)
+                    if not gres.done():
+                        gfut.result().cancel_goal_async()
+                        self._wait_future(gres, 2.0)
+                    if gh.is_cancel_requested:
+                        gfut.result().cancel_goal_async()
+                        raise SkillError(C.CANCELLED, "cancelled during the contact search")
+                    gripped = gres.done() and gres.result().result.success
+                    self._grip_log("contact search" if search else "known top", attempt, gres, gripped)
+                else:
+                    self._vertical(gh, max(end - 0.003 * attempt, sm.search_end_z(self.c)), speed, what="down to the board")
+                    self._phase(gh, Pick, "GRIP")
+                    gfut = self.grip.send_goal_async(Grip.Goal(timeout=float(self.c["grip_timeout"])))
+                    if not self._wait_future(gfut, 3.0) or not gfut.result().accepted:
+                        raise SkillError(C.GRIPPER_ERROR, "grip goal not accepted")
+                    gres = gfut.result().get_result_async()
+                    self._wait_future(gres, self.c["grip_timeout"] + 2.0, gh)
+                    gripped = gres.done() and gres.result().result.success
+                    self._grip_log("contact search" if search else "known top", attempt, gres, gripped)
+                if gripped:
+                    break
+                self._vertical(gh, min(hover, self._tcp()[2] + 0.02), speed, what="lift after a failed grip")
+        except SkillError:  # stop / obstacle mid-grip: cancel the grip = vacuum pump off (gripper W-3)
+            if not gripped and gfut is not None and gfut.done() and gfut.result().accepted:
+                gfut.result().cancel_goal_async()
+            raise
         if not gripped:
             self._vertical(gh, hover, speed, what="back to hover")
             raise SkillError(C.GRIP_FAILED, f"no vacuum on board {b.id} after {self.c['retries'] + 1} attempt(s)")

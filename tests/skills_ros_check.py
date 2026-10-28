@@ -325,6 +325,16 @@ try:
     r = run("pick", Pick.Goal(board_id=bid(board("VARa"))), hook=cancel)
     check("cancel during a move: CANCELLED", r and r.code.value == C.CANCELLED, desc(r))
 
+    reset("cancel_grip")
+    set_fake("force_vacuum", "off")                  # no seal: the pump runs while the cup goes down
+    def cancel_grip(phase, gh):
+        if phase == "GRIP":
+            until(lambda: S["g"].vacuum_on, 3); gh.cancel_goal_async()
+    r = run("pick", Pick.Goal(board_id=bid(board("VARa"))), hook=cancel_grip)
+    set_fake("force_vacuum", "")
+    check("stop while the vacuum searches: CANCELLED and the vacuum pump off",
+          r and r.code.value == C.CANCELLED and until(lambda: not S["g"].vacuum_on, 3), desc(r))
+
     reset("release_safe")
     pb = board(bid=zone("processing_1").board_id) if zone("processing_1").board_id else None   # input stack is used up
     r = run("pick", Pick.Goal(board_id=bid(pb)))
