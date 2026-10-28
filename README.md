@@ -59,7 +59,7 @@ Commands (window 6, or `pixi run python3 tools/task_cli.py ...`; `help` lists al
 | Command | What |
 |---|---|
 | `tc status` / `tc world` / `tc list` / `tc wait j3` | controller state, boards + zones, jobs, follow a job |
-| `tc transfer VARa drop_off_a 2` | 2 input VARa boards -> drop_off_a (no count = 1, `0` = all, `any` = any variant) |
+| `tc transfer VARa drop_off_a 2` | 2 input VARa boards -> drop_off_a (no count = 1, `0` = all, `-1` = continuous until cancelled, `any` = any variant; `fault` is a valid target) |
 | `tc process VARa processing_1 drop_off_a 1` | input board -> processing zone; after the operator processed it -> drop_off_a |
 | `tc board b7 drop_off_b` / `tc clear drop_off_a drop_off_b` | one board by id / move boards of a zone |
 | `tc pause` `tc resume` `tc stop` `tc home` `tc cancel j3` `tc prio j3 10` | control (stop holds a board, resume drops it into the fault zone) |
@@ -119,7 +119,7 @@ Logging: `tools/live_env.sh` (sessions, `debug` / `demo`), `tools/live_monitor.p
 
 `tests/README.md`. Logic tests run in seconds without ROS (`pixi run python3 tests/world_core_check.py`, ...); ROS /
 sim tests need a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 pixi run python3 tests/skills_ros_check.py`).
-Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 40, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
+Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 45, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
 
 ## Limitations / open
 

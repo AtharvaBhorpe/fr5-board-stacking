@@ -66,9 +66,9 @@ The timeline below was recorded before these changes: it shows a home move after
 
 | Job (bridge / `tc` command) | Does | Notes |
 |---|---|---|
-| `transfer VARIANT\|any TO [COUNT] [PRIO]` | input boards of a variant -> zone `TO` | COUNT = boards to deliver, default 1, `0` = all matching |
+| `transfer VARIANT\|any TO [COUNT] [PRIO]` | input boards of a variant -> zone `TO` (a drop-off, a processing zone or `fault`) | COUNT = boards to deliver, default 1, `0` = all matching now, `-1` = continuous |
 | `board ID TO [PRIO]` | exactly this board (id from the world) -> `TO` | the only way to move an `UNKWN` board |
-| `process VARIANT\|any ZONE [TO] [COUNT] [PRIO]` | input board -> processing `ZONE`, wait for the operator, then -> `TO` | one job for the whole chain; no `TO` = done when processed |
+| `process VARIANT\|any ZONE [TO] [COUNT] [PRIO]` | input board -> processing `ZONE`, wait for the operator, then -> `TO` (drop-off or `fault`) | one job for the whole chain; no `TO` = done when processed |
 | `clear FROM TO [COUNT] [PRIO]` | boards of zone `FROM` -> `TO` | not from the fault zone |
 
 | Control | Effect |
@@ -83,7 +83,14 @@ The timeline below was recorded before these changes: it shows a home move after
 
 Limits: input stacks <= 5 boards; drop-off stacks <= 10 (then FULL: the job waits, the held board goes to the fault
 zone after 20 s); jobs pick only input boards (`clear` for zone boards); targets are zones only (no free poses); the
-fault zone (behind the robot) is used automatically, never as a target; one skill at a time (the controller orders).
+fault zone (behind the robot, a void: boards put there leave the world) is a valid target (`to fault`, e.g. "discard
+the VARb") and is also used automatically; one skill at a time (the controller orders). One processing zone
+(`processing_1`): process jobs take turns there, also across priorities.
+
+**COUNT:** `N` = deliver N boards (waits up to 30 s for missing ones, then DONE partial); `0` = all matching boards
+(DONE 3 s after none is left); **`-1` = continuous** ("keep doing X", "whenever a VARc appears"): never ends by
+itself, waits for new matching boards added later, stop it with `cancel JOB`. A higher-priority continuous job with
+no board on the table currently makes the robot go home before lower-priority work (open item TM-O19).
 
 Job result: `delivered`, `to_fault`, `lost`, `skipped` + `message`; DONE can be partial (reason in `message`).
 The controller handles by itself: retries, a board without vacuum (skipped for good), a hand in the work area (waits),

@@ -532,6 +532,34 @@ def tm36_unconfirmed():
           and cnt(jobs(sim)[a], "delivered") == 2, str([e[2] for e in events(sim, "not confirmed")]))
 
 
+
+@case("TM-39 continuous")
+def tm39_continuous():
+    sim = Sim(boards=[{"variant": "white_small", "x": -0.30, "y": -0.30, "yaw": -0.1, "count": 3}])   # no red at first
+    ok_a, _, a = sim.add(type="process", select_variant="red", zone="processing_1", to="drop_off_1", count=-1, priority=10)
+    _, _, b = sim.add(type="transfer", select_variant="white_small", to="drop_off_2", count=0, priority=1)
+    sim.loop(max_t=400, until=lambda s: jobs(s)[b]["state"] == "DONE")
+    t0 = sim.t
+    sim.loop(max_t=t0 + MCFG["partial_after"] + MCFG["end_wait"] + 20)            # idle at home, no red for > 50 s
+    Ja = jobs(sim)[a]
+    check("TM-39 count -1 (continuous) accepted; no matching board, robot idle past end_wait + partial_after: the job "
+          "stays open (QUEUED / WAITING; the lower one ran meanwhile)", ok_a and Ja["state"] in ("QUEUED", "WAITING") and "continuous" in Ja["message"]
+          and cnt(jobs(sim)[b], "delivered") == 3, f"{Ja['state']} {Ja['message']}, {short(sim.seq)}")
+    for k, (x, y, yaw) in enumerate(((-0.45, 0.22, 0.2), (-0.62, 0.20, 0.0))):
+        sim.fake._add("red", x, y, yaw)                                          # the operator adds a red board
+        sim.loop(max_t=sim.t + 200, until=lambda s, k=k: cnt(jobs(s)[a], "delivered") == k + 1 and not s.core.current)
+        Ja = jobs(sim)[a]
+        check(f"TM-39 red board {k + 1} added later: processed -> drop_off_1, delivered {k + 1}, job still open",
+              cnt(Ja, "delivered") == k + 1 and Ja["state"] in ("WAITING", "RUNNING"), f"{Ja['state']} {Ja['message']}")
+    sim.core.control("cancel_job", a, 0, sim.t)
+    sim.loop(max_t=sim.t + 20, until=lambda s: jobs(s)[a]["state"] == "CANCELLED")
+    check("TM-39 cancel ends the continuous job", jobs(sim)[a]["state"] == "CANCELLED", jobs(sim)[a]["message"])
+    w = sim.wd()
+    bad1 = sim.core.add_job({"type": "transfer", "select_variant": "red", "to": "drop_off_1", "count": -2}, w, sim.t)
+    bid = next(x["id"] for x in w["boards"])
+    bad2 = sim.core.add_job({"type": "transfer", "select_board": bid, "to": "drop_off_2", "count": -1}, w, sim.t)
+    check("TM-39 count -2 and select_board with count -1 rejected", not bad1[0] and not bad2[0], f"{bad1[1]} / {bad2[1]}")
+
 check(*invariant_summary())
 print(f"{ok} passed, {bad} failed")
 sys.exit(1 if bad else 0)

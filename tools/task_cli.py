@@ -7,7 +7,8 @@ Look (no effect on the robot):
     wait JOB [TIMEOUT_S]           follow a job until DONE / CANCELLED (prints every change)
 
 Jobs (queued; the controller decides when they run):
-    transfer VARIANT|any TO [COUNT] [PRIO]          input boards of a variant -> zone TO (COUNT default 1, 0 = all)
+    transfer VARIANT|any TO [COUNT] [PRIO]          input boards of a variant -> zone TO (COUNT default 1, 0 = all,
+                                                    -1 = continuous until cancelled; also for process / clear)
     board BOARD_ID TO [PRIO]                        exactly this board -> TO (also an UNKWN board)
     process VARIANT|any ZONE [TO] [COUNT] [PRIO]    input board -> processing ZONE -> (after processing) TO
     clear FROM TO [COUNT] [PRIO]                    boards of zone FROM -> TO (COUNT default 1, 0 = all; not the fault zone)

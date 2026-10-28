@@ -213,8 +213,8 @@ check("unowned FAULT in a processing zone (unknown board): one verbose alert (CL
 sim = Sim()
 for job, text in [({"type": "dance"}, "unknown job type"), ({"type": "transfer", "select_variant": "blue", "to": "drop_off_1"}, "unknown variant"),
                   ({"type": "process", "zone": "drop_off_1"}, "processing zone"), ({"type": "process", "zone": "processing_1", "to": "processing_2"}, "'to' must be"),
-                  ({"type": "transfer", "to": "nowhere"}, "target zone"), ({"type": "transfer", "to": "drop_off_1", "count": -1}, "count and max_attempts must be >= 0"),
-                  ({"type": "transfer", "to": "drop_off_1", "max_attempts": -1}, "count and max_attempts must be >= 0"),
+                  ({"type": "transfer", "to": "nowhere"}, "target zone"), ({"type": "transfer", "to": "drop_off_1", "count": -2}, "count must be >= -1"),
+                  ({"type": "transfer", "to": "drop_off_1", "max_attempts": -1}, "max_attempts >= 0"),
                   ({"type": "transfer", "to": "drop_off_1", "count": 3, "max_attempts": 2}, "max_attempts must be >= count"),
                   ({"type": "transfer", "to": "drop_off_1", "select_board": "b99"}, "not in the world"),
                   ({"type": "transfer", "to": "drop_off_1", "select_board": "b1", "count": 2}, "count must be 0 or 1"),

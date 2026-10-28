@@ -13,7 +13,7 @@ World.msg + 'stamp'), the time and the current tcp; this core decides the next s
 Reactive (CL-21): every tick each job says its next action from the world as it is now. Priority (CL-22): higher
 `priority` first, ties in queue order, switching only between skills. A held board is always placed by the job that
 picked it. Board choice: nearest to the current tcp (CL-26). Counters per job (S1): attempts, delivered, to_fault,
-lost, skipped; `count` = target number of delivered boards.
+lost, skipped; `count` = target number of delivered boards (0 = all matching, -1 = continuous until cancelled, TM-39).
 
 Tick order (each step may end the tick with "nothing now"):
   skill running (R7) -> world older than the last result (CL-23) -> world not yet showing the last result (U) ->
@@ -173,13 +173,13 @@ class MainCore:
             return False, f"unknown job type '{typ}' (process | transfer | clear_zone | home)", ""
         if v and v not in self.c["variants"]:
             return False, f"unknown variant '{v}' (known: {', '.join(self.c['variants'])})", ""
-        if job.get("count", 0) < 0 or job.get("max_attempts", 0) < 0:
-            return False, "count and max_attempts must be >= 0 (0 = all / no limit)", ""
+        if job.get("count", 0) < -1 or job.get("max_attempts", 0) < 0:
+            return False, "count must be >= -1 (0 = all, -1 = continuous) and max_attempts >= 0 (0 = no limit)", ""
         if job.get("count", 0) and job.get("max_attempts", 0) and job["max_attempts"] < job["count"]:
             return False, "max_attempts must be >= count", ""
         if job.get("select_board") and self._board(world, job["select_board"]) is None:
             return False, f"board '{job['select_board']}' not in the world", ""
-        if job.get("select_board") and job.get("count", 0) > 1:                              # A12
+        if job.get("select_board") and job.get("count", 0) not in (0, 1):                   # A12
             return False, "select_board names one board: count must be 0 or 1", ""
         if typ == "process":
             if not zone_ok(job.get("zone", ""), ("processing",)):
@@ -212,7 +212,7 @@ class MainCore:
     @staticmethod
     def describe(j):
         sel = j["select_board"] or (j["select_variant"] or "any") + (f" from {j['from_zone']}" if j["from_zone"] else "")
-        n = j["count"] or "all"
+        n = "continuous" if j["count"] < 0 else j["count"] or "all"
         lim = f", max {j['max_attempts']} attempts" if j["max_attempts"] else ""
         return {"process": f"process {n} x {sel} in {j['zone']}" + (f" -> {j['to']}" if j["to"] else ""),
                 "transfer": f"transfer {n} x {sel} -> {j['to']}",
@@ -263,7 +263,7 @@ class MainCore:
 
     def _may_start(self, j):
         """A new board may be started (S1): target not reached incl. boards in flight, attempts left."""
-        if j["count"] and j["delivered"] + len(self._in_flight(j)) >= j["count"]:
+        if j["count"] > 0 and j["delivered"] + len(self._in_flight(j)) >= j["count"]:
             return False
         if j["max_attempts"] and j["attempts"] >= j["max_attempts"]:
             return False
@@ -347,6 +347,9 @@ class MainCore:
             j["_none_since"] = None
             self._log(t, "info", f"{j['id']}: no matching board seen - moving home for a clear camera view (CL-30)")
             return {"skill": "home", "job": "", "board": ""}
+        if j["count"] < 0:                                   # TM-39 continuous: never ends by itself (cancel)
+            j["message"] = "continuous: waiting for a matching board"
+            return None
         if j["_none_since"] is None:
             j["_none_since"] = t
         wait = self.c["end_wait"] if not j["count"] else self.c["partial_after"]
@@ -361,7 +364,7 @@ class MainCore:
         if self._in_flight(j):
             j["state"] = "WAITING"
             return None
-        if j["count"] and j["delivered"] >= j["count"]:
+        if j["count"] > 0 and j["delivered"] >= j["count"]:
             self._finish(j, t, "DONE", self._summary(j))
         elif j["max_attempts"] and j["attempts"] >= j["max_attempts"]:
             self._finish(j, t, "DONE", self._summary(j) + " - max attempts reached (partial)")
@@ -371,7 +374,7 @@ class MainCore:
 
     @staticmethod
     def _summary(j):
-        return (f"{j['delivered']} delivered" + (f" of {j['count']}" if j["count"] else "") +
+        return (f"{j['delivered']} delivered" + (f" of {j['count']}" if j["count"] > 0 else "") +
                 f", {j['to_fault']} to fault, {j['lost']} lost, {j['skipped']} skipped ({j['attempts']} attempts)")
 
     def _finish(self, j, t, state, message):
