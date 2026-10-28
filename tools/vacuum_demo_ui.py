@@ -1,4 +1,5 @@
-"""Demo page for the vacuum-failure recovery (TM-47): one big button 'Simulate vacuum failure' + 'Now'.
+"""Demo page for the vacuum-failure recovery (TM-47): one big button 'Simulate vacuum failure' + 'Now', and
+'Pause' / 'Resume' for the main controller (TM-48: 'pause' / 'resume' through the bridge, as `tc pause` / `tc resume`).
 
     pixi run python3 tools/vacuum_demo_ui.py [--port 8765] [--lan] [--delay 1.5] [--bridge DIR]
     (started by tools/trial_up.sh as window 8 'demo-ui'; open http://localhost:8765)
@@ -35,7 +36,8 @@ def parse_state(path):
     g = re.search(r"gripper (\S+)", txt)
     h = re.search(r"held '([^']*)'", txt)
     c = re.search(r"CTRL (\S+)", txt)
-    return {"ctrl": c.group(1) if c else "?", "skill": m.group(1) if m else "-", "detail": (m.group(2).strip() if m else ""),
+    paused = bool(re.search(r"CTRL [^|]*PAUSED", txt))
+    return {"ctrl": c.group(1) if c else "?", "paused": paused, "skill": m.group(1) if m else "-", "detail": (m.group(2).strip() if m else ""),
             "phase": m.group(3) if m else "-", "gripper": g.group(1) if g else "?", "held": h.group(1) if h else ""}, age
 
 
@@ -94,10 +96,13 @@ h1{font-weight:600;font-size:clamp(20px,4vw,34px);margin:0;text-align:center}
 #msg{font-size:clamp(16px,2.6vw,24px);color:#fc6;text-align:center}
 #ev{font-family:ui-monospace,monospace;font-size:13px;color:#aaa;white-space:pre-wrap;max-width:900px;width:100%}
 .warn{color:#f88;font-size:14px}
+#pause{border-color:#fc6}#resume{border-color:#6c6}.on{background:#553 !important}
 </style></head><body>
 <h1>FR5 board stacking - vacuum failure recovery</h1>
 <button id="arm" onclick="post(armed?'/disarm':'/arm')">Simulate vacuum failure</button>
-<div class="row"><button class="small" onclick="post('/now')">Now (while holding)</button></div>
+<div class="row"><button class="small" onclick="post('/now')">Now (while holding)</button>
+<button class="small" id="pause" onclick="post('/pause')">Pause</button>
+<button class="small" id="resume" onclick="post('/resume')">Resume</button></div>
 <div id="msg"></div><div id="st"></div><div id="ev"></div>
 <div class="warn">Real robot: the gripper is switched - a person at the e-stop.</div>
 <script>
@@ -107,7 +112,8 @@ async function poll(){try{const r=await (await fetch('/status')).json();armed=r.
  const b=document.getElementById('arm');b.classList.toggle('armed',armed);
  b.textContent=armed?'Armed - next carry (tap to cancel)':'Simulate vacuum failure';
  document.getElementById('msg').textContent=r.msg;
- const s=r.state;document.getElementById('st').innerHTML=s.ctrl?('controller <b>'+s.ctrl+'</b> | skill <b>'+s.skill+'</b> '+
+ const s=r.state;document.getElementById('pause').classList.toggle('on',!!s.paused);
+ document.getElementById('st').innerHTML=s.ctrl?('controller <b>'+s.ctrl+(s.paused?' (PAUSED)':'')+'</b> | skill <b>'+s.skill+'</b> '+
   s.detail+' | phase <b>'+s.phase+'</b><br>gripper <b>'+s.gripper+'</b>'+(s.held?' holding <b>'+s.held+'</b>':'')+
   (r.age!==null&&r.age>10?' | state '+Math.round(r.age)+' s old (bridge running?)':'')):'no bridge state (is trial_up running?)';
  document.getElementById('ev').textContent=r.events.join('\\n');}catch(e){document.getElementById('msg').textContent='page server not reachable';}}
@@ -161,6 +167,10 @@ def main():
                     A["msg"] = f"armed: vacuum failure {a.delay:.1f} s into the next carry"
                 elif self.path == "/disarm":
                     A["armed"], A["carry_t"], A["msg"] = False, None, "cancelled"
+                elif self.path in ("/pause", "/resume"):          # TM-48: whole controller (finish the skill /
+                    cmd = self.path[1:]                               # place a held board first, then hold)
+                    err = send(fifo, cmd)
+                    A["msg"] = err or f"{cmd} sent at {time.strftime('%H:%M:%S')}"
                 elif self.path == "/now":
                     err = send(fifo, "inject vacuum_loss")
                     A["msg"] = err or f"vacuum failure sent at {time.strftime('%H:%M:%S')} (refused unless holding)"

@@ -1,6 +1,6 @@
 """tools/vacuum_demo_ui.py without ROS / robot: a temp bridge dir (state.txt + cmd pipe read here), the page server
 on a free port. Checks: page + status, 'Now' sends inject at once, 'Arm' fires DELAY s into a carry (not before, not
-without a carry), cancel, a carry that ends before the delay does not fire, bridge not running -> message.
+without a carry), cancel, a carry that ends before the delay does not fire, bridge not running -> message, Pause / Resume (TM-48).
 
     pixi run python3 tests/demo_ui_check.py
 """
@@ -95,6 +95,15 @@ try:
           not GOT and json.loads(get("/status"))["armed"], GOT)
     post("/disarm"); set_state("place", "HOVER", "HOLDING", "b3"); time.sleep(1.0)
     check("Cancel (disarm): no injection on the next carry", not GOT and not json.loads(get("/status"))["armed"], GOT)
+    GOT.clear()
+    post("/pause"); time.sleep(0.2); post("/resume"); time.sleep(0.3)
+    check("TM-48 Pause / Resume buttons send 'pause' / 'resume' to the controller (bridge), in order",
+          [c for _, c in GOT] == ["pause", "resume"] and 'id="pause"' in get("/") and 'id="resume"' in get("/"), GOT)
+    with open(state, "w") as f:
+        f.write("12:00:01 CTRL PAUSED PAUSED | skill -    phase - | ready skills True motion True world True\n"
+                "WORLD vision_ok True held '' gripper IDLE obstacles 0 problems []\n")
+    st = json.loads(get("/status"))
+    check("TM-48 status shows the controller paused", st["state"]["paused"] is True, st["state"])
 finally:
     p.terminate(); p.wait(timeout=5); log.close()
 print(f"{ok} passed, {bad} failed")
