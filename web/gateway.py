@@ -50,7 +50,7 @@ def top_view(w, W=960, H=540, x0=0.15, x1=-0.85, y0=0.9, y1=-0.9):
         cv2.fillPoly(img, [p], color) if fill else cv2.polylines(img, [p], True, color, 2)
         cx, cy = p.mean(0).astype(int)
         for i, text in enumerate(lines):
-            cv2.putText(img, text, (cx - 45, cy - 6 + 18 * i), cv2.FONT_HERSHEY_SIMPLEX, .5,
+            cv2.putText(img, text, (cx - 70, cy - 8 + 30 * i), cv2.FONT_HERSHEY_SIMPLEX, .85,
                         (25, 25, 25) if fill else color, 2)
     zc = {'EMPTY': (90, 200, 90), 'OK': (90, 200, 90), 'LOADED': (60, 170, 230), 'PROCESSING': (40, 140, 255),
           'DONE': (230, 200, 60), 'FULL': (60, 60, 230), 'FAULT': (60, 60, 230)}
@@ -65,9 +65,9 @@ def top_view(w, W=960, H=540, x0=0.15, x1=-0.85, y0=0.9, y1=-0.9):
     for o in w.get('obstacles', []):
         rect(o, (0, 0, 255), False, [o['label']])
     cv2.circle(img, px(0, 0), 18, (200, 200, 200), 2)
-    cv2.putText(img, 'robot' + (f"  holding {w['held']}" if w.get('held') else ''), (px(0, 0)[0] - 22, 30), 0, .55,
+    cv2.putText(img, 'robot' + (f"  holding {w['held']}" if w.get('held') else ''), (px(0, 0)[0] - 30, 30), 0, .85,
                 (0, 220, 255) if w.get('held') else (200, 200, 200), 2)
-    cv2.putText(img, 'Main controller world model (/task/world) - simulated', (10, H - 12), 0, .55, (0, 200, 255), 2)
+    cv2.putText(img, 'World model (/task/world), simulated', (10, H - 14), 0, .8, (0, 200, 255), 2)
     return img
 
 
