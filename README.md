@@ -64,6 +64,7 @@ Commands (window 6, or `pixi run python3 tools/task_cli.py ...`; `help` lists al
 | `tc board b7 drop_off_b` / `tc clear drop_off_a drop_off_b` | one board by id / move boards of a zone |
 | `tc pause` `tc resume` `tc stop` `tc home` `tc cancel j3` `tc prio j3 10` | control (stop holds a board, resume drops it into the fault zone) |
 | `tc reset_zone drop_off_a` | the operator emptied a zone by hand (world only) |
+| `tc inject vacuum_loss [SECS]` | demo / test: while holding, vacuum off + blow-off SECS (default 1 s) -> the board drops, part-lost recovery runs (REAL robot: switches the gripper, only with a person at the e-stop) |
 
 Fast interface for scripts / an agent (no process start per call): `<session>/bridge/state.txt` (compact state,
 rewritten on every change), `bridge/events.txt` (results, job changes, alerts), commands into the pipe:
@@ -99,7 +100,7 @@ rewritten on every change), `bridge/events.txt` (results, job changes, alerts), 
   world and count as pickable (priority is never changed by occlusion); a place not followed by home is confirmed by
   the camera later (warning only if not).
 - **Failures:** grip failed -> the board is skipped (problem board), vision stale -> wait, obstacle -> wait_clear,
-  board lost -> counted, 3 motion failures in a row or a failed release -> HALTED (check, then `tc resume`). A board
+  board lost -> counted (a board that fell on the table is a new input board and is picked again if its job still needs one), 3 motion failures in a row or a failed release -> HALTED (check, then `tc resume`). A board
   that cannot go anywhere is dropped into the **fault zone** (fixed spot behind the base, a void).
 
 ## Configuration (`src/hk_fr5_task/config/`)
@@ -118,7 +119,7 @@ Logging: `tools/live_env.sh` (sessions, `debug` / `demo`), `tools/live_monitor.p
 
 `tests/README.md`. Logic tests run in seconds without ROS (`pixi run python3 tests/world_core_check.py`, ...); ROS /
 sim tests need a free domain (`ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 pixi run python3 tests/skills_ros_check.py`).
-Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 40, fuzz 21, skill_math 17, fake_world 24, skills_ros 29, main_ros 17, ...).
+Last full run 2026-10-28: all pass (world_core 78, main_core 49, regress 40, fuzz 21, skill_math 17, fake_world 29, inject 6, skills_ros 30, main_ros 18, ...).
 
 ## Limitations / open
 

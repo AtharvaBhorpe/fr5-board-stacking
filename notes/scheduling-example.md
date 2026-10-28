@@ -88,7 +88,7 @@ fault zone (behind the robot) is used automatically, never as a target; one skil
 Job result: `delivered`, `to_fault`, `lost`, `skipped` + `message`; DONE can be partial (reason in `message`).
 The controller handles by itself: retries, a board without vacuum (skipped for good), a hand in the work area (waits),
 stale camera (waits), a board lost on the way (counted `lost`; when it falls on the table it is a new input board that
-a job with deliveries still missing picks again; not yet tested end-to-end).
+a job with deliveries still missing picks again after the next home move; tested in sim, not yet on the robot).
 
 Alerts that need a **person** (tell the human, do not cancel the job):
 

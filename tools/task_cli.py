@@ -16,12 +16,16 @@ Jobs (queued; the controller decides when they run):
 Control:
     pause [JOB] | resume [JOB] | stop | home | cancel JOB | prio JOB N | clear_queue
     reset_zone ZONE                the operator emptied ZONE: tell the world model (no robot motion)
+Fault injection (demo / test; REAL robot: switches the gripper, only on the user's command, a person at the e-stop):
+    inject vacuum_loss [SECS] [--force]   while holding: vacuum off + blow-off SECS (default 1.0) -> part lost
+                                          (tools/inject_vacuum_loss.py; refused unless the gripper is HOLDING)
 Direct skill (debug; MOVES THE ROBOT, refused unless the controller is paused or idle; --force skips that check):
     skill pick board_id=b3 [contact_search=true] [velocity_scaling=0.1]
     skill place target=drop_off_a | skill place x=-0.3 y=0.4 yaw=1.57
     skill home | skill wait_clear [timeout=10] | skill release_safe [target=fault]
 """
 import json
+import os
 import sys
 import time
 
@@ -140,6 +144,11 @@ def main():
     a = [x for x in a if x != "--force"]
     if not a or a[0] in ("-h", "--help", "help"):
         raise SystemExit(__doc__)
+    if a[0] == "inject":                                   # its own process (no ROS node of ours here yet)
+        if a[1:2] != ["vacuum_loss"]:
+            raise SystemExit("inject: only 'vacuum_loss [SECS] [--force]'")
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inject_vacuum_loss.py")
+        os.execv(sys.executable, [sys.executable, script] + a[2:] + (["--force"] if force else []))
     rclpy.init()
     n = rclpy.create_node("task_cli")
     c = a[0]

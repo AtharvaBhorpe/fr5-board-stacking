@@ -77,7 +77,7 @@ class FakeWorld:
             b = min(self.boards, key=lambda b: math.hypot(b["x"] - ev["x"], b["y"] - ev["y"]))
             if math.hypot(b["x"] - ev["x"], b["y"] - ev["y"]) > 0.05:
                 raise ValueError(f"picked: no board within 50 mm of ({ev['x']:.3f}, {ev['y']:.3f})")
-            self.held = {"variant": b["variant"]}
+            self.held = {"variant": b["variant"], "yaw": b["yaw"]}
             b["layers"].pop()
             b["count"] = len(b["layers"])
             if b["count"] <= 0:
@@ -100,10 +100,33 @@ class FakeWorld:
                 op = self.s.get("operator", {})
                 self.pending.append((t + op.get("take_after", 1.5), "take", z["name"]))   # return: after the take
             self.log.append((t, f"placed {variant} at ({x:.3f}, {y:.3f})" + (f" in {z['name']}" if z else "")))
-        elif typ == "dropped":
-            self.held = None
+        elif typ == "dropped":                  # vacuum lost in flight: the board falls under the tcp
+            self._drop(t)
         else:
             raise ValueError(f"unknown event type '{typ}'")
+
+    def _drop(self, t):
+        """Vacuum loss (TM-38): the held board lands under the tcp (small random offset / turn) if that is on a table in
+        the camera area (drop_area), else it is gone (over the rail between the tables, off the table, tcp unknown).
+        A board landing in a zone is a zone board (not re-picked); on the table it is a new input board."""
+        held, self.held = self.held, None
+        if held is None:
+            return
+        a = self.s.get("drop_area", {})
+        if self.tcp is None:
+            self.log.append((t, f"dropped {held['variant']}: gone (tcp unknown)"))
+            return
+        x = self.tcp[0] + float(self.rng.normal(0, a.get("scatter", 0.01)))
+        y = self.tcp[1] + float(self.rng.normal(0, a.get("scatter", 0.01)))
+        xr, yr = a.get("x", [-0.66, 0.09]), a.get("y", [-0.86, 0.84])
+        if not (xr[0] <= x <= xr[1] and yr[0] <= y <= yr[1]) or abs(y) < a.get("rail_half_width", 0.08):
+            self.log.append((t, f"dropped {held['variant']} at ({x:.3f}, {y:.3f}): gone (off the table / on the rail)"))
+            return
+        yaw = held.get("yaw", 0.0) + float(self.rng.normal(0, a.get("turn", 0.15)))
+        self._add(held["variant"], x, y, yaw)
+        z = self.zone_at(x, y)
+        self.log.append((t, f"dropped {held['variant']}: landed at ({x:.3f}, {y:.3f})"
+                            + (f" in {z['name']}" if z else " on the table")))
 
     def _covered(self, z):
         """The arm (band base -> tcp, + the held board) covers zone z in the camera view (same shape as the world
